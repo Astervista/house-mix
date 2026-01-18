@@ -1,0 +1,272 @@
+@use "dimensions";
+@use "colors";
+
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    height: 100%;
+    @include colors.datum-type-colors();
+}
+
+.mix-canvas {
+    flex-grow: 1;
+
+    .output-group,
+    .input-group {
+
+        &.add-output,
+        &.add-input {
+            cursor: pointer;
+
+            &:hover {
+                .output-container,
+                .input-container {
+                    fill: var(--mat-sys-surface-container-low);
+                }
+            }
+
+            &:active {
+                .output-container,
+                .input-container {
+                    fill: var(--mat-sys-surface-container);
+                }
+            }
+        }
+
+        .output-container,
+        .input-container {
+            stroke: var(--mat-sys-primary-container);
+            fill: var(--mat-sys-background);
+            stroke-width: 2px;
+            transition: fill .4s;
+        }
+
+        .input-text-name,
+        .add-input-text {
+            fill: var(--mat-sys-on-background);
+            font-size: 20px;
+            text-anchor: end;
+            dominant-baseline: middle;
+        }
+
+        .add-output-text {
+            fill: var(--mat-sys-on-background);
+            font-size: 20px;
+            text-anchor: start;
+            dominant-baseline: middle;
+        }
+
+        .input-text-origin {
+            fill: var(--mat-sys-surface-tint);
+            font-size: 17px;
+            font-weight: 200;
+            text-anchor: end;
+            dominant-baseline: middle;
+        }
+    }
+
+    .output-group {
+        .node-external-output-name {
+            fill: var(--mat-sys-on-background);
+            font-size: 20px;
+            dominant-baseline: middle;
+            &.node-external-output-constant {
+                fill: var(--mat-sys-surface-tint);
+                font-size: 17px;
+                font-weight: 200;
+            }
+        }
+    }
+
+    .node-group {
+        .node-heading,
+        .node-container {
+            stroke: var(--mat-sys-primary-container);
+            fill: var(--mat-sys-background);
+            stroke-width: 2px;
+            transition: fill .4s;
+        }
+        .node-heading-text {
+            fill: var(--mat-sys-on-background);
+            font-size: 20px;
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+        .node-connection-name {
+            fill: var(--mat-sys-on-background);
+            font-size: 20px;
+            dominant-baseline: middle;
+
+            &.node-output-name {
+                text-anchor: end;
+            }
+            &.node-input-name {
+                text-anchor: start;
+            }
+            &.node-input-constant {
+                fill: var(--mat-sys-surface-tint);
+                font-size: 17px;
+                font-weight: 200;
+            }
+        }
+    }
+
+    .connector {
+
+
+        stroke: var(--connector-type-color, --mat-sys-on-background);
+        fill: var(--mat-sys-background);
+        stroke-width: 1.5px;
+        transition: stroke-width 0.25s ease-in-out, r 0.2s ease-in-out;
+        r: var(--connector-radius);
+
+        &.disabled {
+            r: 2px;
+            stroke-width: 4px;
+        }
+
+        &.unselectable {
+            pointer-events: none;
+        }
+
+        &:hover {
+            stroke-width: 4px;
+            r: calc(var(--connector-radius) - 2);
+        }
+
+        &:active {
+            stroke-width: var(--connector-radius);
+            r: calc(var(--connector-radius) * 0.5);
+        }
+    }
+
+    .connector-snap {
+
+        stroke: none;
+        fill: transparent;
+
+        &.unselectable {
+            pointer-events: none;
+        }
+    }
+
+    .connector-non-null {
+        fill: var(--connector-type-color, --mat-sys-on-background);
+        pointer-events: none;
+    }
+
+    .connection-back {
+        stroke: transparent;
+        stroke-width: calc(var(--connection-width) * 3.5);
+        stroke-linecap: round;
+        transition: stroke 0.3s;
+        fill: none;
+
+        &:hover {
+            stroke: var(--mat-sys-primary-container);
+            + .connection {
+                stroke-width: calc(var(--connection-width) * 1.2);
+            }
+        }
+        &.connection-selected {
+            stroke: var(--mat-sys-primary);
+            + .connection {
+                stroke-width: calc(var(--connection-width) * 1.2);
+            }
+        }
+    }
+
+    .connection {
+        stroke: var(--mat-sys-on-background);
+        fill: none;
+        stroke-width: var(--connection-width);
+        stroke-linecap: round;
+        transition: stroke-width 0.25s ease-in-out;
+        pointer-events: none;
+    }
+
+    .add-node {
+        stroke: var(--mat-sys-primary-container);
+        fill: var(--mat-sys-background);
+        stroke-width: 2px;
+        transition: fill .4s;
+        cursor: pointer;
+
+        &:hover,
+        &:active {
+            fill: var(--mat-sys-surface-container-low);
+        }
+
+        &:hover:active {
+            fill: var(--mat-sys-surface-container);
+        }
+    }
+
+    .add-node-plus {
+        stroke-width: 6px;
+        stroke: white;
+        pointer-events: none;
+    }
+
+    .node-input-tag {
+        pointer-events: none;
+        transition: transform 0.5s ease-in-out;
+    }
+
+    .node-input-area + rect + rect.hidden {
+        pointer-events: none;
+    }
+
+    .node-input-area + rect + rect,
+    .node-input-area + rect {
+        cursor: pointer;
+    }
+
+    .node-input-area:hover + rect + rect + .node-input-tag,
+    .node-input-area + rect:hover + rect + .node-input-tag,
+    .node-input-area + rect + rect:hover + .node-input-tag {
+        transform: translateX(30px);
+    }
+
+    .node-input-area + rect + rect + .node-input-tag + .mat-icon-svg + .mat-icon-svg,
+    .node-input-area + rect + rect + .node-input-tag + .mat-icon-svg {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        pointer-events: none;
+    }
+
+    .node-input-area:hover + rect + rect + .node-input-tag + .mat-icon-svg + .mat-icon-svg,
+    .node-input-area + rect:hover + rect + .node-input-tag + .mat-icon-svg + .mat-icon-svg,
+    .node-input-area + rect + rect:hover + .node-input-tag + .mat-icon-svg + .mat-icon-svg,
+    .node-input-area:hover + rect + rect + .node-input-tag + .mat-icon-svg,
+    .node-input-area + rect:hover + rect + .node-input-tag + .mat-icon-svg,
+    .node-input-area + rect + rect:hover + .node-input-tag + .mat-icon-svg {
+        opacity: 1;
+        transition: opacity 0.3s 0.25s ease-in-out;
+    }
+
+    .node-input-area {
+        fill: transparent;
+    }
+
+    .mat-icon-svg {
+        //noinspection CssInvalidFunction
+        transform: translate(var(--icon-pos-x, 0px), var(--icon-pos-y, 0px)) scale(calc(var(--icon-size, 24) / 960), calc(var(--icon-size, 24) / 960)) translate(-480px, 480px);
+        fill: var(--mat-sys-on-background);
+    }
+}
+
+.fab-add {
+    position: absolute;
+    transform: translate(-50%, 0);
+    left: 50%;
+    bottom: dimensions.$margin-xlarge;
+    transition: scale 0.5s ease-in-out;
+    transform-origin: left;
+
+    &.hidden {
+        scale: 0;
+    }
+}
+

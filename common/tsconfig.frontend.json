@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-fe",
+    "paths": {
+      "class-decorators": ["./src/decorators/decorators-mock.ts"]
+    }
+  }
+}

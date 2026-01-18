@@ -1,0 +1,15 @@
+@if (isActuator()) {
+    <div class="preview" [style.background-image]="'url(\'/bulb.png\')'"></div>
+} @else if (isSensor()) {
+    <div class="preview" [style.background-image]="'url(\'/sensor.png\')'"></div>
+}
+<span class="display-name">{{ device.displayName }}</span>
+<div class="buttons">
+    @if (isActuator(this.device)) {
+        <button
+            mat-icon-button
+            (click)="openMix()">
+            <mat-icon>instant_mix</mat-icon>
+        </button>
+    }
+</div>

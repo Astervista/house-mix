@@ -1,0 +1,37 @@
+:root {
+    --margin-xsmall: 1px;
+    --margin-small: 2px;
+    --margin-msmall: 3px;
+    --margin-medium: 4px;
+    --margin-mlarge: 6px;
+    --margin-large: 8px;
+    --margin-xlarge: 12px;
+    --margin-xxlarge: 16px;
+
+
+    --indent-small: 8px;
+    --indent-msmall: 12px;
+    --indent-medium: 16px;
+    --indent-mlarge: 20px;
+    --indent-large: 25px;
+
+    --timesheet-shift-info-status-circle-size: 12px;
+}
+
+$margin-small: var(--margin-small);
+$margin-msmall: var(--margin-msmall);
+$margin-medium: var(--margin-medium);
+$margin-mlarge: var(--margin-mlarge);
+$margin-large: var(--margin-large);
+$margin-xlarge: var(--margin-xlarge);
+$margin-xxlarge: var(--margin-xxlarge);
+
+$indent-small: var(--indent-small);
+$indent-msmall: var(--indent-msmall);
+$indent-medium: var(--indent-medium);
+$indent-mlarge: var(--indent-mlarge);
+$indent-large: var(--indent-large);
+
+$status-circle-size: var(--timesheet-shift-info-status-circle-size);
+
+$small-title-font-size: 1.2rem;

@@ -1,0 +1,18 @@
+<h3>Devices</h3>
+<div class="devices-list">
+    <house-mix-loading-scrim
+        [loadingStatus]="loadingStatus"
+    ></house-mix-loading-scrim>
+    @if (actuators != null) {
+        @if (actuators.length > 0) {
+            @for (actuator of actuators; track actuator.name) {
+                <house-mix-device
+                    [device]="actuator">
+                </house-mix-device>
+            }
+        }
+    }
+</div>
+<mat-card class="demo-inline-calendar-card">
+    <mat-calendar [(selected)]="selected"></mat-calendar>
+</mat-card>

@@ -1,0 +1,21 @@
+This file should never be modified.
+
+Its purpose is to trigger a hot module replacement (HMR) in the frontend application, when angular is
+running in the debounced folder from {project root}/coding-utils/angular-debouncer.
+
+When this file is modified, the debouncer will detect the change and flush all the changes to the debounced folder,
+which will be picked up by the Angular application. This wil trigger a soft reload, meaning that depending on the changed
+files, Angular may not reload the entire application, but only the changed parts or not reload at all.
+
+To run the application with this feature, run the debouncer:
+
+cd {project root}/coding-utils/angular-debouncer/
+node dst/index.js
+
+And then run the Angular application as usual, but from the debounced folder:
+
+cd /tmp/angular-debouncer/timesheet/frontend/
+ng serve [...other options]
+
+to trigger a rebuild, touch this file, but do not modify it.
+

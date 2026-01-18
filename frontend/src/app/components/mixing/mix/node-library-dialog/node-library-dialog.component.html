@@ -1,0 +1,90 @@
+<h2 mat-dialog-title>Define a new output</h2>
+<mat-dialog-content>
+    <div class="list">
+        @for (item of ELABORATION_NODE_LIBRARY; track item.code) {
+            <div
+                class="node-preview"
+                [class.selected]="result == item"
+                (click)="result = item">
+                <span
+                    class="node-preview-title">
+                    {{ ELABORATION_NODE_DISPLAY_NAME[item.code] }}
+                </span>
+                <span
+                    class="node-preview-description">
+                    {{ item.description }}
+                </span>
+                @if (item.code == ElaborationNodeCode.NULL_GUARD) {
+                    <mat-form-field class="null-guard-input">
+                        <mat-label>Data type</mat-label>
+                        <mat-select [formControl]="nullGuardTypeFormControl">
+                            @for (type of Object.values(DatumType); track type) {
+                                <mat-option [value]="type">
+                                    <div
+                                        class="type-container">
+                                        <span class="type-circle"
+                                              [class.selected]="nullGuardTypeFormControl.value == type"
+                                              [style.--type-color]="getColorVarNameForType(type)"></span>
+                                        {{ DatumTypeDisplay[type] }}
+                                    </div>
+                                </mat-option>
+                            }
+                        </mat-select>
+                    </mat-form-field>
+                }
+                <div
+                    class="node-preview-exposed-container">
+                    <div
+                        class="node-preview-exposed-side">
+                        @for (input of examples[item.code].inputs; track $index) {
+                            <div
+                                class="node-preview-input">
+                                <span class="node-preview-input-circle"
+                                      [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                                @if (!input.nullable) {
+                                    <span class="node-preview-input-circle-non-null"
+                                          [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                                }
+                                <div
+                                    class="node-preview-input-info">
+                                    <span class="node-preview-input-name">{{ input.name }}</span>
+                                    <span class="node-preview-input-type">{{ DatumTypeDisplay[input.type] }}</span>
+                                    @if (input.nullable) {
+                                        <span class="node-preview-input-type">Nullable</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div
+                        class="node-preview-exposed-side">
+                        @for (output of examples[item.code].outputs; track $index) {
+                            <div
+                                class="node-preview-output">
+                                <span class="node-preview-output-circle"
+                                      [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                                @if (!output.nullable) {
+                                    <span class="node-preview-output-circle-non-null"
+                                          [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                                }
+                                <div
+                                    class="node-preview-output-info">
+                                    <span class="node-preview-output-name">{{ output.name }}</span>
+                                    <span class="node-preview-output-type">{{ DatumTypeDisplay[output.type] }}</span>
+                                    @if (output.nullable) {
+                                        <span class="node-preview-output-type">Nullable</span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button [mat-dialog-close]="null">Cancel</button>
+    <button mat-button (click)="confirm()" [disabled]="result == null">Select</button>
+
+</mat-dialog-actions>

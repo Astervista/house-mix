@@ -1,0 +1,592 @@
+<button
+    class="fab-add"
+    mat-fab
+    aria-label="Add"
+    [class.hidden]="(mix == null) || (this.mix.nodes.length == 0)"
+    (click)="addNode()">
+    <mat-icon>add</mat-icon>
+</button>
+<svg
+    class="mix-canvas"
+    [style.--connector-radius]="MEASURES.CONNECTOR_RADIUS"
+    (wheel)="uiManager.wheel($event)"
+    (mousemove)="uiManager.mouseMove($event)"
+    (mouseup)="uiManager.mouseUp()">
+
+    <rect
+        height="100%"
+        width="100%"
+        fill="transparent"
+        [style.cursor]="uiManager.backgroundCursor"
+        (mousedown)="uiManager.backgroundMouseDown($event)">
+
+    </rect>
+
+    <g
+        [attr.transform]="`translate(${uiManager.translation.x}, ${uiManager.translation.y}) scale(${uiManager.scale})`">
+
+        @if (mix != null) {
+            @let inputsDisabled = uiManager.draggingConnectionForOutput;
+            @let outputsDisabled = uiManager.draggingConnectionForInput;
+            @let temporaryConnectorDatumInfo = uiManager.draggingConnectorDatumInfo;
+            @let keepEnabledExternalInput = uiManager.draggingConnectionExternalInput;
+            @let keepEnabledExternalOutput = uiManager.draggingConnectionExternalOutput;
+
+            <!--CONNECTIONS-->
+
+            @let replacingConnection = uiManager.replacingConnection;
+            <g
+                class="connection-group"
+                [style.--connection-width]="MEASURES.CONNECTION_WIDTH">
+                @for (connection of mix.connections; track connection) {
+                    @if ((connection.sourceType != ConnectionSourceType.CONSTANT) && (connection != replacingConnection)) {
+                        @let connectionPosition = uiManager.getConnectionPosition(connection);
+                        @if (connectionPosition != null) {
+                            @let width = connectionPosition.to.x - connectionPosition.from.x;
+                            @let height = Math.abs(connectionPosition.to.y - connectionPosition.from.y);
+                            @let multiplier = width > 0 ? 0.3 : -0.7;
+                            @let path =
+                                `M${connectionPosition.from.x},${connectionPosition.from.y}` +
+                                (height > MEASURES.CONNECTION_WIDTH * 5
+                                    ?
+                                `C${connectionPosition.from.x + width * multiplier},${connectionPosition.from.y},` +
+                                `${connectionPosition.to.x - width * multiplier},${connectionPosition.to.y},`
+                                    :
+                                    `L`) +
+                                `${connectionPosition.to.x},${connectionPosition.to.y}`;
+                            <path
+                                class="connection-back"
+                                [attr.d]="path">
+                                {{ connection.sourceType }}
+                            </path>
+                            <path
+                                class="connection"
+                                [attr.d]="path">
+                            </path>
+                        }
+                    }
+                }
+
+                @let connectionPosition = uiManager.draggingConnector;
+                @if (connectionPosition != null) {
+                    @let width = connectionPosition.to.x - connectionPosition.from.x;
+                    @let height = Math.abs(connectionPosition.to.y - connectionPosition.from.y);
+                    @let multiplier = width > 0 ? 0.3 : -0.7;
+                    @let path =
+                        `M${connectionPosition.from.x},${connectionPosition.from.y}` +
+                        (height > MEASURES.CONNECTION_WIDTH * 5
+                            ?
+                        `C${connectionPosition.from.x + width * multiplier},${connectionPosition.from.y},` +
+                        `${connectionPosition.to.x - width * multiplier},${connectionPosition.to.y},`
+                            :
+                            `L`) +
+                        `${connectionPosition.to.x},${connectionPosition.to.y}`;
+                    <path
+                        class="connection-back connection-selected"
+                        [attr.d]="path">
+                    </path>
+                    <path
+                        class="connection"
+                        [attr.d]="path">
+                    </path>
+                }
+            </g>
+
+            <!-- INPUTS -->
+
+            @for (input of mix.imports; track input; let inputIndex = $index) {
+                @let disabled = outputsDisabled
+                                || ((temporaryConnectorDatumInfo != null) && (input.type != temporaryConnectorDatumInfo.type))
+                                || ((temporaryConnectorDatumInfo != null) && (input.nullable && !temporaryConnectorDatumInfo.nullable));
+                <g
+                    class="input-group"
+                    [attr.transform]="`translate(${-MEASURES.INPUT_WIDTH - MEASURES.SECTIONS_SEPARATOR / 2}, ${-uiManager.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * inputIndex})`">
+
+                    <rect
+                        [attr.width]="MEASURES.INPUT_WIDTH"
+                        [attr.height]="MEASURES.INPUT_HEIGHT"
+                        rx="10px"
+                        ry="10px"
+                        class="input-container">
+                    </rect>
+                    <text
+                        class="input-text-name"
+                        [attr.x]="MEASURES.INPUT_WIDTH - 20"
+                        [attr.y]="MEASURES.INPUT_NAME_TOP">
+                        {{ input.name }}
+                    </text>
+                    <text
+                        class="input-text-origin"
+                        [attr.x]="MEASURES.INPUT_WIDTH - 20"
+                        [attr.y]="MEASURES.INPUT_ORIGIN_TOP">
+                        Main switch click
+                    </text>
+                    <path
+                        class="connector-snap"
+                        [class.unselectable]="disabled"
+                        [attr.transform]="`translate(${MEASURES.INPUT_WIDTH}, ${MEASURES.INPUT_HEIGHT / 2}) scale(${(MEASURES.CONNECTOR_SNAP_RADIUS - 2) / 100})`"
+                        (mousemove)="uiManager.externalConnectorRightFacingMouseMove(input)"
+                        d="M-26.98,96.31c8.58,2.4,17.63,3.69,26.98,3.69,55.23,0,100-44.77,100-100S55.23-100,0-100c-9.35,0-18.4,1.29-26.98,3.69V96.31Z">
+                    </path>
+                    <circle
+                        class="connector"
+                        [class.disabled]="disabled && input != keepEnabledExternalInput"
+                        [class.unselectable]="disabled"
+                        [style.--connector-type-color]="getColorVarNameForType(input.type)"
+                        [attr.cx]="MEASURES.INPUT_WIDTH"
+                        [attr.cy]="MEASURES.INPUT_HEIGHT / 2"
+                        (mousedown)="$event.stopPropagation(); uiManager.externalConnectorRightFacingMouseDown(input, $event)"
+                        (mousemove)="uiManager.externalConnectorRightFacingMouseMove(input)">
+                    </circle>
+                    @if (!input.nullable) {
+                        <circle
+                            class="connector-non-null"
+                            [style.--connector-type-color]="getColorVarNameForType(input.type)"
+                            [attr.cx]="MEASURES.INPUT_WIDTH"
+                            [attr.cy]="MEASURES.INPUT_HEIGHT / 2"
+                            [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                        </circle>
+                    }
+                </g>
+            }
+            <g
+                class="input-group add-input"
+                [attr.transform]="`translate(${-MEASURES.INPUT_WIDTH - MEASURES.SECTIONS_SEPARATOR / 2}, ${-uiManager.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * mix.imports.length})`"
+                (click)="addInput()">
+
+                <rect
+                    [attr.width]="MEASURES.INPUT_WIDTH"
+                    [attr.height]="MEASURES.ADD_INPUT_HEIGHT"
+                    rx="10px"
+                    ry="10px"
+                    class="input-container">
+                </rect>
+                <text
+                    class="add-input-text"
+                    [attr.x]="MEASURES.INPUT_WIDTH - 20"
+                    [attr.y]="MEASURES.ADD_INPUT_HEIGHT / 2">
+                    Add an input
+                </text>
+            </g>
+
+            <!-- OUTPUTS -->
+
+            @for (output of mix.outputs; track output; let inputIndex = $index) {
+                @let disabled = inputsDisabled
+                                || ((temporaryConnectorDatumInfo != null) && (output.type != temporaryConnectorDatumInfo.type))
+                                || ((temporaryConnectorDatumInfo != null) && (temporaryConnectorDatumInfo.nullable && !output.nullable))
+                                || ((this.uiManager.draggingConnectionForInput) && (this.uiManager.isExternalOutputLocked(output)) && (output != keepEnabledExternalOutput));
+                <g
+                    class="output-group"
+                    [attr.transform]="`translate(${uiManager.outputsPosition}, ${-uiManager.outputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * inputIndex})`">
+
+                    <rect
+                        [attr.width]="MEASURES.OUTPUT_WIDTH"
+                        [attr.height]="MEASURES.OUTPUT_HEIGHT"
+                        rx="10px"
+                        ry="10px"
+                        class="output-container">
+                    </rect>
+                    @let externalOutputCanBeChanged = this.externalOutputCanBeChanged(output);
+                    @let connectionTop = MEASURES.OUTPUT_HEIGHT / 2;
+                    @let constantSource = getConstantSourceForExternalOutput(output);
+                    @if (externalOutputCanBeChanged) {
+                        <rect
+                            class="node-input-area"
+                            [attr.width]="MEASURES.NODE_WIDTH / 2"
+                            [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
+                            [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
+                        </rect>
+                        <rect
+                            width="24px"
+                            height="24px"
+                            fill="transparent"
+                            [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop + (output.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
+                                        }px)`"
+                            (mousedown)="$event.stopPropagation()"
+                            (click)="editExternalOutputConstant(output)">
+                        </rect>
+                        <rect
+                            width="24px"
+                            height="24px"
+                            fill="transparent"
+                            [class.hidden]="!output.nullable"
+                            [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
+                                        }px)`"
+                            (mousedown)="$event.stopPropagation()"
+                            (click)="clearExternalOutputConstant(output)">
+                        </rect>
+
+                    }
+                    <g class="node-input-tag">
+                        <text
+                            class="node-connection-name node-external-output-name"
+                            [attr.y]="connectionTop - (constantSource != null ? MEASURES.NODE_CONNECTION_CONSTANT_SHIFT : 0)"
+                            [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                            {{ output.name }}
+                        </text>
+                        @if (constantSource != null) {
+                            @if (constantSource.sourceValue == null) {
+                                <path
+                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                    [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                    class="mat-icon-svg node-external-output-name node-external-output-constant"
+                                    d="M120-280v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 480v-80h80v80h-80Zm0-640v-80h80v80h-80Zm160 0v-80h80v80h-80Zm60 640-56-56 142-142-142-142 56-56 142 142 142-142 56 56-142 142 142 142-56 56-142-142-142 142Zm100-640v-80h80v80h-80Zm160 160v-80h80v80h-80ZM120-760v-80h80v80h-80Zm720 0h-80v-80h80v80ZM120-120v-80h80v80h-80Z"
+                                />
+                            } @else {
+
+                                @if (output.type == DatumType.NUMBER) {
+                                    <text
+                                        class="node-external-output-name node-external-output-constant"
+                                        [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                        [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                        Value: {{ constantSource.sourceValue }}
+                                    </text>
+                                } @else if (output.type == DatumType.DATE || output.type == DatumType.TIME || output.type == DatumType.DATE_TIME) {
+                                    @let format = output.type == DatumType.DATE ? "yyyy-MM-dd" : (output.type == DatumType.TIME ? "HH:mm:ss" : "yyyy-MM-dd HH:mm:ss");
+                                    <text
+                                        class="node-external-output-name node-external-output-constant"
+                                        [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                        [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                        {{ Datum.getValueFromUnknownAndType(constantSource.sourceValue, output.type) | date:format }}
+                                    </text>
+                                } @else if (output.type == DatumType.BOOLEAN) {
+                                    @if (Datum.getValueFromUnknownAndType(constantSource.sourceValue, output.type)) {
+                                        <path
+                                            [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                            [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                            [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                            class="mat-icon-svg node-external-output-name node-external-output-constant"
+                                            d="m424-312 282-282-56-56-226 226-114-114-56 56 170 170ZM120-120v-720h720v720H120Zm80-80h560v-560H200v560Zm0 0v-560 560Z"
+                                        />
+                                    } @else {
+                                        <path
+                                            [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                            [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                            [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                            class="mat-icon-svg node-external-output-name node-external-output-constant"
+                                            d="M120-120v-720h720v720H120Zm80-80h560v-560H200v560Z"
+                                        />
+                                    }
+                                }
+                            }
+                        }
+                    </g>
+                    @if (externalOutputCanBeChanged) {
+                        <path
+                            [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                            [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                            [style.--icon-pos-y]="connectionTop + (output.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
+                            class="mat-icon-svg"
+                            d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                        />
+                        @if (output.nullable) {
+                            <path
+                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                class="mat-icon-svg"
+                                d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                            />
+                        }
+                    }
+                    <path
+                        class="connector-snap"
+                        [class.unselectable]="disabled"
+                        [attr.transform]="`translate(${0}, ${MEASURES.OUTPUT_HEIGHT / 2}) scale(${(MEASURES.CONNECTOR_SNAP_RADIUS - 2) / 100})`"
+                        (mousemove)="uiManager.externalConnectorLeftFacingMouseMove(output)"
+                        d="M26.98-96.31c-8.58-2.4-17.63-3.69-26.98-3.69-55.23,0-100,44.77-100,100S-55.23,100,0,100c9.35,0,18.4-1.29,26.98-3.69V-96.31Z">
+                    </path>
+                    <circle
+                        class="connector"
+                        [class.disabled]="disabled && output != keepEnabledExternalOutput"
+                        [class.unselectable]="disabled"
+                        [style.--connector-type-color]="getColorVarNameForType(output.type)"
+                        [attr.cx]="0"
+                        [attr.cy]="MEASURES.INPUT_HEIGHT / 2"
+                        (mousemove)="uiManager.externalConnectorLeftFacingMouseMove(output)"
+                        (mousedown)="$event.stopPropagation(); uiManager.externalConnectorLeftFacingMouseDown(output, $event)">
+                    </circle>
+                    @if (!output.nullable) {
+                        <circle
+                            class="connector-non-null"
+                            [style.--connector-type-color]="getColorVarNameForType(output.type)"
+                            [attr.cx]="0"
+                            [attr.cy]="MEASURES.INPUT_HEIGHT / 2"
+                            [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                        </circle>
+                    }
+                </g>
+            }
+            <g
+                class="output-group add-output"
+                [attr.transform]="`translate(${uiManager.outputsPosition}, ${-uiManager.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * mix.outputs.length})`"
+                (click)="addOutput()">
+
+                <rect
+                    [attr.width]="MEASURES.OUTPUT_WIDTH"
+                    [attr.height]="MEASURES.ADD_OUTPUT_HEIGHT"
+                    rx="10px"
+                    ry="10px"
+                    class="output-container">
+                </rect>
+                <text
+                    class="add-output-text"
+                    [attr.x]="20"
+                    [attr.y]="MEASURES.ADD_INPUT_HEIGHT / 2">
+                    Define a new output
+                </text>
+            </g>
+
+
+            <!-- NODES -->
+
+            @if (mix.nodes.length == 0) {
+                <g
+                    class="add-node-group"
+                    [style.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR * 0.25}px, 0)`"
+                    (click)="addNode()">
+                    <circle
+                        class="add-node"
+                        [attr.r]="MEASURES.NODE_ADD_RADIUS"
+                        cx="0"
+                        cy="0"></circle>
+                    <path
+                        class="add-node-plus"
+                        [attr.d]="`M${-MEASURES.NODE_ADD_RADIUS * .5},0h${MEASURES.NODE_ADD_RADIUS}M0,${-MEASURES.NODE_ADD_RADIUS * .5}v${MEASURES.NODE_ADD_RADIUS}`">
+                    </path>
+                </g>
+            } @else {
+                @let keepEnabledInput = uiManager.draggingConnectionInput;
+                @let keepEnabledOutput = uiManager.draggingConnectionOutput;
+                <g
+                    [attr.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR / 2}, 0)`">
+                    @for (node of mix.nodes; track node.id) {
+                        @let stacks = Math.max(node.inputs.length, node.outputs.length);
+                        @let leftDisplacement = uiManager.getNodeConnectionsDisplacement(node, true);
+                        @let rightDisplacement = uiManager.getNodeConnectionsDisplacement(node, false);
+                        @let nodePosition = uiManager.getNodePosition(node);
+                        <g
+                            class="node-group"
+                            [attr.transform]="`translate(${nodePosition.x}, ${nodePosition.y})`"
+                            (mousedown)="$event.stopPropagation(); uiManager.nodeMouseDown(node, $event)">
+                            <rect
+                                [attr.width]="MEASURES.NODE_WIDTH"
+                                [attr.height]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1)"
+                                rx="10px"
+                                ry="10px"
+                                class="node-container">
+                            </rect>
+                            <rect
+                                [attr.width]="MEASURES.NODE_HEADING_WIDTH"
+                                [attr.height]="MEASURES.NODE_HEADING_HEIGHT"
+                                rx="5"
+                                ry="5"
+                                [attr.transform]="`translate(${(MEASURES.NODE_WIDTH - MEASURES.NODE_HEADING_WIDTH) / 2}, ${-MEASURES.NODE_HEADING_HEIGHT / 2})`"
+                                class="node-heading">
+                            </rect>
+                            <text
+                                class="node-heading-text"
+                                [attr.x]="MEASURES.NODE_WIDTH / 2"
+                                y="0">
+                                {{ ELABORATION_NODE_DISPLAY_NAME[node.code] }}
+                            </text>
+                            @for (input of node.inputs; track input; let inputIndex = $index) {
+                                @let connectionTop = uiManager.getNodeConnectionTop(node, inputIndex) + leftDisplacement;
+                                @let disabled = inputsDisabled
+                                                || ((temporaryConnectorDatumInfo != null) && (input.type != temporaryConnectorDatumInfo.type))
+                                                || ((temporaryConnectorDatumInfo != null) && (!input.nullable && temporaryConnectorDatumInfo.nullable))
+                                                || ((this.uiManager.draggingConnectionForInput) && (this.uiManager.isInputLocked(node, input)) && (input != keepEnabledInput));
+                                @let constantSource = getConstantSourceForInput(node, input);
+
+                                @let inputCanBeChanged = this.inputCanBeChanged(node, input);
+                                @if (inputCanBeChanged) {
+                                    <rect
+                                        class="node-input-area"
+                                        [attr.width]="MEASURES.NODE_WIDTH / 2"
+                                        [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
+                                        [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
+                                    </rect>
+                                    <rect
+                                        width="24px"
+                                        height="24px"
+                                        fill="transparent"
+                                        [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop + (input.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
+                                        }px)`"
+                                        (mousedown)="$event.stopPropagation()"
+                                        (click)="editNodeInputConstant(node, input)">
+                                    </rect>
+                                    <rect
+                                        width="24px"
+                                        height="24px"
+                                        fill="transparent"
+                                        [class.hidden]="!input.nullable"
+                                        [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
+                                        }px)`"
+                                        (mousedown)="$event.stopPropagation()"
+                                        (click)="clearNodeInputConstant(node, input)">
+                                    </rect>
+
+                                }
+                                <g class="node-input-tag">
+                                    <text
+                                        class="node-connection-name node-input-name"
+                                        [attr.y]="connectionTop - (constantSource != null ? MEASURES.NODE_CONNECTION_CONSTANT_SHIFT : 0)"
+                                        [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                        {{ input.name }}
+                                    </text>
+                                    @if (constantSource != null) {
+                                        @if (constantSource.sourceValue == null) {
+                                            <path
+                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                                class="mat-icon-svg node-connection-name node-input-constant"
+                                                d="M120-280v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 480v-80h80v80h-80Zm0-640v-80h80v80h-80Zm160 0v-80h80v80h-80Zm60 640-56-56 142-142-142-142 56-56 142 142 142-142 56 56-142 142 142 142-56 56-142-142-142 142Zm100-640v-80h80v80h-80Zm160 160v-80h80v80h-80ZM120-760v-80h80v80h-80Zm720 0h-80v-80h80v80ZM120-120v-80h80v80h-80Z"
+                                            />
+                                        } @else {
+                                            @if (input.type == DatumType.NUMBER) {
+                                                <text
+                                                    class="node-connection-name node-input-constant"
+                                                    [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                    [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                    Value: {{ constantSource.sourceValue }}
+                                                </text>
+                                            } @else if (input.type == DatumType.DATE || input.type == DatumType.TIME || input.type == DatumType.DATE_TIME) {
+                                                @let format = input.type == DatumType.DATE ? "yyyy-MM-dd" : (input.type == DatumType.TIME ? "HH:mm:ss" : "yyyy-MM-dd HH:mm:ss");
+                                                <text
+                                                    class="node-connection-name node-input-constant"
+                                                    [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                    [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                    {{ Datum.getValueFromUnknownAndType(constantSource.sourceValue, input.type) | date:format }}
+                                                </text>
+                                            } @else if (input.type == DatumType.BOOLEAN) {
+                                                @if (Datum.getValueFromUnknownAndType(constantSource.sourceValue, input.type)) {
+                                                    <path
+                                                        [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                        [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                        [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                                        class="mat-icon-svg node-connection-name node-input-constant"
+                                                        d="m424-312 282-282-56-56-226 226-114-114-56 56 170 170ZM120-120v-720h720v720H120Zm80-80h560v-560H200v560Zm0 0v-560 560Z"
+                                                    />
+                                                } @else {
+                                                    <path
+                                                        [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                        [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                        [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                                        class="mat-icon-svg node-connection-name node-input-constant"
+                                                        d="M120-120v-720h720v720H120Zm80-80h560v-560H200v560Z"
+                                                    />
+                                                }
+                                            }
+                                        }
+                                    }
+                                </g>
+                                @if (inputCanBeChanged) {
+                                    <path
+                                        [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                        [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                        [style.--icon-pos-y]="connectionTop + (input.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
+                                        class="mat-icon-svg"
+                                        d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                                    />
+                                    @if (input.nullable) {
+                                        <path
+                                            [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                            [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                            [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                            class="mat-icon-svg"
+                                            d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                                        />
+                                    }
+                                }
+
+                                <path
+                                    class="connector-snap"
+                                    [class.unselectable]="disabled"
+                                    [attr.transform]="`translate(${0}, ${connectionTop}) scale(${(MEASURES.CONNECTOR_SNAP_RADIUS - 2) / 100})`"
+                                    (mousemove)="uiManager.nodeConnectorMouseMove(node, input, false)"
+                                    d="M26.98-96.31c-8.58-2.4-17.63-3.69-26.98-3.69-55.23,0-100,44.77-100,100S-55.23,100,0,100c9.35,0,18.4-1.29,26.98-3.69V-96.31Z">
+                                </path>
+                                <circle
+                                    class="connector"
+                                    [class.disabled]="disabled && input != keepEnabledInput"
+                                    [class.unselectable]="disabled"
+                                    [style.--connector-type-color]="getColorVarNameForType(input.type)"
+                                    [attr.cy]="connectionTop"
+                                    [attr.cx]="0"
+                                    (mousedown)="$event.stopPropagation(); uiManager.nodeConnectorMouseDown(node, input, false,$event)"
+                                    (mousemove)="uiManager.nodeConnectorMouseMove(node, input, false)">
+                                </circle>
+                                @if (!input.nullable) {
+                                    <circle
+                                        class="connector-non-null"
+                                        [style.--connector-type-color]="getColorVarNameForType(input.type)"
+                                        [attr.cy]="connectionTop"
+                                        [attr.cx]="0"
+                                        [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                                    </circle>
+                                }
+                            }
+                            @for (output of node.outputs; track output; let outputIndex = $index) {
+                                @let connectionTop = uiManager.getNodeConnectionTop(node, outputIndex) + rightDisplacement;
+                                @let disabled = outputsDisabled
+                                                || ((temporaryConnectorDatumInfo != null) && (output.type != temporaryConnectorDatumInfo.type))
+                                                || ((temporaryConnectorDatumInfo != null) && (output.nullable && !temporaryConnectorDatumInfo.nullable));
+                                <path
+                                    class="connector-snap"
+                                    [class.unselectable]="disabled"
+                                    [attr.transform]="`translate(${MEASURES.NODE_WIDTH}, ${connectionTop}) scale(${(MEASURES.CONNECTOR_SNAP_RADIUS - 2) / 100})`"
+                                    (mousemove)="uiManager.nodeConnectorMouseMove(node, output, true)"
+                                    d="M-26.98,96.31c8.58,2.4,17.63,3.69,26.98,3.69,55.23,0,100-44.77,100-100S55.23-100,0-100c-9.35,0-18.4,1.29-26.98,3.69V96.31Z">
+                                </path>
+                                <circle
+                                    class="connector"
+                                    [class.disabled]="disabled && output != keepEnabledOutput"
+                                    [class.unselectable]="disabled"
+                                    [style.--connector-type-color]="getColorVarNameForType(output.type)"
+                                    [attr.cy]="connectionTop"
+                                    [attr.cx]="MEASURES.NODE_WIDTH"
+                                    (mousedown)="$event.stopPropagation(); uiManager.nodeConnectorMouseDown(node, output, true,$event)"
+                                    (mousemove)="uiManager.nodeConnectorMouseMove(node, output, true)">
+                                </circle>
+                                @if (!output.nullable) {
+                                    <circle
+                                        class="connector-non-null"
+                                        [style.--connector-type-color]="getColorVarNameForType(output.type)"
+                                        [attr.cy]="connectionTop"
+                                        [attr.cx]="MEASURES.NODE_WIDTH"
+                                        [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                                    </circle>
+                                }
+                                <text
+                                    class="node-connection-name node-output-name"
+                                    [attr.y]="connectionTop"
+                                    [attr.x]="MEASURES.NODE_WIDTH - MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                    {{ output.name }}
+                                </text>
+                            }
+                        </g>
+                    }
+                </g>
+            }
+        }
+    </g>
+</svg>

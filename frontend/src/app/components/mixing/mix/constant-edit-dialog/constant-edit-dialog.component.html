@@ -1,0 +1,33 @@
+<h2 mat-dialog-title>{{ getTitle() }}</h2>
+<mat-dialog-content>
+    @if (this.data.type == DatumType.NUMBER) {
+        <mat-form-field class="example-full-width">
+            <mat-label>Value</mat-label>
+            <input matInput type="number" [formControl]="numberFormControl">
+        </mat-form-field>
+    }
+    @if (this.data.type == DatumType.TIME || this.data.type == DatumType.DATE_TIME) {
+        <mat-form-field>
+            <mat-label>Pick a time</mat-label>
+            <input matInput [matTimepicker]="picker" [formControl]="timeFormControl">
+            <mat-hint>HH:MM:SS</mat-hint>
+            <mat-timepicker-toggle matIconSuffix [for]="picker"/>
+            <mat-timepicker #picker/>
+        </mat-form-field>
+    }
+    @if (this.data.type == DatumType.DATE || this.data.type == DatumType.DATE_TIME) {
+        <mat-form-field>
+            <mat-label>Choose a date</mat-label>
+            <input matInput [matDatepicker]="picker" [formControl]="dateFormControl">
+            <mat-hint>YYYY-MM-DD</mat-hint>
+            <mat-datepicker-toggle matIconSuffix [for]="picker">
+                <mat-icon matDatepickerToggleIcon>keyboard_arrow_down</mat-icon>
+            </mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button [mat-dialog-close]="{successful: false, value: null}">Cancel</button>
+    <button mat-button [disabled]="selectedValue == null" [mat-dialog-close]="{successful: true, value: selectedValue}">Select</button>
+</mat-dialog-actions>

@@ -1,0 +1,206 @@
+@use "@angular/material" as mat;
+
+$scheduled-shift-color: #5C97FF;
+$done-shift-color: #FF5A5A;
+$invoiced-shift-color: #FFA95C;
+$paid-shift-color: #4CC194;
+$cancelled-shift-color: #5f1919;
+
+$error: #ea4646;
+$warning: #c97a44;
+$correct: #06af83;
+
+$text-color: #000;
+$background-color: #FFF;
+
+$text-color-dark: #FFF;
+$background-color-dark: #1A1A1A;
+
+// Material Theme Colors (Light)
+$primary-light: #00677d;
+$primary-light: #008daa;
+$on-primary-light: #ffffff;
+$primary-container-light: #b3ebff;
+$on-primary-container-light: #001f27;
+$inverse-primary-light: #6ed4f3;
+$primary-fixed-light: #b3ebff;
+$primary-fixed-dim-light: #6ed4f3;
+$on-primary-fixed-light: #001f27;
+$on-primary-fixed-variant-light: #004e5f;
+$secondary-light: #316095;
+$on-secondary-light: #ffffff;
+$secondary-container-light: #d3e4ff;
+$on-secondary-container-light: #001c38;
+$secondary-fixed-light: #d3e4ff;
+$secondary-fixed-dim-light: #a2c9ff;
+$on-secondary-fixed-light: #001c38;
+$on-secondary-fixed-variant-light: #11487c;
+$tertiary-light: #016a60;
+$on-tertiary-light: #ffffff;
+$tertiary-container-light: #9ff2e4;
+$on-tertiary-container-light: #00201c;
+$tertiary-fixed-light: #9ff2e4;
+$tertiary-fixed-dim-light: #84d5c8;
+$on-tertiary-fixed-light: #00201c;
+$on-tertiary-fixed-variant-light: #005048;
+$background-light: #fcf9f8;
+$on-background-light: #1c1b1c;
+$surface-light: #fcf9f8;
+$surface-dim-light: #dcd9d9;
+$surface-bright-light: #fcf9f8;
+$surface-container-lowest-light: #ffffff;
+$surface-container-low-light: #f6f3f2;
+$surface-container-light: #f0eded;
+$surface-container-high-light: #ebe7e7;
+$surface-container-highest-light: #e5e2e1;
+$on-surface-light: #1c1b1c;
+$shadow-light: #000000;
+$scrim-light: #000000;
+$surface-tint-light: #5a5f61;
+$inverse-surface-light: #313030;
+$inverse-on-surface-light: #f3f0ef;
+$outline-light: #747879;
+$outline-variant-light: #c3c7c9;
+$neutral-light: #787777;
+$neutral10-light: #1c1b1c;
+$error-light: $error;
+$error-container-light: #ffdad6;
+$on-error-light: #ffffff;
+$on-error-container-light: #410002;
+$surface-variant-light: #dfe3e5;
+$on-surface-variant-light: #434749;
+$neutral-variant-light: #73787a;
+$neutral-variant20-light: #2d3133;
+$inverse-secondary-light: #a2c9ff;
+$inverse-tertiary-light: #84d5c8;
+
+// Material Theme Colors (Dark)
+$primary-dark: #6ed4f3;
+$on-primary-dark: #003642;
+$primary-container-dark: #004e5f;
+$on-primary-container-dark: #b3ebff;
+$inverse-primary-dark: #00677d;
+$primary-fixed-dark: #b3ebff;
+$primary-fixed-dim-dark: #6ed4f3;
+$on-primary-fixed-dark: #001f27;
+$on-primary-fixed-variant-dark: #004e5f;
+$secondary-dark: #a2c9ff;
+$on-secondary-dark: #00315b;
+$secondary-container-dark: #11487c;
+$on-secondary-container-dark: #d3e4ff;
+$secondary-fixed-dark: #d3e4ff;
+$secondary-fixed-dim-dark: #a2c9ff;
+$on-secondary-fixed-dark: #001c38;
+$on-secondary-fixed-variant-dark: #11487c;
+$tertiary-dark: #84d5c8;
+$on-tertiary-dark: #003732;
+$tertiary-container-dark: #005048;
+$on-tertiary-container-dark: #9ff2e4;
+$tertiary-fixed-dark: #9ff2e4;
+$tertiary-fixed-dim-dark: #84d5c8;
+$on-tertiary-fixed-dark: #00201c;
+$on-tertiary-fixed-variant-dark: #005048;
+$background-dark: #131313;
+$on-background-dark: #e5e2e1;
+$surface-dark: #131313;
+$surface-dim-dark: #131313;
+$surface-bright-dark: #3a3939;
+$surface-container-lowest-dark: #0e0e0e;
+$surface-container-low-dark: #1c1b1c;
+$surface-container-dark: #201f20;
+$surface-container-high-dark: #2a2a2a;
+$surface-container-highest-dark: #353535;
+$on-surface-dark: #e5e2e1;
+$shadow-dark: #000000;
+$scrim-dark: #000000;
+$surface-tint-dark: #c3c7c9;
+$inverse-surface-dark: #e5e2e1;
+$inverse-on-surface-dark: #313030;
+$outline-dark: #8e9193;
+$outline-variant-dark: #434749;
+$neutral-dark: #787777;
+$neutral10-dark: #1c1b1c;
+$error-dark: #ff5050;
+$error-container-dark: #93000a;
+$on-error-dark: #690005;
+$on-error-container-dark: #ffdad6;
+$surface-variant-dark: #434749;
+$on-surface-variant-dark: #c3c7c9;
+$neutral-variant-dark: #73787a;
+$neutral-variant20-dark: #2d3133;
+$inverse-secondary-dark: #316095;
+$inverse-tertiary-dark: #016a60;
+
+@mixin generate-color-var-opacities($name, $color) {
+    --app-#{$name}-color: #{$color};
+    @for $i from 1 through 9 {
+        $opacity: $i * 0.1;
+        --app-#{$name}-color-#{$i * 10}: #{rgba($color, $opacity)};
+    }
+    --app-#{$name}-color-5: #{rgba($color, 0.05)};
+}
+
+body {
+    @include generate-color-var-opacities(background, $background-color);
+    @include generate-color-var-opacities(text, $text-color);
+
+    @include generate-color-var-opacities(error, $error);
+    @include generate-color-var-opacities(warning, $warning);
+    @include generate-color-var-opacities(correct, $correct);
+
+    --app-border-color: var(--app-text-color-10);
+
+    color: var(--app-text-color);
+    background: var(--app-background-color);
+
+    /* Scrollbar color: lighter for light mode */
+    --app-scrollbar-color: var(--app-text-color-30);
+    --app-scrollbar-color-hover: var(--app-text-color-40);
+    --app-scrollbar-color-active: var(--app-text-color-50);
+
+    @include generate-color-var-opacities(primary, $primary-light);
+    @include generate-color-var-opacities(secondary, $secondary-light);
+
+    --app-jagged-edge-svg-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='12' viewBox='0 0 20 12'><path d='M0,1L10,11L20,1' fill='none' stroke='black'/></svg>")
+}
+
+html.dark > body {
+
+    --app-border-color: var(--app-text-color-20);
+
+    @include generate-color-var-opacities(background, $background-color-dark);
+    @include generate-color-var-opacities(text, $text-color-dark);
+
+    /* Scrollbar color: more opaque for dark mode */
+    --app-scrollbar-color: var(--app-text-color-60);
+    --app-scrollbar-color-hover: var(--app-text-color-70);
+    --app-scrollbar-color-active: var(--app-text-color-80);
+
+    @include generate-color-var-opacities(primary, $primary-dark);
+    @include generate-color-var-opacities(secondary, $secondary-dark);
+
+
+    --app-jagged-edge-svg-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='12' viewBox='0 0 20 12'><path d='M0,1L10,11L20,1' fill='none' stroke='white'/></svg>")
+
+}
+
+
+$border-color: var(--app-border-color);
+
+$background: var(--app-background-color, #FFF);
+
+@mixin datum-type-colors() {
+    --connector-type-number-color: #ff825d;
+    --connector-type-date-color: #b579ef;
+    --connector-type-date-time-color: #7979f3;
+    --connector-type-time-color: #0094ff;
+    --connector-type-boolean-color: #00ff8a;
+}
+
+@mixin error-button {
+    @include mat.button-overrides((
+            text-label-text-color: $error,
+            text-ripple-color: var(--app-error-color-20),
+            text-state-layer-color: $error,
+    ));
+}

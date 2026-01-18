@@ -1,0 +1,24 @@
+@use "dimensions";
+@use "colors";
+
+:host {
+}
+
+.type-circle {
+    @include colors.datum-type-colors();
+
+    width: 14px;
+    height: 14px;
+    border-radius: 20px;
+    border: 2px solid var(--type-color, var(--mat-sys-on-background));
+
+    &.selected {
+        background: var(--type-color, var(--mat-sys-on-background));
+    }
+}
+
+.type-container {
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-mlarge;
+}

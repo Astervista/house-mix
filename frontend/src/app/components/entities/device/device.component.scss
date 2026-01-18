@@ -1,0 +1,32 @@
+@use "dimensions";
+
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-items: flex-start;
+    height: 100%;
+    border-radius: 4px;
+    outline: solid 2px var(--mat-sys-primary);
+    padding: dimensions.$margin-xlarge;
+    gap: dimensions.$margin-mlarge;
+}
+
+.preview {
+    width: 100px;
+    height: 100px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.display-name {
+    font-size: 1.3rem;
+}
+
+.buttons {
+    display: flex;
+    gap: dimensions.$margin-medium;
+    justify-content: center;
+    align-self: stretch;
+}

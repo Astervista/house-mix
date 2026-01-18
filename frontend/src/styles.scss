@@ -1,0 +1,39 @@
+@use '@angular/material' as mat;
+
+html, body {
+    height: 100%;
+    display: flex
+}
+
+body {
+    margin: 0;
+    max-width: 100%;
+    min-width: 100%;
+    width: 100%;
+    user-select: none;
+    font-family: "Fira Sans", "Roboto", "Helvetica Neue", sans-serif
+}
+
+app-root {
+    margin: 0;
+    max-width: 100%;
+    min-width: 100%;
+    width: 100%;
+}
+
+html {
+    @include mat.theme((
+        color: (
+            theme-type: light,
+            primary: mat.$azure-palette,
+            tertiary: mat.$blue-palette,
+        ),
+        typography: (
+            plain-family: Fira Sans,
+            bold-weight: 900,
+            medium-weight: 500,
+            regular-weight: 300,
+        ),
+        density: 0,
+    ));
+}

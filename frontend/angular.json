@@ -1,0 +1,139 @@
+{
+    "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+    "version": 1,
+    "newProjectRoot": "projects",
+    "projects": {
+        "house-mix": {
+            "projectType": "application",
+            "schematics": {
+                "schematics": {
+                    "@schematics/angular:component": {
+                        "type": "component",
+                        "styleext": "scss",
+                        "style": "scss"
+                    },
+                    "@schematics/angular:directive": {
+                        "type": "directive"
+                    },
+                    "@schematics/angular:service": {
+                        "type": "service"
+                    },
+                    "@schematics/angular:guard": {
+                        "typeSeparator": "."
+                    },
+                    "@schematics/angular:interceptor": {
+                        "typeSeparator": "."
+                    },
+                    "@schematics/angular:module": {
+                        "typeSeparator": "."
+                    },
+                    "@schematics/angular:pipe": {
+                        "typeSeparator": "."
+                    },
+                    "@schematics/angular:resolver": {
+                        "typeSeparator": "."
+                    }
+                }
+            },
+            "root": "",
+            "sourceRoot": "src",
+            "prefix": "house-mix",
+            "architect": {
+                "build": {
+                    "builder": "@angular-devkit/build-angular:application",
+                    "options": {
+                        "outputPath": "dist/house-mix",
+                        "index": "src/index.html",
+                        "browser": "src/main.ts",
+                        "polyfills": [
+                            "zone.js"
+                        ],
+                        "tsConfig": "tsconfig.app.json",
+                        "inlineStyleLanguage": "scss",
+                        "assets": [
+                            {
+                                "glob": "**/*",
+                                "input": "public"
+                            }
+                        ],
+                        "stylePreprocessorOptions": {
+                            "includePaths": [
+                                "src/styles"
+                            ]
+                        },
+                        "styles": [
+                            "src/styles.scss",
+                            "src/material-theme.scss"
+                        ],
+                        "scripts": [],
+                        "server": "src/main.server.ts",
+                        "prerender": true,
+                        "ssr": {
+                            "entry": "src/server.ts"
+                        }
+                    },
+                    "configurations": {
+                        "production": {
+                            "budgets": [
+                                {
+                                    "type": "initial",
+                                    "maximumWarning": "500kB",
+                                    "maximumError": "1MB"
+                                },
+                                {
+                                    "type": "anyComponentStyle",
+                                    "maximumWarning": "4kB",
+                                    "maximumError": "8kB"
+                                }
+                            ],
+                            "outputHashing": "all"
+                        },
+                        "development": {
+                            "optimization": false,
+                            "extractLicenses": false,
+                            "sourceMap": true
+                        }
+                    },
+                    "defaultConfiguration": "production"
+                },
+                "serve": {
+                    "builder": "@angular-devkit/build-angular:dev-server",
+                    "configurations": {
+                        "production": {
+                            "buildTarget": "house-mix:build:production"
+                        },
+                        "development": {
+                            "buildTarget": "house-mix:build:development"
+                        }
+                    },
+                    "defaultConfiguration": "development"
+                },
+                "extract-i18n": {
+                    "builder": "@angular-devkit/build-angular:extract-i18n"
+                },
+                "test": {
+                    "builder": "@angular-devkit/build-angular:karma",
+                    "options": {
+                        "polyfills": [
+                            "zone.js",
+                            "zone.js/testing"
+                        ],
+                        "tsConfig": "tsconfig.spec.json",
+                        "inlineStyleLanguage": "scss",
+                        "assets": [
+                            {
+                                "glob": "**/*",
+                                "input": "public"
+                            }
+                        ],
+                        "styles": [
+                            "@angular/material/prebuilt-themes/magenta-violet.css",
+                            "src/styles.scss"
+                        ],
+                        "scripts": []
+                    }
+                }
+            }
+        }
+    }
+}

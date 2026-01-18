@@ -1,0 +1,32 @@
+<div
+        class="background-container"
+        [class.small]="small"
+        [class.backdrop]="backdrop">
+
+    @if (error && errorClickable) {
+        <button
+                mat-button
+                class="error-button"
+                (click)="onClick($event)">
+            <mat-icon>refresh</mat-icon>
+            {{ this.errorTextClick }}
+        </button>
+    } @else {
+        @if (!error) {
+            <mat-spinner
+                    [diameter]="small ? 15 : 30">
+
+            </mat-spinner>
+        } @else {
+            <mat-icon
+                    class="error-text"
+                    [matIconSize]="small ? 18 : 24">
+                error
+            </mat-icon>
+        }
+        <span
+                [class.error-text]="error">
+            {{ this.error ? this.errorText : "Loading..." }}
+        </span>
+    }
+</div>
