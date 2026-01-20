@@ -1,0 +1,38 @@
+<span
+    matTooltipPosition="above"
+    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+    class="group-name"
+    [matTooltip]="`Codename: ${group.name}`">
+    {{ group.displayName }}
+</span>
+@if (isGroupEmpty(group)) {
+    <span class="group-empty">This group is empty.<br>You can add subgroups or devices on the top right</span>
+} @else {
+    @if (group.groups.length > 0) {
+        <span class="section-name">Subgroups</span>
+        <div class="subgroups">
+            @for (subgroupName of group.groups; track subgroupName) {
+                @let subgroup = getOtherGroup(subgroupName);
+                @if (subgroup != null) {
+                    <house-mix-group
+                        [group]="subgroup"
+                        [otherGroups]="otherGroups"
+                        [selectedGroup]="selectedGroup"
+                        (onSelect)="this.onSelectEmitter.emit($event)">
+                    </house-mix-group>
+                } @else {
+                    <span class="simple-subgroup">{{subgroupName}}</span>
+                }
+            }
+        </div>
+    }
+    @if (group.actuators.length > 0) {
+        <span class="section-name">Actuators</span>
+        <div class="group-content">
+            @for (actuator of group.actuators; track actuator) {
+                <span>{{actuator}}</span>
+                <!--<house-mix-device [device]="actuator"></house-mix-device>-->
+            }
+        </div>
+    }
+}

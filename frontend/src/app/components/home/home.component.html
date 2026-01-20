@@ -1,1 +1,21 @@
-<h1>Affiora House</h1>
+<div class="main-title">HouseMix - Affiora House</div>
+<house-mix-toolbar
+    [elements]="toolbarElements"
+    (elementSelected)="toolbarClick(asToolbarAction($event))">
+
+</house-mix-toolbar>
+<div
+    class="main-content"
+    (click)="selectedObject = null">
+    <div
+        class="groups-container">
+        @for (group of rootGroups; track group.name) {
+            <house-mix-group
+                [group]="group"
+                [otherGroups]="allGroups"
+                [selectedGroup]="selectedGroup"
+                (onSelect)="this.selectedObject = $event">
+            </house-mix-group>
+        }
+    </div>
+</div>

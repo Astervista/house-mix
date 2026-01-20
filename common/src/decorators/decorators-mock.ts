@@ -30,3 +30,9 @@ export function ValidateIf(..._params: unknown[]): PropertyDecorator {
         /* intentionally empty */
     };
 }
+
+export function IsArray(..._params: unknown[]): PropertyDecorator {
+    return () => {
+        /* intentionally empty */
+    };
+}

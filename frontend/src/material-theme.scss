@@ -136,13 +136,13 @@ body {
     @include mat.form-field-overrides((
             filled-container-color: transparent,
             outlined-focus-outline-width: 1.5px,
-            outlined-outline-color: var(--app-text-color-40)
+            outlined-outline-color: var(--house-mix-text-color-40)
     ));
     @include mat.dialog-overrides((
-            container-color: var(--app-background-color)
+            container-color: var(--house-mix-background-color)
     ));
     @include mat.menu-overrides((
-            container-color: var(--app-background-color),
+            container-color: var(--house-mix-background-color),
             item-label-text-weight: 300
     ));
     @include mat.button-toggle-overrides((
@@ -215,11 +215,11 @@ html.dark > body {
 
 
 .cdk-overlay-backdrop {
-    background-color: var(--app-text-color-30);
+    background-color: var(--house-mix-text-color-30);
 }
 
 html.dark > body .cdk-overlay-backdrop {
-    background-color: var(--app-text-color-10);
+    background-color: var(--house-mix-text-color-10);
 }
 
 
@@ -231,7 +231,7 @@ mat-form-field {
 
 button.selected {
     outline: 1px solid var(--mat-sys-primary);
-    background-color: var(--app-text-color-5);
+    background-color: var(--house-mix-text-color-5);
 }
 
 mat-tooltip-component {
@@ -303,8 +303,8 @@ mat-tooltip-component {
             ));
 
             &.selected {
-                background-color: var(--app-shift-status-color-30);
-                outline-color: var(--app-shift-status-color);
+                background-color: var(--house-mix-shift-status-color-30);
+                outline-color: var(--house-mix-shift-status-color);
             }
         }
 
@@ -312,7 +312,7 @@ mat-tooltip-component {
             width: 17px;
             height: 17px;
             border-radius: 50%;
-            background: var(--app-shift-status-color);
+            background: var(--house-mix-shift-status-color);
             display: block;
             margin: auto;
         }
@@ -352,7 +352,7 @@ mat-dialog-content.mat-mdc-dialog-content {
 }
 .mdc-checkbox {
     .mdc-checkbox__background {
-        border: 1px solid var(--app-text-color-50);
+        border: 1px solid var(--house-mix-text-color-50);
     }
 }
 .mdc-checkbox__checkmark>.mdc-checkbox__checkmark-path {

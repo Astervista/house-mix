@@ -1,1 +1,1 @@
-export {IsNotEmpty, Matches, IsPositive, IsDefined, ValidateIf} from "class-validator";
+export {IsNotEmpty, Matches, IsPositive, IsDefined, ValidateIf, IsArray} from "class-validator";

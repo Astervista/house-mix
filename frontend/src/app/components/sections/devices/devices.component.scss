@@ -1,7 +1,0 @@
-@use "dimensions";
-
-.devices-list {
-    display: flex;
-    gap: dimensions.$margin-xlarge;
-    padding: dimensions.$margin-xlarge;
-}

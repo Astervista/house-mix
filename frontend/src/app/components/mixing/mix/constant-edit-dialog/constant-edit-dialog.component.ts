@@ -170,7 +170,7 @@ export class ConstantEditDialogComponent {
                 return 'Change time';
             }
             case DatumType.DATE: {
-                return 'Select date';
+                return 'Change date';
             }
             case DatumType.DATE_TIME: {
                 return 'Change date and time';

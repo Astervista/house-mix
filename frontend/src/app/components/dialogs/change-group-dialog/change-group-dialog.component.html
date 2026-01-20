@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>Move to another group</h2>
+<mat-dialog-content>
+    <mat-form-field>
+        <mat-label>New location</mat-label>
+        <mat-select
+            [formControl]="parentGroupFormControl">
+            <mat-option [value]="TOPMOST"><i>Put in the root</i></mat-option>
+            @for (otherGroup of groups; track otherGroup.name) {
+                <mat-option [value]="otherGroup.name">{{ otherGroup.displayName }}</mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button [mat-dialog-close]="null">Cancel</button>
+    <button mat-button [mat-dialog-close]="parentGroupFormControl.value" [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null)">Move</button>
+</mat-dialog-actions>

@@ -1,0 +1,23 @@
+@use "dimensions";
+@use "colors";
+
+:host {
+    height: 50px;
+    align-self: stretch;
+    display: flex;
+    padding: dimensions.$margin-mlarge dimensions.$margin-xlarge;
+    gap: dimensions.$margin-mlarge;
+    align-items: center;
+}
+
+.divider {
+    width: 1px;
+    background: colors.$border-color;
+    margin: dimensions.$margin-large dimensions.$margin-msmall;
+    box-sizing: border-box;
+    align-self: stretch;
+}
+
+.spacer {
+    flex-grow: 1;
+}

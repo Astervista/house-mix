@@ -1,0 +1,14 @@
+@use "dimensions";
+
+mat-form-field {
+    min-width: min(100%, 300px);
+}
+
+mat-radio-group {
+    padding: dimensions.$indent-medium 0;
+}
+
+.radio-button-list {
+    display: flex;
+    flex-direction: column;
+}

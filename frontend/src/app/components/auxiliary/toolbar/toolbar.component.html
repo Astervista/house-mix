@@ -1,0 +1,44 @@
+@for (menu of menus; track menu.for) {
+    <mat-menu #menuRef="matMenu">
+        @for (element of menu.menu; track element.id) {
+            @switch (element.type) {
+                @case (ToolBarElementType.BUTTON) {
+                    <button mat-menu-item
+                            [matMenuTriggerFor]="getMenu(element.id)"
+                            (click)="onElementClick(element)">
+                        @if (element.icon != "") {
+                            <mat-icon>{{ element.icon }}</mat-icon>
+                        }
+                        <span>{{ element.hint }}</span>
+                    </button>
+                }
+                @case (ToolBarElementType.DIVIDER) {
+                    <mat-divider></mat-divider>
+                }
+            }
+        }
+    </mat-menu>
+    <ng-container
+        [menuRegister]="{ id: menu.for, menu: menuRef }">
+    </ng-container>
+}
+@for (element of _elements; track element.id) {
+    @switch (element.type) {
+        @case (ToolBarElementType.BUTTON) {
+            <button
+                mat-icon-button
+                [matTooltip]="element.hint"
+                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                [matMenuTriggerFor]="getMenu(element.id)"
+                (click)="onElementClick(element)">
+                <mat-icon>{{ element.icon }}</mat-icon>
+            </button>
+        }
+        @case (ToolBarElementType.DIVIDER) {
+            <div class="divider"></div>
+        }
+        @case (ToolBarElementType.SPACER) {
+            <div class="spacer"></div>
+        }
+    }
+}
