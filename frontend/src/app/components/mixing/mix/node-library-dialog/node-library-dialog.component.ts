@@ -2,7 +2,7 @@ import {Component} from '@angular/core';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatButton} from '@angular/material/button';
 import {MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
-import {DatumTypeDisplay, ELABORATION_NODE_DISPLAY_NAME, ELABORATION_NODE_LIBRARY, ElaborationNodeLibraryItem, getColorVarNameForType} from '../../constants';
+import {DATUM_TIME_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, ELABORATION_NODE_LIBRARY, ElaborationNodeLibraryItem, getColorVarNameForType} from '../../constants';
 import {ElaborationNode, ElaborationNodeCode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
 import {DatumType} from '@common/mixing/mix/datum';
 import {MatFormField, MatLabel, MatOption, MatSelect} from '@angular/material/select';
@@ -68,7 +68,7 @@ export class NodeLibraryDialogComponent {
     }
 
     protected readonly ELABORATION_NODE_LIBRARY = ELABORATION_NODE_LIBRARY;
-    protected readonly DatumTypeDisplay       = DatumTypeDisplay;
+    protected readonly DATUM_TIME_DISPLAY       = DATUM_TIME_DISPLAY;
     protected readonly getColorVarNameForType        = getColorVarNameForType;
     protected readonly ELABORATION_NODE_DISPLAY_NAME = ELABORATION_NODE_DISPLAY_NAME;
     protected readonly ElaborationNodeCode = ElaborationNodeCode;

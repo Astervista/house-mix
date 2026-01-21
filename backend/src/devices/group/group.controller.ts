@@ -2,6 +2,7 @@ import {BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {GroupService} from "./group.service";
 import {AddActuatorBody, type ChangeParentChange, DeleteGroupChildFate, type DeleteGroupOptions, type GroupCreateOptions, type GroupEditChanges} from "@common/devices/group/rest-classes";
+import {EntityType} from "@common/devices/constants";
 
 @Controller('group')
 export class GroupController {
@@ -76,7 +77,7 @@ export class GroupController {
         @Body()
         data: ChangeParentChange
     ): Promise<void> {
-        await this.groupService.changeParent(name, data.parent);
+        await this.groupService.changeParent(name, data.parent, EntityType.GROUP);
     }
     
     @Post(":name/actuator/:actuatorName")
@@ -89,7 +90,7 @@ export class GroupController {
         @Body()
         options: AddActuatorBody | null
     ): Promise<void> {
-        await this.groupService.addActuator(name, actuatorName, options?.move ?? false);
+        await this.groupService.addDevice(name, actuatorName, EntityType.ACTUATOR, options?.move ?? false);
     }
 
 }

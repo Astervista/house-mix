@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {Group} from '@common/devices/group/group';
-import {ChangeParentChange, DeleteGroupOptions, GroupCreateOptions, GroupEditChanges, GroupPathParams} from '@common/devices/group/rest-classes';
+import {ChangeParentChange, DeleteGroupOptions, GroupCreateOptions, GroupEditChanges, EntityPathParams} from '@common/devices/group/rest-classes';
 
 @Injectable({
                 providedIn: 'root'
@@ -34,16 +34,19 @@ export class GroupService {
     @Patch<GroupEditChanges, null>(
         '/:name/'
     )
-    public editGroup!: (changes: GroupEditChanges, params: GroupPathParams) => Promise<void>;
+    public editGroup!: (changes: GroupEditChanges, params: EntityPathParams) => Promise<void>;
 
     @Delete<DeleteGroupOptions, null>(
-        '/:name/'
+        '/:name/',
+        {
+            hasBody: true
+        }
     )
-    public deleteGroup!: (options: DeleteGroupOptions, params: GroupPathParams) => Promise<void>;
+    public deleteGroup!: (options: DeleteGroupOptions, params: EntityPathParams) => Promise<void>;
 
     @Patch<ChangeParentChange, null>(
         '/:name/parent'
     )
-    public changeParent!: (change: ChangeParentChange, params: GroupPathParams) => Promise<void>;
+    public changeParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
 
 }

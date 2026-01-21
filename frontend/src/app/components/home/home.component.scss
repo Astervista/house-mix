@@ -34,3 +34,21 @@
     gap: dimensions.$margin-large;
     padding: dimensions.$margin-large;
 }
+
+
+.device-title {
+    padding: dimensions.$margin-large;
+    font-size: 20px;
+    font-weight: 200;
+}
+
+.device-list {
+    display: flex;
+    overflow-x: auto;
+    padding: dimensions.$margin-large;
+    gap: dimensions.$margin-large;
+    align-items: stretch;
+    mat-icon {
+        align-self: center;
+    }
+}

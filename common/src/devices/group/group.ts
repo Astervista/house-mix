@@ -2,8 +2,9 @@ import {IsArray, IsNotEmpty, Matches} from "class-decorators";
 
 export class Group {
     
-    private readonly _actuators: string[] = [];
     private readonly _groups: string[] = [];
+    private readonly _actuators: string[] = [];
+    private readonly _sensors: string[] = [];
     
     constructor(
         public name: string,
@@ -15,13 +16,16 @@ export class Group {
         return this._actuators.slice();
     }
     
+    public get sensors(): readonly string[] {
+        return this._sensors.slice();
+    }
+    
     public get groups(): readonly string[] {
         return this._groups.slice();
     }
     
     public get hasChildren(): boolean {
-        // TODO: Add the option for the sensors
-        return this._actuators.length > 0 || this._groups.length > 0;
+        return this._actuators.length > 0 || this._groups.length > 0 || this._sensors.length > 0;
     }
     
     public getAllDescendants(groups: readonly Group[]): string[] {
@@ -38,20 +42,6 @@ export class Group {
         return children;
     }
     
-    public addActuator(actuator: string): void {
-        this._actuators.push(actuator);
-    }
-    
-    public removeActuator(actuator: string): boolean {
-        const index = this._actuators.indexOf(actuator);
-        if (index > -1) {
-            this._actuators.splice(index, 1);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    
     public addGroup(group: string): void {
         this._groups.push(group);
     }
@@ -66,10 +56,6 @@ export class Group {
         }
     }
     
-    public containsActuator(actuator: string): boolean {
-        return this._actuators.includes(actuator);
-    }
-    
     public containsGroup(group: string): boolean {
         return this._groups.includes(group);
     }
@@ -81,22 +67,73 @@ export class Group {
         }
     }
     
+    public addActuator(actuator: string): void {
+        this._actuators.push(actuator);
+    }
+    
+    public removeActuator(actuator: string): boolean {
+        const index = this._actuators.indexOf(actuator);
+        if (index > -1) {
+            this._actuators.splice(index, 1);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public containsActuator(actuator: string): boolean {
+        return this._actuators.includes(actuator);
+    }
+    
+    public actuatorRenamed(oldName: string, newName: string): void {
+        if (this.containsActuator(oldName)) {
+            this.removeActuator(oldName);
+            this.addActuator(newName);
+        }
+    }
+    
+    public addSensor(sensor: string): void {
+        this._sensors.push(sensor);
+    }
+    
+    public removeSensor(sensor: string): boolean {
+        const index = this._sensors.indexOf(sensor);
+        if (index > -1) {
+            this._sensors.splice(index, 1);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public containsSensor(sensor: string): boolean {
+        return this._sensors.includes(sensor);
+    }
+    
+    public sensorRenamed(oldName: string, newName: string): void {
+        if (this.containsSensor(oldName)) {
+            this.removeSensor(oldName);
+            this.addSensor(newName);
+        }
+    }
+    
     public toJSON(): GroupJSON {
         return {
             name: this.name,
             displayName: this.displayName,
+            groups: this._groups.slice(),
             actuators: this._actuators.slice(),
-            groups: this._groups.slice()
+            sensors: this._sensors.slice()
         }
     }
     
     public static fromJSON(JSON: GroupJSON): Group {
         const group = new Group(JSON.name, JSON.displayName);
-        group._actuators.push(...JSON.actuators);
         group._groups.push(...JSON.groups);
+        group._actuators.push(...JSON.actuators);
+        group._sensors.push(...JSON.sensors);
         return group;
     }
-
 }
 
 
@@ -111,11 +148,15 @@ export class GroupJSON {
     
     @IsArray()
     @Matches(/^[a-z\-0-9_]+$/, { each: true})
+    public groups: string[] = [];
+    
+    @IsArray()
+    @Matches(/^[a-z\-0-9_]+$/, { each: true})
     public actuators: string[] = [];
     
     @IsArray()
     @Matches(/^[a-z\-0-9_]+$/, { each: true})
-    public groups: string[] = [];
+    public sensors: string[] = [];
     
     constructor(name: string, displayName: string) {
         this.name = name;

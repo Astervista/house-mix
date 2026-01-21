@@ -12,7 +12,7 @@ export interface GroupEditChanges {
     displayName?: string;
 }
 
-export interface GroupPathParams {
+export interface EntityPathParams {
     name: string;
 }
 

@@ -13,9 +13,45 @@
             <house-mix-group
                 [group]="group"
                 [otherGroups]="allGroups"
-                [selectedGroup]="selectedGroup"
+                [actuators]="allActuators"
+                [sensors]="allSensors"
+                [selected]="this.selectedObject"
                 (onSelect)="this.selectedObject = $event">
             </house-mix-group>
         }
     </div>
 </div>
+
+@if (rootActuators.length + rootSensors.length > 0) {
+    <div
+        class="device-container"
+        (click)="selectedObject = null">
+        <span
+            class="device-title">
+            Devices without a group
+        </span>
+        <div
+            class="device-list">
+            @if (rootActuators.length > 0) {
+                <mat-icon>lightbulb</mat-icon>
+                @for (actuator of rootActuators; track actuator.name) {
+                    <house-mix-device
+                        [device]="actuator"
+                        [selected]="selectedObject == actuator"
+                        (onSelect)="this.selectedObject = $event">
+                    </house-mix-device>
+                }
+            }
+            @if (rootSensors.length > 0) {
+                <mat-icon>detector</mat-icon>
+                @for (sensor of rootSensors; track sensor.name) {
+                    <house-mix-device
+                        [device]="sensor"
+                        [selected]="selectedObject == sensor"
+                        (onSelect)="this.selectedObject = $event">
+                    </house-mix-device>
+                }
+            }
+        </div>
+    </div>
+}

@@ -1,39 +1,51 @@
-import {Component, Input} from '@angular/core';
+import {Component, EventEmitter, HostBinding, HostListener, Input, Output} from '@angular/core';
 import {Device} from '@common/devices/device';
 import {Actuator} from '@common/devices/actuator/actuator';
-import {MatIconButton} from '@angular/material/button';
+import {Sensor} from '@common/devices/sensor/sensor';
 import {MatIcon} from '@angular/material/icon';
-import {Router} from '@angular/router';
+import {ACTUATOR_TYPE_DISPLAY, ACTUATOR_TYPE_ICON, SENSOR_TYPE_DISPLAY, SENSOR_TYPE_ICON} from './constants';
+import {TOOLTIP_TIMEOUT} from '../../../../utils/constants';
+import {MatTooltip} from '@angular/material/tooltip';
+import {DynamicSvgComponent} from '../../../auxiliary/dynamic-svg/dynamic-svg.component';
 
 @Component({
                selector:    'house-mix-device',
                templateUrl: './device.component.html',
                imports: [
-                   MatIconButton,
-                   MatIcon
+                   MatIcon,
+                   MatTooltip,
+                   DynamicSvgComponent
                ],
                styleUrl:    './device.component.scss'
            })
 export class DeviceComponent {
 
     @Input({required: true}) public device!: Device;
+    @HostBinding("class.selected")
+    @Input() public selected: boolean = false;
+
+    @Output("onSelect") public onSelectEmitter: EventEmitter<Device> = new EventEmitter<Device>();
+
+    @HostListener('click', ["$event"])
+    public onClick(event: MouseEvent): void {
+        event.stopPropagation();
+        this.onSelectEmitter.emit(this.device);
+    }
 
     constructor(
-        private router: Router
     ) {}
 
     public isActuator(device: Device = this.device): device is Actuator {
-        return this.device instanceof Actuator;
+        return device instanceof Actuator;
     }
 
-    public isSensor(device: Device = this.device): boolean {
-        return false;
+    public isSensor(device: Device = this.device): device is Sensor {
+        return device instanceof Sensor;
     }
 
-    protected openMix(): void {
-        if (this.isActuator(this.device)) {
-            // Navigate to mix page, with query parameter id
-            void this.router.navigate(['mix'], {queryParams: {id: this.device.mix}});
-        }
-    }
+    protected readonly ACTUATOR_TYPE_ICON = ACTUATOR_TYPE_ICON;
+    protected readonly TOOLTIP_TIMEOUT       = TOOLTIP_TIMEOUT;
+    protected readonly ACTUATOR_TYPE_DISPLAY = ACTUATOR_TYPE_DISPLAY;
+    protected readonly SENSOR_TYPE_ICON    = SENSOR_TYPE_ICON;
+    protected readonly SENSOR_TYPE_DISPLAY = SENSOR_TYPE_DISPLAY;
 }

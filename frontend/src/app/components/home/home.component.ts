@@ -2,9 +2,22 @@ import {Component} from '@angular/core';
 import {Router} from '@angular/router';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {MatDialog} from '@angular/material/dialog';
-import {AddGroupDialogComponent, AddGroupDialogData, AddGroupDialogResult} from '../dialogs/add-group-dialog/add-group-dialog.component';
+import {
+    AddEntityDialogComponent,
+    AddEntityDialogData,
+    AddEntityDialogResultActuator,
+    AddEntityDialogResultGroup,
+    AddEntityDialogResultSensor,
+    EditEntityDialogResultActuator,
+    EditEntityDialogResultGroup,
+    EditEntityDialogResultSensor
+} from '../dialogs/add-entity-dialog/add-entity-dialog.component';
 import {Group} from '@common/devices/group/group';
 import {Actuator} from '@common/devices/actuator/actuator';
+import {Sensor} from '@common/devices/sensor/sensor';
+import {Device} from '@common/devices/device';
+import {Datum} from '@common/mixing/mix/datum';
+import {EntityType} from '@common/devices/constants';
 import {GroupService} from '../../services/group.service';
 import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 import {MatSnackBar} from '@angular/material/snack-bar';
@@ -13,13 +26,19 @@ import {GroupComponent} from '../entities/devices/group/group.component';
 import {ChangeGroupDialogComponent, ChangeGroupDialogData, TopmostResult} from '../dialogs/change-group-dialog/change-group-dialog.component';
 import {DeleteGroupDialogComponent, DeleteGroupDialogData} from '../dialogs/delete-group-dialog/delete-group-dialog.component';
 import {DeleteGroupChildFate, DeleteGroupOptions} from '@common/devices/group/rest-classes';
+import {DeviceService} from '../../services/device.service';
+import {DeviceComponent} from '../entities/devices/device/device.component';
+import {ConfirmDialogComponent, ConfirmDialogData} from '../dialogs/confirm-dialog/confirm-dialog.component';
+import {MatIcon} from '@angular/material/icon';
 
 
 @Component({
                selector:    'house-mix-home',
                imports:     [
                    ToolbarComponent,
-                   GroupComponent
+                   GroupComponent,
+                   DeviceComponent,
+                   MatIcon
                ],
                templateUrl: './home.component.html',
                styleUrl:    './home.component.scss'
@@ -29,24 +48,63 @@ export class HomeComponent {
     protected readonly rootGroups: Group[] = [];
     protected readonly allGroups: Group[]  = [];
 
-    protected selectedObject: Group | Actuator | null = null;
+    protected readonly rootActuators: Actuator[] = [];
+    protected readonly allActuators: Actuator[]  = [];
+
+    protected readonly rootSensors: Sensor[] = [];
+    protected readonly allSensors: Sensor[]  = [];
+
+    protected selectedObject: Group | Device | null = null;
 
     constructor(
         private router: Router,
         private matDialog: MatDialog,
         private groupService: GroupService,
+        private deviceService: DeviceService,
         private snackbar: MatSnackBar
     ) {
-        groupService
-            .getAllGroups()
-            .then((groups) => {
-                this.allGroups.push(...groups);
-                this.rootGroups.push(...groups);
-                for (const group of groups) {
+        Promise
+            .all([
+                     groupService
+                         .getAllGroups()
+                         .then((groups) => {
+                             this.allGroups.push(...groups);
+                         }),
+
+                     deviceService
+                         .getActuators()
+                         .then((actuators) => {
+                             this.allActuators.push(...actuators);
+                         }),
+
+                     deviceService
+                         .getSensors()
+                         .then((actuators) => {
+                             this.allSensors.push(...actuators);
+                         })
+                 ]
+            )
+            .then(() => {
+                this.rootGroups.push(...this.allGroups);
+                this.rootActuators.push(...this.allActuators);
+                this.rootSensors.push(...this.allSensors);
+                for (const group of this.allGroups) {
                     for (const childGroup of group.groups) {
                         const index = this.rootGroups.findIndex(otherGroup => otherGroup.name == childGroup);
                         if (index !== -1) {
                             this.rootGroups.splice(index, 1);
+                        }
+                    }
+                    for (const childActuator of group.actuators) {
+                        const index = this.rootActuators.findIndex(otherActuator => otherActuator.name == childActuator);
+                        if (index !== -1) {
+                            this.rootActuators.splice(index, 1);
+                        }
+                    }
+                    for (const childSensor of group.sensors) {
+                        const index = this.rootSensors.findIndex(otherSensor => otherSensor.name == childSensor);
+                        if (index !== -1) {
+                            this.rootSensors.splice(index, 1);
                         }
                     }
                 }
@@ -54,6 +112,7 @@ export class HomeComponent {
             .catch(() => {
                 // TODO: Check
             });
+
     }
 
     protected get toolbarElements(): ToolbarElement[] {
@@ -100,15 +159,27 @@ export class HomeComponent {
 
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
-            case ToolbarAction.ADD_GROUP:
-                this.matDialog.open<AddGroupDialogComponent, AddGroupDialogData, AddGroupDialogResult>
+            case ToolbarAction.DEVICES: {
+                break;
+            }
+            case ToolbarAction.MIXES: {
+                break;
+            }
+            case ToolbarAction.SYSTEM: {
+                this.goTo("system")
+                break;
+            }
+            case ToolbarAction.ADD_GROUP: {
+                this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, AddEntityDialogResultGroup>
                 (
-                    AddGroupDialogComponent,
+                    AddEntityDialogComponent,
                     {
                         data: {
-                            sonOfGroup:    this.selectedGroup?.name ?? null,
-                            groupNames:    this.allGroups.map(group => group.name),
-                            groupDisplays: this.allGroups.map(group => group.displayName)
+                            entityType:     EntityType.GROUP,
+                            sonOfGroup:     this.selectedGroup?.name ?? null,
+                            groupNames:     this.allGroups.map(group => group.name),
+                            groupDisplays:  this.allGroups.map(group => group.displayName),
+                            forbiddenNames: this.allGroups.map(group => group.name)
                         }
                     }
                 )
@@ -158,17 +229,117 @@ export class HomeComponent {
                         }
                     });
                 break;
+            }
             case ToolbarAction.ADD_ACTUATOR:
-                // TODO
+            case ToolbarAction.ADD_SENSOR: {
+                this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, AddEntityDialogResultActuator | AddEntityDialogResultSensor>
+                (
+                    AddEntityDialogComponent,
+                    {
+                        data: {
+                            entityType:     id == ToolbarAction.ADD_ACTUATOR ? EntityType.ACTUATOR : EntityType.SENSOR,
+                            sonOfGroup:     this.selectedGroup?.name ?? null,
+                            groupNames:     this.allGroups.map(group => group.name),
+                            groupDisplays:  this.allGroups.map(group => group.displayName),
+                            forbiddenNames: (id == ToolbarAction.ADD_ACTUATOR ? this.allActuators : this.allSensors).map(device => device.name)
+                        }
+                    }
+                )
+                    .afterClosed()
+                    .subscribe(result => {
+                        if (result != null) {
+                            if (id == ToolbarAction.ADD_ACTUATOR && result.type == EntityType.ACTUATOR) {
+                                this
+                                    .deviceService
+                                    .createActuator(
+                                        result.actuator,
+                                        {
+                                            parent: result.parent ?? undefined
+                                        }
+                                    )
+                                    .then(() => {
+                                        if (result.parent == null) {
+                                            this.rootActuators.push(result.actuator);
+                                        } else {
+                                            const parentGroup = this.allGroups.find(otherGroup => otherGroup.name == result.parent);
+                                            if (parentGroup != null) {
+                                                parentGroup.addActuator(result.actuator.name);
+                                            }
+                                        }
+                                        this.allActuators.push(result.actuator);
+                                    })
+                                    .catch((e: unknown) => {
+                                        if (e instanceof HttpErrorResponse) {
+                                            if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
+                                                this.snackbar.open(
+                                                    'The actuator codename is already in use. Create an actuator with a different one',
+                                                    undefined,
+                                                    {
+                                                        duration: SNACKBAR_TIMEOUT
+                                                    }
+                                                );
+                                                return;
+                                            }
+                                        }
+                                        this.snackbar.open(
+                                            'There has been an error while creating the actuator',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            } else if (id == ToolbarAction.ADD_SENSOR && result.type == EntityType.SENSOR) {
+                                this
+                                    .deviceService
+                                    .createSensor(
+                                        result.sensor,
+                                        {
+                                            parent: result.parent ?? undefined
+                                        }
+                                    )
+                                    .then(() => {
+                                        if (result.parent == null) {
+                                            this.rootSensors.push(result.sensor);
+                                        } else {
+                                            const parentGroup = this.allGroups.find(otherGroup => otherGroup.name == result.parent);
+                                            if (parentGroup != null) {
+                                                parentGroup.addSensor(result.sensor.name);
+                                            }
+                                        }
+                                        this.allSensors.push(result.sensor);
+                                    })
+                                    .catch((e: unknown) => {
+                                        if (e instanceof HttpErrorResponse) {
+                                            if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
+                                                this.snackbar.open(
+                                                    'The sensor codename is already in use. Create an sensor with a different one',
+                                                    undefined,
+                                                    {
+                                                        duration: SNACKBAR_TIMEOUT
+                                                    }
+                                                );
+                                                return;
+                                            }
+                                        }
+                                        this.snackbar.open(
+                                            'There has been an error while creating the sensor',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
+                        }
+                    });
                 break;
-            case ToolbarAction.ADD_SENSOR:
-                // TODO
-                break;
+            }
             case ToolbarAction.DELETE: {
                 const selectedObject = this.selectedObject;
                 if (selectedObject != null) {
                     if (selectedObject instanceof Group) {
-                        const descendants = selectedObject.getAllDescendants(this.allGroups);
+                        const descendants     = selectedObject.getAllDescendants(this.allGroups);
                         const availableGroups = this.allGroups.filter(group => !descendants.includes(group.name));
                         this.matDialog.open<DeleteGroupDialogComponent, DeleteGroupDialogData, DeleteGroupOptions>
                         (
@@ -184,6 +355,7 @@ export class HomeComponent {
                             .afterClosed()
                             .subscribe(result => {
                                 if (result != null) {
+                                    this.selectedObject = null;
                                     this
                                         .groupService
                                         .deleteGroup(
@@ -210,7 +382,7 @@ export class HomeComponent {
                                                 }
                                             }
                                             const parentGroup =
-                                                            this.allGroups.find(group => group.containsGroup(selectedObject.name));
+                                                      this.allGroups.find(group => group.containsGroup(selectedObject.name));
                                             if (parentGroup != null) {
                                                 parentGroup.removeGroup(selectedObject.name);
                                             } else {
@@ -221,9 +393,9 @@ export class HomeComponent {
                                             }
                                             if (selectedObject.hasChildren) {
                                                 if (destinationGroup != null) {
-                                                    selectedObject.groups.forEach(group => { destinationGroup.addGroup(group) });
-                                                    selectedObject.actuators.forEach(actuator => { destinationGroup.addActuator(actuator) });
-                                                    //TODO: Add other children
+                                                    selectedObject.groups.forEach(group => { destinationGroup.addGroup(group); });
+                                                    selectedObject.actuators.forEach(actuator => { destinationGroup.addActuator(actuator); });
+                                                    selectedObject.sensors.forEach(sensor => { destinationGroup.addSensor(sensor); });
                                                 } else {
                                                     selectedObject.groups.forEach(groupName => {
                                                         const group = this.allGroups.find(g => g.name === groupName);
@@ -231,15 +403,121 @@ export class HomeComponent {
                                                             this.rootGroups.push(group);
                                                         }
                                                     });
-                                                    selectedObject.actuators.forEach(() => {
-                                                        // TODO: Handle actuators at root level if needed, currently they are just removed from the deleted group
+                                                    selectedObject.actuators.forEach(actuatorName => {
+                                                        const actuator = this.allActuators.find(a => a.name === actuatorName);
+                                                        if (actuator != null) {
+                                                            this.rootActuators.push(actuator);
+                                                        }
                                                     });
-                                                    // TODO: Handle other children
+                                                    selectedObject.sensors.forEach(sensorName => {
+                                                        const sensor = this.allSensors.find(s => s.name === sensorName);
+                                                        if (sensor != null) {
+                                                            this.rootSensors.push(sensor);
+                                                        }
+                                                    });
                                                 }
                                             }
                                             const index = this.allGroups.findIndex(group => group.name === selectedObject.name);
                                             if (index !== -1) {
                                                 this.allGroups.splice(index, 1);
+                                            }
+                                        })
+                                        .catch(() => {
+                                            this.snackbar.open(
+                                                'There has been an error while creating the group',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                }
+                            });
+                    } else if (selectedObject instanceof Actuator) {
+
+                        this.matDialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>
+                        (
+                            ConfirmDialogComponent,
+                            {
+                                data: {
+                                    title:       'Delete actuator',
+                                    message:     `Are you sure you want to delete the actuator "${selectedObject.displayName}"?`,
+                                    confirmText: 'Delete',
+                                    warn:        true
+                                }
+                            }
+                        )
+                            .afterClosed()
+                            .subscribe(result => {
+                                if (result != null) {
+                                    this.selectedObject = null;
+                                    this
+                                        .deviceService
+                                        .deleteActuator(
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const parentGroup = this.allGroups.find(group => group.containsActuator(selectedObject.name));
+                                            if (parentGroup != null) {
+                                                parentGroup.removeActuator(selectedObject.name);
+                                            } else {
+                                                const index = this.rootActuators.findIndex(
+                                                    actuator => actuator.name == selectedObject.name
+                                                );
+                                                if (index !== -1) {
+                                                    this.rootActuators.splice(index, 1);
+                                                }
+                                            }
+                                        })
+                                        .catch(() => {
+                                            this.snackbar.open(
+                                                'There has been an error while creating the group',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                }
+                            });
+                    } else if (selectedObject instanceof Sensor) {
+
+                        this.matDialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>
+                        (
+                            ConfirmDialogComponent,
+                            {
+                                data: {
+                                    title:       'Delete sensor',
+                                    message:     `Are you sure you want to delete the sensor "${selectedObject.displayName}"?`,
+                                    confirmText: 'Delete',
+                                    warn:        true
+                                }
+                            }
+                        )
+                            .afterClosed()
+                            .subscribe(result => {
+                                if (result != null) {
+                                    this.selectedObject = null;
+                                    this
+                                        .deviceService
+                                        .deleteSensor(
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const parentGroup = this.allGroups.find(group => group.containsSensor(selectedObject.name));
+                                            if (parentGroup != null) {
+                                                parentGroup.removeSensor(selectedObject.name);
+                                            } else {
+                                                const index = this.rootSensors.findIndex(
+                                                    sensor => sensor.name == selectedObject.name
+                                                );
+                                                if (index !== -1) {
+                                                    this.rootSensors.splice(index, 1);
+                                                }
                                             }
                                         })
                                         .catch(() => {
@@ -261,15 +539,17 @@ export class HomeComponent {
                 const selectedObject = this.selectedObject;
                 if (selectedObject != null) {
                     if (selectedObject instanceof Group) {
-                        this.matDialog.open<AddGroupDialogComponent, AddGroupDialogData, AddGroupDialogResult>
+                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultGroup>
                         (
-                            AddGroupDialogComponent,
+                            AddEntityDialogComponent,
                             {
                                 data: {
-                                    sonOfGroup:    null,
-                                    groupNames:    this.allGroups.map(group => group.name),
-                                    groupDisplays: this.allGroups.map(group => group.displayName),
-                                    edit:          {
+                                    entityType:     EntityType.GROUP,
+                                    sonOfGroup:     null,
+                                    groupNames:     this.allGroups.map(group => group.name),
+                                    groupDisplays:  this.allGroups.map(group => group.displayName),
+                                    forbiddenNames: this.allGroups.map(group => group.name),
+                                    edit:           {
                                         displayName: selectedObject.displayName,
                                         name:        selectedObject.name
                                     }
@@ -288,18 +568,22 @@ export class HomeComponent {
                                             }
                                         )
                                         .then(() => {
-                                            const oldName              = selectedObject.name;
-                                            selectedObject.name        = result.group.name;
-                                            selectedObject.displayName = result.group.displayName;
-                                            for (const group of this.allGroups) {
-                                                group.groupRenamed(oldName, result.group.name);
+                                            const oldName = selectedObject.name;
+                                            if (result.group.name != null) {
+                                                selectedObject.name = result.group.name;
+                                                for (const group of this.allGroups) {
+                                                    group.groupRenamed(oldName, result.group.name);
+                                                }
+                                            }
+                                            if (result.group.displayName != null) {
+                                                selectedObject.displayName = result.group.displayName;
                                             }
                                         })
                                         .catch((e: unknown) => {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
                                                     this.snackbar.open(
-                                                        'The group codename is already in use. Create a group with a different one',
+                                                        'The group codename is already in use. Use a different one',
                                                         undefined,
                                                         {
                                                             duration: SNACKBAR_TIMEOUT
@@ -309,7 +593,161 @@ export class HomeComponent {
                                                 }
                                             }
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while editing the group',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                }
+                            });
+                    } else if (selectedObject instanceof Actuator) {
+                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultActuator>
+                        (
+                            AddEntityDialogComponent,
+                            {
+                                data: {
+                                    entityType:     EntityType.ACTUATOR,
+                                    sonOfGroup:     this.selectedGroup?.name ?? null,
+                                    groupNames:     this.allGroups.map(group => group.name),
+                                    groupDisplays:  this.allGroups.map(group => group.displayName),
+                                    forbiddenNames: this.allActuators.map(actuator => actuator.name),
+                                    edit:           {
+                                        displayName:   selectedObject.displayName,
+                                        name:          selectedObject.name,
+                                        zigbeeAddress: selectedObject.zigbeeAddress,
+                                        actuatorType:  selectedObject.type,
+                                        exposes:       selectedObject.exposes
+                                    }
+                                }
+                            }
+                        )
+                            .afterClosed()
+                            .subscribe(result => {
+                                if (result != null) {
+                                    this
+                                        .deviceService
+                                        .editActuator(
+                                            result.actuator,
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const oldName: string = selectedObject.name;
+                                            if (result.actuator.name != null) {
+                                                selectedObject.name = result.actuator.name;
+                                                for (const group of this.allGroups) {
+                                                    group.actuatorRenamed(oldName, result.actuator.name);
+                                                }
+                                            }
+                                            if (result.actuator.displayName != null) {
+                                                selectedObject.displayName = result.actuator.displayName;
+                                            }
+                                            if (result.actuator.zigbeeAddress != null) {
+                                                selectedObject.zigbeeAddress = result.actuator.zigbeeAddress;
+                                            }
+                                            if (result.actuator.type != null) {
+                                                selectedObject.type = result.actuator.type;
+                                            }
+                                            if (result.actuator.exposes != null) {
+                                                selectedObject.exposes.splice(0, Infinity);
+                                                selectedObject.exposes.push(...result.actuator.exposes.map(ex => Datum.fromJSON(ex)));
+                                            }
+                                        })
+                                        .catch((e: unknown) => {
+                                            if (e instanceof HttpErrorResponse) {
+                                                if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
+                                                    this.snackbar.open(
+                                                        'The actuator codename is already in use. Use a different one',
+                                                        undefined,
+                                                        {
+                                                            duration: SNACKBAR_TIMEOUT
+                                                        }
+                                                    );
+                                                    return;
+                                                }
+                                            }
+                                            this.snackbar.open(
+                                                'There has been an error while editing the actuator',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                }
+                            });
+                    } else if (selectedObject instanceof Sensor) {
+                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultSensor>
+                        (
+                            AddEntityDialogComponent,
+                            {
+                                data: {
+                                    entityType:     EntityType.SENSOR,
+                                    sonOfGroup:     this.selectedGroup?.name ?? null,
+                                    groupNames:     this.allGroups.map(group => group.name),
+                                    groupDisplays:  this.allGroups.map(group => group.displayName),
+                                    forbiddenNames: this.allSensors.map(sensor => sensor.name),
+                                    edit:           {
+                                        displayName:   selectedObject.displayName,
+                                        name:          selectedObject.name,
+                                        zigbeeAddress: selectedObject.zigbeeAddress,
+                                        sensorType:    selectedObject.type,
+                                        exposes:       selectedObject.exposes
+                                    }
+                                }
+                            }
+                        )
+                            .afterClosed()
+                            .subscribe(result => {
+                                if (result != null) {
+                                    this
+                                        .deviceService
+                                        .editSensor(
+                                            result.sensor,
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const oldName: string = selectedObject.name;
+                                            if (result.sensor.name != null) {
+                                                selectedObject.name = result.sensor.name;
+                                                for (const group of this.allGroups) {
+                                                    group.sensorRenamed(oldName, result.sensor.name);
+                                                }
+                                            }
+                                            if (result.sensor.displayName != null) {
+                                                selectedObject.displayName = result.sensor.displayName;
+                                            }
+                                            if (result.sensor.zigbeeAddress != null) {
+                                                selectedObject.zigbeeAddress = result.sensor.zigbeeAddress;
+                                            }
+                                            if (result.sensor.type != null) {
+                                                selectedObject.type = result.sensor.type;
+                                            }
+                                            if (result.sensor.exposes != null) {
+                                                selectedObject.exposes.splice(0, Infinity);
+                                                selectedObject.exposes.push(...result.sensor.exposes.map(ex => Datum.fromJSON(ex)));
+                                            }
+                                        })
+                                        .catch((e: unknown) => {
+                                            if (e instanceof HttpErrorResponse) {
+                                                if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
+                                                    this.snackbar.open(
+                                                        'The sensor codename is already in use. Use a different one',
+                                                        undefined,
+                                                        {
+                                                            duration: SNACKBAR_TIMEOUT
+                                                        }
+                                                    );
+                                                    return;
+                                                }
+                                            }
+                                            this.snackbar.open(
+                                                'There has been an error while editing the sensor',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -328,7 +766,7 @@ export class HomeComponent {
                     let availableGroups: readonly Group[];
                     if (selectedObject instanceof Group) {
                         const descendants = selectedObject.getAllDescendants(this.allGroups);
-                        availableGroups = this.allGroups.filter(group => !descendants.includes(group.name));
+                        availableGroups   = this.allGroups.filter(group => !descendants.includes(group.name));
                     } else {
                         availableGroups = this.allGroups;
                     }
@@ -390,6 +828,80 @@ export class HomeComponent {
                                                 }
                                             );
                                         });
+                                } else if (selectedObject instanceof Actuator) {
+                                    this
+                                        .deviceService
+                                        .changeActuatorParent(
+                                            {
+                                                parent: newParentName
+                                            },
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const oldParent = this.allGroups.find(group => group.containsActuator(selectedObject.name));
+                                            if (oldParent != null) {
+                                                oldParent.removeActuator(selectedObject.name);
+                                            } else {
+                                                const index = this.rootActuators.findIndex(actuator => actuator.name == selectedObject.name);
+                                                if (index !== -1) {
+                                                    this.rootActuators.splice(index, 1);
+                                                }
+                                            }
+                                            const newParent = this.allGroups.find(group => group.name == newParentName);
+                                            if (newParent != null) {
+                                                newParent.addActuator(selectedObject.name);
+                                            } else {
+                                                this.rootActuators.push(selectedObject);
+                                            }
+                                        })
+                                        .catch(() => {
+                                            this.snackbar.open(
+                                                'There has been an error while creating the group',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                } else if (selectedObject instanceof Sensor) {
+                                    this
+                                        .deviceService
+                                        .changeSensorParent(
+                                            {
+                                                parent: newParentName
+                                            },
+                                            {
+                                                name: selectedObject.name
+                                            }
+                                        )
+                                        .then(() => {
+                                            const oldParent = this.allGroups.find(group => group.containsSensor(selectedObject.name));
+                                            if (oldParent != null) {
+                                                oldParent.removeSensor(selectedObject.name);
+                                            } else {
+                                                const index = this.rootSensors.findIndex(sensor => sensor.name == selectedObject.name);
+                                                if (index !== -1) {
+                                                    this.rootSensors.splice(index, 1);
+                                                }
+                                            }
+                                            const newParent = this.allGroups.find(group => group.name == newParentName);
+                                            if (newParent != null) {
+                                                newParent.addSensor(selectedObject.name);
+                                            } else {
+                                                this.rootSensors.push(selectedObject);
+                                            }
+                                        })
+                                        .catch(() => {
+                                            this.snackbar.open(
+                                                'There has been an error while creating the group',
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
                                 }
                             }
                         });
@@ -399,13 +911,14 @@ export class HomeComponent {
         }
     }
 
-    protected readonly ToolbarAction = ToolbarAction;
-
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
 }
 
 enum ToolbarAction {
+    DEVICES      = 'devices',
+    MIXES      = 'mixes',
+    SYSTEM      = 'system',
     DELETE       = 'delete',
     EDIT         = 'edit',
     MOVE         = 'move',
@@ -416,36 +929,57 @@ enum ToolbarAction {
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'dashboard',
+        id:    ToolbarAction.DEVICES,
+        hint:  'Device view',
+        order: 0
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'instant_mix',
+        id:    ToolbarAction.MIXES,
+        hint:  'Mixing',
+        order: 0
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'hub',
+        id:    ToolbarAction.SYSTEM,
+        hint:  'System view',
+        order: 0
+    },
+    {
         type:  ToolBarElementType.SPACER,
         id:    'spacer-1',
-        order: 0
+        order: 1
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'edit',
         id:    ToolbarAction.EDIT,
-        hint:  'Remove',
-        order: 0
+        hint:  'Edit',
+        order: 2
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'move_item',
         id:    ToolbarAction.MOVE,
         hint:  'Move',
-        order: 0
+        order: 3
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'delete',
         id:    ToolbarAction.DELETE,
         hint:  'Remove',
-        order: 0
+        order: 4
     },
     {
         type:    ToolBarElementType.BUTTON,
         icon:    'add',
         id:      'add',
-        order:   1,
+        order:   5,
         hint:    'Add some new entity',
         submenu: [
             {

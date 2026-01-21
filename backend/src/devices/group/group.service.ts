@@ -1,17 +1,24 @@
-import {BadRequestException, ConflictException, Injectable, NotFoundException} from "@nestjs/common";
+import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {FileService} from "../../helpers/file/file.service";
 import {ActuatorService} from "../actuator/actuator.service";
 import {DeleteGroupChildFate, DeleteGroupOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
+import {EntityType} from "@common/devices/constants";
+import {Device} from "@common/devices/device";
+import {SensorService} from "../sensor/sensor.service";
 
 const SAVE_FILE = "devices/group.json";
+
 @Injectable()
 export class GroupService {
     private readonly groupData: Promise<GroupData>;
     
     constructor(
         private fileService: FileService,
-        private actuatorService: ActuatorService
+        @Inject(forwardRef(() => ActuatorService))
+        private actuatorService: ActuatorService,
+        @Inject(forwardRef(() => SensorService))
+        private sensorService: SensorService
     ) {
         this.groupData = fileService
             .readDataFile<GroupDataJSON>(SAVE_FILE)
@@ -37,12 +44,11 @@ export class GroupService {
     }
     
     public async createGroup(group: Group, parentName: string | null): Promise<void> {
-        if ((group.groups.length > 0) || (group.actuators.length > 0)) {
-            // TODO: put sensors when added
+        if ((group.groups.length > 0) || (group.actuators.length > 0) || (group.sensors.length > 0)) {
             throw new BadRequestException(undefined, "A new group cannot be created already with children");
         }
-        const data = await this.groupData;
-        const alreadyExisting = data.groups.some(otherGroup => otherGroup.name === group.name);
+        const data               = await this.groupData;
+        const alreadyExisting    = data.groups.some(otherGroup => otherGroup.name === group.name);
         let parent: Group | null = null;
         if (parentName != null) {
             parent = data.groups.find(otherGroup => otherGroup.name === parentName) ?? null;
@@ -62,8 +68,8 @@ export class GroupService {
     }
     
     public async editGroup(oldName: string, edit: GroupEditChanges): Promise<void> {
-        const data = await this.groupData;
-        const newName = edit.name;
+        const data        = await this.groupData;
+        const newName     = edit.name;
         const groupToEdit = data.groups.find(otherGroup => otherGroup.name === oldName);
         if (groupToEdit == null) {
             throw new NotFoundException();
@@ -77,7 +83,7 @@ export class GroupService {
                 groupToEdit.name = newName;
                 data.groups.forEach(otherGroup => {
                     otherGroup.groupRenamed(oldName, newName);
-                })
+                });
             }
             if (edit.displayName != null) {
                 groupToEdit.displayName = edit.displayName;
@@ -92,7 +98,7 @@ export class GroupService {
         name: string,
         options: DeleteGroupOptions
     ): Promise<void> {
-        const data = await this.groupData;
+        const data          = await this.groupData;
         const groupToDelete = data.groups.find(otherGroup => otherGroup.name === name);
         if (groupToDelete == null) {
             throw new NotFoundException();
@@ -126,9 +132,9 @@ export class GroupService {
             if (children.includes(destinationGroup.name)) {
                 throw new BadRequestException(undefined, "Cannot move a group into one of its own descendants");
             }
-            groupToDelete.groups.forEach(group => { destinationGroup.addGroup(group)})
-            groupToDelete.actuators.forEach(actuator => { destinationGroup.addActuator(actuator)})
-            // TODO: other possibilities
+            groupToDelete.groups.forEach(group => { destinationGroup.addGroup(group);});
+            groupToDelete.actuators.forEach(actuator => { destinationGroup.addActuator(actuator);});
+            groupToDelete.sensors.forEach(sensor => { destinationGroup.addSensor(sensor);});
         }
         const toDeleteIndex = data.groups.findIndex(otherGroup => otherGroup.name === name);
         if (toDeleteIndex !== -1) {
@@ -141,11 +147,25 @@ export class GroupService {
         this.saveData(data);
     }
     
-    public async changeParent(groupToMoveName: string, newParentName: string | null): Promise<void> {
+    public async changeParent(entityToMove: string, newParentName: string | null, entityType: EntityType): Promise<void> {
         const data = await this.groupData;
-        const groupToMove = data.groups.find(otherGroup => otherGroup.name === groupToMoveName);
-        if (groupToMove == null) {
-            throw new NotFoundException();
+        let elementToMove: Group | Device | null;
+        switch (entityType) {
+            case EntityType.GROUP: {
+                elementToMove = data.groups.find(otherGroup => otherGroup.name === entityToMove) ?? null;
+                break;
+            }
+            case EntityType.ACTUATOR: {
+                elementToMove = await this.actuatorService.getActuatorByName(entityToMove);
+                break;
+            }
+            case EntityType.SENSOR: {
+                elementToMove = await this.sensorService.getSensorByName(entityToMove);
+                break;
+            }
+        }
+        if (elementToMove == null) {
+            throw new NotFoundException("Could not find requested element");
         }
         let newParent: Group | null = null;
         if (newParentName != null) {
@@ -153,45 +173,132 @@ export class GroupService {
             if (newParent == null) {
                 throw new NotFoundException(undefined, "New parent group does not exist");
             }
-            const descendants = groupToMove.getAllDescendants(data.groups);
-            if (descendants.includes(groupToMoveName)) {
-                throw new BadRequestException(undefined, "Cannot move a group into one of its own descendants");
+            if ((entityType == EntityType.GROUP) && (elementToMove instanceof Group)) {
+                const descendants = elementToMove.getAllDescendants(data.groups);
+                if (descendants.includes(entityToMove)) {
+                    throw new BadRequestException(undefined, "Cannot move a group into one of its own descendants");
+                }
             }
         }
-        const oldParent = data.groups.find(otherGroup => otherGroup.containsGroup(groupToMoveName));
+        // TODO: This probably requires checking for mixes using parent's results, that all get messed up
+        const oldParent = data.groups.find(otherGroup => otherGroup.containsActuator(entityToMove));
         if (oldParent != null) {
-            oldParent.removeGroup(groupToMoveName);
+            switch (entityType) {
+                case EntityType.GROUP:
+                    oldParent.removeGroup(entityToMove);
+                    break;
+                case EntityType.ACTUATOR:
+                    oldParent.removeActuator(entityToMove);
+                    break;
+                case EntityType.SENSOR:
+                    oldParent.removeSensor(entityToMove);
+                    break;
+                
+            }
         }
         if (newParent != null) {
-            newParent.addGroup(groupToMoveName);
+            switch (entityType) {
+                case EntityType.GROUP:
+                    newParent.addGroup(entityToMove);
+                    break;
+                case EntityType.ACTUATOR:
+                    newParent.addActuator(entityToMove);
+                    break;
+                case EntityType.SENSOR:
+                    newParent.addSensor(entityToMove);
+                    break;
+            }
         }
         this.saveData(data);
     }
     
-    public async addActuator(name: string, actuatorName: string, move: boolean): Promise<void> {
-        const data = await this.groupData;
-        const containingGroup = data.groups.find(otherGroup => otherGroup.containsActuator(actuatorName));
-        const targetGroup = data.groups.find(otherGroup => otherGroup.name == name);
-        const actuatorExists = await this.actuatorService.actuatorExists(actuatorName);
+    public async addDevice(groupName: string, deviceName: string, entityType: EntityType, move: boolean, mustExist: boolean = true): Promise<void> {
+        if (entityType == EntityType.GROUP) {
+            throw new InternalServerErrorException();
+        }
+        const data            = await this.groupData;
+        let containingGroup : Group | null;
+        if (entityType == EntityType.ACTUATOR) {
+            containingGroup = data.groups.find(otherGroup => otherGroup.containsActuator(deviceName)) ?? null;
+        } else  {
+            containingGroup = data.groups.find(otherGroup => otherGroup.containsSensor(deviceName)) ?? null;
+        }
+        const targetGroup     = data.groups.find(otherGroup => otherGroup.name == groupName);
         if (targetGroup == null) {
             throw new NotFoundException(undefined, "Target group does not exist");
         }
-        if (!actuatorExists) {
-            throw new NotFoundException(undefined, "Actuator does not exist");
+        if (mustExist) {
+            let deviceExists: boolean;
+            if (entityType == EntityType.ACTUATOR) {
+                deviceExists = await this.actuatorService.actuatorExists(deviceName);
+            } else {
+                deviceExists = await this.sensorService.sensorExists(deviceName);
+            }
+            if (!deviceExists) {
+                throw new NotFoundException(undefined, "Actuator does not exist");
+            }
         }
-        if (containingGroup?.name === name) {
+        if (containingGroup?.name === groupName) {
             return;
         }
         if (!move && containingGroup != null) {
-            throw new ConflictException(undefined, "The actuator is already in another group");
+            throw new ConflictException(undefined, "The device is already in another group");
         }
-        if (containingGroup != null) {
-            containingGroup.removeActuator(actuatorName);
+        if (entityType == EntityType.ACTUATOR) {
+            if (containingGroup != null) {
+                containingGroup.removeActuator(deviceName);
+            }
+            targetGroup.addActuator(deviceName);
+        } else {
+            if (containingGroup != null) {
+                containingGroup.removeSensor(deviceName);
+            }
+            targetGroup.addSensor(deviceName);
         }
-        targetGroup.addActuator(actuatorName);
         this.saveData(data);
     }
+    
+    public async removeDevice(name: string, entityType: EntityType): Promise<void> {
+        const data = await this.groupData;
+        let elementToRemove: Device | null = null;
+        if (entityType == EntityType.ACTUATOR) {
+            elementToRemove = await this.actuatorService.getActuatorByName(name);
+        } else if (entityType == EntityType.SENSOR) {
+            elementToRemove = await this.sensorService.getSensorByName(name);
+        }
+        if (elementToRemove == null) {
+            throw new NotFoundException();
+        }
+        if (entityType == EntityType.ACTUATOR) {
+            const containingGroup = data.groups.find(otherGroup => otherGroup.containsActuator(name));
+            if (containingGroup != null) {
+                containingGroup.removeActuator(name);
+            }
+            await this.actuatorService.deleteActuator(name);
+        } else if (entityType == EntityType.SENSOR) {
+            const containingGroup = data.groups.find(otherGroup => otherGroup.containsSensor(name));
+            if (containingGroup != null) {
+                containingGroup.removeSensor(name);
+            }
+            await this.sensorService.deleteSensor(name);
+        }
+        this.saveData(data);
+    }
+    
+    public async actuatorRenamed(oldName: string, newName: string): Promise<void> {
+        const data = await this.groupData;
+        data.groups.forEach(group => { group.actuatorRenamed(oldName, newName) })
+        this.saveData(data);
+    }
+    
+    public async sensorRenamed(oldName: string, newName: string): Promise<void> {
+        const data = await this.groupData;
+        data.groups.forEach(group => { group.sensorRenamed(oldName, newName) })
+        this.saveData(data);
+    }
+    
 }
+
 class GroupData {
     
     public groups: Group[];
@@ -206,8 +313,8 @@ class GroupData {
     
     public toJSON(): GroupDataJSON {
         return {
-            groups: this.groups.map((group: Group) => group.toJSON()),
-        }
+            groups: this.groups.map((group: Group) => group.toJSON())
+        };
     }
     
 }

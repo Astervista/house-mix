@@ -1,0 +1,22 @@
+@if (formGroup.hasError('sonOfNoGroup')) {
+    <mat-error>Either choose a parent or set the group as top-level</mat-error>
+}
+<mat-radio-group
+    class="children-radio-button"
+    [formControl]="topLevelFormControl">
+    <div class="radio-button-list">
+        <mat-radio-button class="example-radio-button" [value]="true">Top-level</mat-radio-button>
+        <mat-radio-button class="example-radio-button" [value]="false">Inside a group</mat-radio-button>
+    </div>
+</mat-radio-group>
+@if (this.topLevelFormControl.value == false) {
+    <mat-form-field>
+        <mat-label>Parent group</mat-label>
+        <mat-select
+            [formControl]="parentGroupFormControl">
+            @for (otherGroup of groups; track otherGroup.name) {
+                <mat-option [value]="otherGroup.name">{{ otherGroup.displayName }}</mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+}

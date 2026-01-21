@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+    <defs>
+        <style>
+            .st0 {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .st0, .st1 {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .st1 {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <path class="st0"
+          d="M69.489,85.942c-15.498,8.412-35.287,6.066-48.392-7.039-15.963-15.963-15.963-41.843,0-57.806s41.843-15.963,57.806,0c15.963,15.963,15.963,41.843,0,57.806l-16.841-16.841"/>
+    <path class="st1 stroke-color-animation" d="M78.235,67.407l-10.596-10.596c5.428-10.079,3.887-22.919-4.623-31.43-10.392-10.392-27.242-10.392-37.634,0"/>
+</svg>

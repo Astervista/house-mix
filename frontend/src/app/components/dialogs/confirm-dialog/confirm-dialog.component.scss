@@ -1,0 +1,19 @@
+@use "colors";
+
+.mat-dialog-actions {
+  margin-top: 16px;
+}
+
+button[mat-button] {
+  min-width: 80px;
+}
+
+h2[mat-dialog-title] {
+  margin-bottom: 8px;
+}
+
+.confirm-warn {
+
+    @include colors.error-button;
+}
+

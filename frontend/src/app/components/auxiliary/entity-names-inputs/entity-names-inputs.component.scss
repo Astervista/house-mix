@@ -1,0 +1,10 @@
+@use "dimensions";
+
+:host {
+    display: flex;
+    flex-direction: column;
+    &.horizontal {
+        flex-direction: row;
+        gap: dimensions.$margin-medium;
+    }
+}

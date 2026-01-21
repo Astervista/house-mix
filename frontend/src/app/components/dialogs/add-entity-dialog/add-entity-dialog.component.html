@@ -1,0 +1,186 @@
+<h2 mat-dialog-title>{{ title }}</h2>
+<mat-dialog-content>
+    <house-mix-entity-names-inputs
+        [horizontal]="this.data.entityType != EntityType.GROUP"
+        [originalName]="this.data.edit?.name ?? null"
+        [originalDisplayName]="this.data.edit?.displayName ?? null"
+        [forbiddenNames]="this.data.forbiddenNames">
+    </house-mix-entity-names-inputs>
+    @if (this.data.entityType != EntityType.GROUP) {
+        <div class="device-info-container">
+            <mat-form-field>
+                <mat-label>Zigbee IEEE address</mat-label>
+                <input
+                    matInput
+                    [formControl]="zigbeeAddressFormControl">
+                <mat-hint>The device's zigbee address</mat-hint>
+                @if (zigbeeAddressFormControl.hasError('required')) {
+                    <mat-error>An address is required</mat-error>
+                } @else if (zigbeeAddressFormControl.invalid) {
+                    <mat-error>The address is a 64-bit hex</mat-error>
+                }
+            </mat-form-field>
+            @if (this.data.entityType == EntityType.ACTUATOR) {
+                <mat-form-field>
+                    <mat-label>Actuator type</mat-label>
+                    <mat-select
+                        [formControl]="actuatorTypeFormControl">
+                        @if (actuatorTypeFormControl.value != null) {
+                            <mat-select-trigger>
+                                <div class="device-type-container">
+                                    <house-mix-dynamic-svg
+                                        class="device-type-icon trigger"
+                                        [class.selected]="true"
+                                        [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[actuatorTypeFormControl.value]}`">
+                                    </house-mix-dynamic-svg>
+                                    <span>{{ ACTUATOR_TYPE_DISPLAY[actuatorTypeFormControl.value] }}</span>
+                                </div>
+                            </mat-select-trigger>
+                        }
+                        @for (type of Object.values(ActuatorType); track type) {
+                            <mat-option [value]="type">
+                                <div class="device-type-container">
+                                    <house-mix-dynamic-svg
+                                        class="device-type-icon"
+                                        [class.selected]="actuatorTypeFormControl.value == type"
+                                        [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[type]}`">
+                                    </house-mix-dynamic-svg>
+                                    <span>{{ ACTUATOR_TYPE_DISPLAY[type] }}</span>
+                                </div>
+                            </mat-option>
+                        }
+                    </mat-select>
+                    @if (actuatorTypeFormControl.hasError('required')) {
+                        <mat-error>
+                            The actuator type is required
+                        </mat-error>
+                    }
+                </mat-form-field>
+            }
+            @if (this.data.entityType == EntityType.SENSOR) {
+                <mat-form-field>
+                    <mat-label>Sensor type</mat-label>
+                    <mat-select
+                        [formControl]="sensorTypeFormControl">
+                        @if (sensorTypeFormControl.value != null) {
+                            <mat-select-trigger>
+                                <div class="device-type-container">
+                                    <house-mix-dynamic-svg
+                                        class="device-type-icon trigger"
+                                        [class.selected]="true"
+                                        [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[sensorTypeFormControl.value]}`">
+                                    </house-mix-dynamic-svg>
+                                    <span>{{ SENSOR_TYPE_DISPLAY[sensorTypeFormControl.value] }}</span>
+                                </div>
+                            </mat-select-trigger>
+                        }
+                        @for (type of Object.values(SensorType); track type) {
+                            @if (type != SensorType.UNKNOWN) {
+                                <mat-option [value]="type">
+                                    <div class="device-type-container">
+                                        <house-mix-dynamic-svg
+                                            class="device-type-icon"
+                                            [class.selected]="sensorTypeFormControl.value == type"
+                                            [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[type]}`">
+                                        </house-mix-dynamic-svg>
+
+                                        <span>{{ SENSOR_TYPE_DISPLAY[type] }}</span>
+                                    </div>
+                                </mat-option>
+                            }
+                        }
+                    </mat-select>
+                    @if (sensorTypeFormControl.hasError('required')) {
+                        <mat-error>
+                            The sensor type is required
+                        </mat-error>
+                    }
+                </mat-form-field>
+            }
+        </div>
+        <div class="exposes-properties-header">
+            <p>{{ this.data.entityType == EntityType.ACTUATOR ? 'Actuator properties' : 'Sensor properties' }}</p>
+            <button
+                mat-icon-button
+                (click)="addExposes()">
+                <mat-icon>add</mat-icon>
+            </button>
+            <button
+                mat-icon-button
+                [matMenuTriggerFor]="this.data.entityType == EntityType.ACTUATOR ? actuatorDataLibrary : sensorDataLibrary">
+                <mat-icon>newsstand</mat-icon>
+            </button>
+        </div>
+        <div class="exposes-properties">
+            @if (this.deviceExposes.length == 0) {
+                <span class="no-data">No property has been defined</span>
+            } @else {
+                @for (datum of deviceExposes; track datum.name) {
+                    <div class="datum">
+                        <mat-icon class="datum-null-icon">{{ datum.nullable ? 'question_mark' : '' }}</mat-icon>
+                        <span class="datum-name">{{ datum.name }}</span>
+                        <span class="datum-type">{{ DATUM_TIME_DISPLAY[datum.type] }}</span>
+                        <button
+                            mat-icon-button
+                            (click)="removeDeviceExposes(datum)">
+                            <mat-icon>delete</mat-icon>
+                        </button>
+
+                    </div>
+
+                }
+            }
+        </div>
+    }
+    @if (this.data.edit == null) {
+        @switch (this.data.entityType) {
+            @case (EntityType.GROUP) {
+                <p>Select a location in which to put the new group</p>
+            }
+            @case (EntityType.ACTUATOR) {
+                <p>Select a location in which to put the new actuator</p>
+            }
+            @case (EntityType.SENSOR) {
+                <p>Select a location in which to put the new sensor</p>
+            }
+        }
+        <house-mix-entity-location-input
+            [defaultGroup]="this.data.sonOfGroup"
+            [groups]="this.groups">
+
+        </house-mix-entity-location-input>
+    }
+
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            [mat-dialog-close]="null">
+        Cancel
+    </button>
+    <button
+        mat-button
+        [mat-dialog-close]="result"
+        [disabled]="confirmDisabled">
+        {{ this.data.edit == null ? 'Create' : 'Edit' }}
+    </button>
+</mat-dialog-actions>
+<mat-menu
+    #actuatorDataLibrary="matMenu"
+    xPosition="before">
+    @for (datum of ACTUATOR_PROPERTIES_LIBRARY; track datum.display) {
+        <button
+            mat-menu-item
+            (click)="deviceExposesFromLibrary = datum.data">{{ datum.display }}
+        </button>
+    }
+</mat-menu>
+<mat-menu
+    #sensorDataLibrary="matMenu"
+    xPosition="before">
+    @for (datum of SENSOR_PROPERTIES_LIBRARY; track datum.display) {
+        <button
+            mat-menu-item
+            (click)="deviceExposesFromLibrary = datum.data">{{ datum.display }}
+        </button>
+    }
+</mat-menu>

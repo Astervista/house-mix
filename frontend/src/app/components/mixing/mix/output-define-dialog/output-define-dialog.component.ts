@@ -5,9 +5,8 @@ import {MatButton} from '@angular/material/button';
 import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors} from '@angular/forms';
 import {MatFormField, MatInput, MatLabel} from '@angular/material/input';
 import {MatOption, MatSelect} from '@angular/material/select';
-import {DatumTypeDisplay, getColorVarNameForType} from '../../constants';
-import {MatCheckbox} from '@angular/material/checkbox';
-import {JsonPipe} from '@angular/common';
+import {DATUM_TIME_DISPLAY, getColorVarNameForType} from '../../constants';
+import {MatCheckbox} from '@angular/material/checkbox'
 
 @Component({
   selector: 'house-mix-output-define-dialog',
@@ -37,7 +36,7 @@ export class OutputDefineDialogComponent {
     protected nullableFormControl: FormControl<boolean | null> = new FormControl<boolean>(false);
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) public forbiddenNames: string[]
+        @Inject(MAT_DIALOG_DATA) public data: OutputDefineDialogData
     ) {
         this.typeFormControl.valueChanges.subscribe(value => {
                 this.updateResult(value, this.nameFormControl.value, this.nullableFormControl.value);
@@ -49,7 +48,7 @@ export class OutputDefineDialogComponent {
             if (control.value == null || control.value == "") {
                 return {required: true}
             }
-            const forbidden = this.forbiddenNames.includes(control.value);
+            const forbidden = this.data.forbiddenNames.includes(control.value);
             return forbidden ? {forbiddenName: true} : null;
         })
         this.nullableFormControl.valueChanges.subscribe(value => {
@@ -67,6 +66,11 @@ export class OutputDefineDialogComponent {
 
     protected readonly DatumType = DatumType;
     protected readonly Object           = Object;
-    protected readonly DatumTypeDisplay       = DatumTypeDisplay;
+    protected readonly DATUM_TIME_DISPLAY       = DATUM_TIME_DISPLAY;
     protected readonly getColorVarNameForType = getColorVarNameForType;
+}
+
+export interface OutputDefineDialogData {
+    forbiddenNames: string[];
+    title?: string;
 }

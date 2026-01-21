@@ -12,7 +12,7 @@ import {
 } from '@common/mixing/mix/elaboration-node';
 import {isDevMode} from '@angular/core';
 
-export const DatumTypeDisplay: Record<DatumType, string> = {
+export const DATUM_TIME_DISPLAY: Record<DatumType, string> = {
     [DatumType.BOOLEAN]:   'Boolean',
     [DatumType.NUMBER]:    'Number',
     [DatumType.TIME]:      'Time',

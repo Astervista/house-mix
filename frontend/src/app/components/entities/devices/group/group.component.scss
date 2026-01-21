@@ -1,36 +1,21 @@
 @use "dimensions";
 @use "colors";
+@use "../entity";
 
 :host {
 
-    --house-mix-group-border-color: #{colors.$border-color};
+    @include entity.container;
 
     min-width: 250px;
     min-height: 50px;
-    border-radius: 5px;
-    display: flex;
-    flex-direction: column;
-    transition: outline-width 0.15s ease-in-out, outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
-    outline: solid 1px var(--house-mix-group-border-color);
-
-    &.selected {
-        --house-mix-group-border-color: var(--mat-sys-primary);
-        outline-width: 3px;
-        outline-offset: -1.5px;
-    }
 
 }
 
 
 .group-name {
-    font-size: 20px;
-    font-weight: 300;
-    padding: dimensions.$margin-mlarge;
-    border-right: solid 1px var(--house-mix-group-border-color);
-    border-bottom: solid 1px var(--house-mix-group-border-color);
-    border-bottom-right-radius: 3px;
-    align-self: start;
-    transition: border-bottom-color 0.15s ease-in-out, border-right-color 0.15s ease-in-out, border-top-color 0.15s ease-in-out, border-left-color 0.15s ease-in-out;
+
+    @include entity.name
+
 }
 
 .group-empty {

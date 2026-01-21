@@ -1,0 +1,24 @@
+<mat-form-field>
+    <mat-label>Codename</mat-label>
+    <input matInput placeholder=" " [formControl]="nameFormControl">
+    <!-- TODO: Not only groups -->
+    <mat-hint>A unique codename for the group</mat-hint>
+    @if (nameFormControl.hasError('required')) {
+        <mat-error>A codename is required</mat-error>
+    } @else if (nameFormControl.hasError('pattern')) {
+        <mat-error>A codename can only have lowercase letters, numbers, dashes and underscores</mat-error>
+    } @else if (nameFormControl.hasError('forbiddenName')) {
+        <mat-error>This codename is already used by another group</mat-error>
+    }
+</mat-form-field>
+@if (!this.horizontal) {
+    <div style="height: 20px"></div>
+}
+<mat-form-field>
+    <mat-label>Display name</mat-label>
+    <input matInput [formControl]="displayNameFormControl">
+    <mat-hint>A name displayed with the group</mat-hint>
+    @if (!displayNameFormControl.valid) {
+        <mat-error>A display name is required</mat-error>
+    }
+</mat-form-field>

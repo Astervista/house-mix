@@ -77,7 +77,7 @@ export class Datum {
             case DatumType.TIME:
             case DatumType.DATE:
             case DatumType.DATE_TIME: {
-                return sourceValue as Date
+                return sourceValue as Date;
             }
         }
     }
@@ -178,4 +178,14 @@ export enum DatumType {
     TIME      = "TIME",
     DATE      = "DATE",
     DATE_TIME = "DATE_TIME"
+}
+
+export enum DatumChangeType {
+    NEW     = "NEW",
+    DELETED = "DELETED"
+}
+
+export interface DatumChange {
+    change: DatumChangeType,
+    datum: Datum
 }

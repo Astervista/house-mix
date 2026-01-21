@@ -5,6 +5,7 @@
     "/Users/asteriofiora/WebstormProjects/zigbee-lights/common/src",
     "/Users/asteriofiora/WebstormProjects/zigbee-lights/common/dist",
     "/Users/asteriofiora/WebstormProjects/zigbee-lights/frontend/src",
+    "/Users/asteriofiora/WebstormProjects/zigbee-lights/frontend/public",
     "/Users/asteriofiora/WebstormProjects/zigbee-lights/hmr-trigger.txt"
   ],
   "commitTriggers": [

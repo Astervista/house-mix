@@ -1,7 +1,7 @@
 <span
+    class="group-name"
     matTooltipPosition="above"
     [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
-    class="group-name"
     [matTooltip]="`Codename: ${group.name}`">
     {{ group.displayName }}
 </span>
@@ -17,7 +17,8 @@
                     <house-mix-group
                         [group]="subgroup"
                         [otherGroups]="otherGroups"
-                        [selectedGroup]="selectedGroup"
+                        [actuators]="actuators"
+                        [selected]="selected"
                         (onSelect)="this.onSelectEmitter.emit($event)">
                     </house-mix-group>
                 } @else {
@@ -29,9 +30,36 @@
     @if (group.actuators.length > 0) {
         <span class="section-name">Actuators</span>
         <div class="group-content">
-            @for (actuator of group.actuators; track actuator) {
-                <span>{{actuator}}</span>
-                <!--<house-mix-device [device]="actuator"></house-mix-device>-->
+            @for (actuatorName of group.actuators; track actuatorName) {
+                @let actuator = getActuator(actuatorName);
+                @if (actuator != null) {
+                    <house-mix-device
+                        [device]="actuator"
+                        [selected]="selected == actuator"
+                        (onSelect)="this.onSelectEmitter.emit($event)">
+
+                    </house-mix-device>
+                } @else {
+                    <span class="simple-subgroup">{{actuatorName}}</span>
+                }
+            }
+        </div>
+    }
+    @if (group.sensors.length > 0) {
+        <span class="section-name">Sensors</span>
+        <div class="group-content">
+            @for (sensorName of group.sensors; track sensorName) {
+                @let sensor = getSensor(sensorName);
+                @if (sensor != null) {
+                    <house-mix-device
+                        [device]="sensor"
+                        [selected]="selected == sensor"
+                        (onSelect)="this.onSelectEmitter.emit($event)">
+
+                    </house-mix-device>
+                } @else {
+                    <span class="simple-subgroup">{{sensorName}}</span>
+                }
             }
         </div>
     }

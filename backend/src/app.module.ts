@@ -9,11 +9,13 @@ import { SceneController } from './mixing/scene/scene.controller';
 import { SceneService } from './mixing/scene/scene.service';
 import { MixController } from './mixing/mix/mix.controller';
 import { MixService } from './mixing/mix/mix.service';
+import { SensorService } from "./devices/sensor/sensor.service";
+import {SensorController} from "./devices/sensor/sensor.controller";
 
 @Module({
   imports: [],
-  controllers: [ActuatorController, GroupController, SceneController, MixController],
-  providers: [ZigbeeService, ActuatorService, FileService, GroupService, SceneService, MixService],
+  controllers: [ActuatorController, SensorController, GroupController, SceneController, MixController],
+  providers: [ZigbeeService, FileService, GroupService, ActuatorService, SensorService, SceneService, MixService],
 })
 export class AppModule {
 

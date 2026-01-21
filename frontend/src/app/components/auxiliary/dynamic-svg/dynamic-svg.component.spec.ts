@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AddGroupDialogComponent } from './add-group-dialog.component';
+import { DynamicSvgComponent } from './dynamic-svg.component';
 
-describe('AddGroupDialogComponent', () => {
-  let component: AddGroupDialogComponent;
-  let fixture: ComponentFixture<AddGroupDialogComponent>;
+describe('DynamicSvgComponent', () => {
+  let component: DynamicSvgComponent;
+  let fixture: ComponentFixture<DynamicSvgComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AddGroupDialogComponent]
+      imports: [DynamicSvgComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(AddGroupDialogComponent);
+    fixture = TestBed.createComponent(DynamicSvgComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

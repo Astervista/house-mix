@@ -7,13 +7,13 @@ import {MixingService} from '../mixing.service';
 import {Datum, DatumOrigin, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
-import {ElaborationNode, ElaborationNodeCode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
+import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
 import {MEASURES, MixUiManager} from './mix-ui-manager';
 import {MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {DatePipe} from '@angular/common';
 import {ConstantEditDialogComponent, ConstantEditDialogData, ConstantEditDialogResponse} from './constant-edit-dialog/constant-edit-dialog.component';
-import {OutputDefineDialogComponent} from './output-define-dialog/output-define-dialog.component';
+import {OutputDefineDialogComponent, OutputDefineDialogData} from './output-define-dialog/output-define-dialog.component';
 import {ELABORATION_NODE_DISPLAY_NAME, ElaborationNodeLibraryItem, getColorVarNameForType} from '../constants';
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 
@@ -144,10 +144,12 @@ export class MixComponent implements OnInit {
             const dialogRef =
                       this
                           .matDialog
-                          .open<OutputDefineDialogComponent, string[], ExportedDatum>(
+                          .open<OutputDefineDialogComponent, OutputDefineDialogData, ExportedDatum>(
                               OutputDefineDialogComponent,
                               {
-                                  data: mix.outputs.map(input => input.name)
+                                  data: {
+                                      forbiddenNames: mix.outputs.map(input => input.name)
+                                  }
                               }
                           );
             dialogRef

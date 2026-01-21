@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <defs>
+        <style>
+            .st0 {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .st0, .st1 {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .st1 {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <path class="st0"
+          d="M52.018,72.897c6.342-5.591,10.343-13.774,10.343-22.897,0-13.233-8.42-24.492-20.192-28.724,2.496-.684,5.121-1.043,7.831-1.043,16.439,0,29.766,13.327,29.766,29.766s-13.327,29.766-29.766,29.766c-16.439,0-29.766-13.327-29.766-29.766,0-10.337,5.267-19.443,13.267-24.778"/>
+    <line class="st1 stroke-color-animation" x1="13.122" y1="50" x2="5.109" y2="50"/>
+    <line class="st1 stroke-color-animation" x1="50" y1="86.878" x2="50" y2="90.18"/>
+    <line class="st1 stroke-color-animation" x1="23.923" y1="76.077" x2="19.375" y2="80.625"/>
+    <line class="st1 stroke-color-animation" x1="23.923" y1="23.923" x2="16.173" y2="16.173"/>
+    <line class="st1 stroke-color-animation" x1="15.777" y1="36.26" x2="7.502" y2="32.938"/>
+    <line class="st1 stroke-color-animation" x1="16.085" y1="64.484" x2="9.115" y2="67.46"/>
+    <line class="st1 stroke-color-animation" x1="36.26" y1="84.223" x2="34.531" y2="88.529"/>
+</svg>

@@ -1,0 +1,36 @@
+@use "dimensions";
+@use "colors";
+
+@mixin container {
+
+    --house-mix-entity-border-color: #{colors.$border-color};
+
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    transition: outline-width 0.15s ease-in-out, outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
+    outline: solid 1px var(--house-mix-entity-border-color);
+
+    &.selected {
+        --house-mix-entity-border-color: var(--mat-sys-primary);
+        outline-width: 3px;
+        outline-offset: -1.5px;
+    }
+
+}
+
+
+@mixin name($full-width: false) {
+    font-size: 20px;
+    font-weight: 300;
+    padding: dimensions.$margin-mlarge;
+    border-bottom: solid 1px var(--house-mix-entity-border-color);
+    @if($full-width == false) {
+        border-right: solid 1px var(--house-mix-entity-border-color);
+        border-bottom-right-radius: 3px;
+        align-self: start;
+    } @else {
+        align-self: stretch;
+    }
+    transition: border-bottom-color 0.15s ease-in-out, border-right-color 0.15s ease-in-out, border-top-color 0.15s ease-in-out, border-left-color 0.15s ease-in-out;
+}

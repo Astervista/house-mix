@@ -1,15 +1,36 @@
-@if (isActuator()) {
-    <div class="preview" [style.background-image]="'url(\'/bulb.png\')'"></div>
-} @else if (isSensor()) {
-    <div class="preview" [style.background-image]="'url(\'/sensor.png\')'"></div>
+<span
+    class="display-name"
+    matTooltipPosition="above"
+    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+    [matTooltip]="`Codename: ${device.name}`">{{ device.displayName }}</span>
+@if (isActuator(device)) {
+    <house-mix-dynamic-svg
+        class="preview"
+        [class.selected]="selected"
+        [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[device.type]}`">
+    </house-mix-dynamic-svg>
+} @else if (isSensor(device)) {
+    <house-mix-dynamic-svg
+        class="preview"
+        [class.selected]="selected"
+        [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[device.type]}`">
+    </house-mix-dynamic-svg>
 }
-<span class="display-name">{{ device.displayName }}</span>
-<div class="buttons">
-    @if (isActuator(this.device)) {
-        <button
-            mat-icon-button
-            (click)="openMix()">
-            <mat-icon>instant_mix</mat-icon>
-        </button>
-    }
+<div
+    class="info">
+    <span
+        class="info-type">
+        @if (isActuator(device)) {
+            {{ ACTUATOR_TYPE_DISPLAY[device.type] }}
+        } @else if (isSensor(device)) {
+            {{ SENSOR_TYPE_DISPLAY[device.type] }}
+        }
+    </span>
+    <mat-icon>list_alt</mat-icon>
+    <span
+        class="expose-number">
+        {{ device.exposes.length }}
+    </span>
 </div>
+
+<!-- TODO: Differentiate sensors and actuators -->

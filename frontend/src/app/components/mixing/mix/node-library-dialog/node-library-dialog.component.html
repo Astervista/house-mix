@@ -25,7 +25,7 @@
                                         <span class="type-circle"
                                               [class.selected]="nullGuardTypeFormControl.value == type"
                                               [style.--type-color]="getColorVarNameForType(type)"></span>
-                                        {{ DatumTypeDisplay[type] }}
+                                        {{ DATUM_TIME_DISPLAY[type] }}
                                     </div>
                                 </mat-option>
                             }
@@ -48,7 +48,7 @@
                                 <div
                                     class="node-preview-input-info">
                                     <span class="node-preview-input-name">{{ input.name }}</span>
-                                    <span class="node-preview-input-type">{{ DatumTypeDisplay[input.type] }}</span>
+                                    <span class="node-preview-input-type">{{ DATUM_TIME_DISPLAY[input.type] }}</span>
                                     @if (input.nullable) {
                                         <span class="node-preview-input-type">Nullable</span>
                                     }
@@ -70,7 +70,7 @@
                                 <div
                                     class="node-preview-output-info">
                                     <span class="node-preview-output-name">{{ output.name }}</span>
-                                    <span class="node-preview-output-type">{{ DatumTypeDisplay[output.type] }}</span>
+                                    <span class="node-preview-output-type">{{ DATUM_TIME_DISPLAY[output.type] }}</span>
                                     @if (output.nullable) {
                                         <span class="node-preview-output-type">Nullable</span>
                                     }

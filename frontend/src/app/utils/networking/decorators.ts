@@ -647,7 +647,8 @@ interface DeleteOptions<T> {
     result?: (new (...args: never[]) => T) | null;
     resultIsArray?: boolean;
     httpParams?: HttpParams;
-    queryParams?: Record<string, boolean>
+    queryParams?: Record<string, boolean>,
+    hasBody?: boolean
 }
 
 export function Delete<B, T>(path: string, options?: DeleteOptions<T>) {
@@ -677,11 +678,11 @@ export function Delete<B, T>(path: string, options?: DeleteOptions<T>) {
 
     const queryParamEntries = Object.entries(options?.queryParams ?? {});
 
-    return function (
+    return  function (
         target: unknown,
         propertyKey: string
     ): void {
-        const fn = function (this: { httpClient?: HttpClient }, body: B, ...params: Record<string, unknown>[]): Promise<T | T[]> {
+        const fn = function (this: { httpClient?: HttpClient }, body: B | null, ...params: Record<string, unknown>[]): Promise<T | T[]> {
 
             let pathParams: Record<string, unknown> = {};
             let queryParams: Record<string, unknown> = {};
@@ -783,11 +784,21 @@ export function Delete<B, T>(path: string, options?: DeleteOptions<T>) {
             }
         };
 
-        Object.defineProperty(target, propertyKey, {
-            configurable: true,
-            enumerable:   true,
-            writable:     true,
-            value:        fn
-        });
+        if (options?.hasBody == true) {
+            Object.defineProperty(target, propertyKey, {
+                configurable: true,
+                enumerable:   true,
+                writable:     true,
+                value:        fn
+            });
+        } else {
+            Object.defineProperty(target, propertyKey, {
+                configurable: true,
+                enumerable:   true,
+                writable:     true,
+                value: function (this: { httpClient?: HttpClient }, ...params: Record<string, unknown>[]){ return  fn.bind(this)(null, ...params) }
+            });
+        }
     };
+
 }

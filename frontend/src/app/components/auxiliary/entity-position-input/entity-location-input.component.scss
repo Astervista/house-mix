@@ -1,7 +1,8 @@
 @use "dimensions";
 
-mat-form-field {
-    min-width: min(100%, 300px);
+:host {
+    display: flex;
+    flex-direction: column;
 }
 
 mat-radio-group {

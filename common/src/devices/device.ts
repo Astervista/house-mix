@@ -1,40 +1,53 @@
 import {IsNotEmpty, Matches} from "class-decorators";
+import {Datum, DatumChange, DatumChangeType, DatumJSON} from "../mixing/mix/datum";
 
 export class Device {
     
-    private readonly _uid: string;
-    private readonly _name: string;
+    public readonly exposes: Datum[] = [];
     
-    constructor(uid: string, name: string, public displayName: string) {
-        this._uid = uid;
-        this._name = name;
+    constructor(public zigbeeAddress: string, public name: string, public displayName: string) {
     }
-
-    public get uid(): string {
-        return this._uid;
-    }
-
-    public get name(): string {
-        return this._name;
+    
+    public calculateExposesChanges(newExposes: Datum[]): DatumChange[] {
+        const changes: { change: DatumChangeType, datum: Datum }[] = [];
+        for (const oldExpose of this.exposes) {
+            const newVersion = newExposes.find(a => a.name === oldExpose.name);
+            if (newVersion == null) {
+                changes.push({change: DatumChangeType.DELETED, datum: oldExpose});
+            } else {
+                if (newVersion.type !== oldExpose.type || newVersion.nullable !== oldExpose.nullable) {
+                    changes.push({change: DatumChangeType.DELETED, datum: oldExpose});
+                    changes.push({change: DatumChangeType.NEW, datum: newVersion});
+                }
+            }
+        }
+        for (const newExpose of newExposes) {
+            if (!this.exposes.some(a => a.name === newExpose.name)) {
+                changes.push({change: DatumChangeType.NEW, datum: newExpose});
+            }
+        }
+        return changes;
     }
     
     public toJSON(): DeviceJSON {
         return {
-            uid: this.uid,
+            zigbeeAddress: this.zigbeeAddress,
             name: this.name,
-            displayName: this.displayName
+            displayName: this.displayName,
+            exposes: this.exposes.map(datum => datum.toJSON())
         }
     }
     
     public static fromJSON(JSON: DeviceJSON): Device {
-        return new Device(JSON.uid, JSON.name, JSON.displayName);
+        return new Device(JSON.zigbeeAddress, JSON.name, JSON.displayName);
     }
 }
 
 export class DeviceJSON {
     
     @IsNotEmpty()
-    public uid: string;
+    @Matches(/^[0-9A-F]+$/)
+    public zigbeeAddress: string;
     
     @IsNotEmpty()
     @Matches(/^[a-z\-0-9_]+$/)
@@ -43,8 +56,10 @@ export class DeviceJSON {
     @IsNotEmpty()
     public displayName: string;
     
-    constructor(uid: string, name: string, displayName: string) {
-        this.uid = uid;
+    public exposes: DatumJSON[] = [];
+    
+    constructor(zigbeeAddress: string, name: string, displayName: string) {
+        this.zigbeeAddress = zigbeeAddress;
         this.name = name;
         this.displayName = displayName;
     }

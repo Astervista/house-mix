@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Define a new output</h2>
+<h2 mat-dialog-title>{{ data.title ?? 'Define a new output' }}</h2>
 <mat-dialog-content>
     <mat-form-field>
         <mat-label>Data type</mat-label>
@@ -10,7 +10,7 @@
                         <span class="type-circle"
                               [class.selected]="typeFormControl.value == type"
                               [style.--type-color]="getColorVarNameForType(type)"></span>
-                        {{ DatumTypeDisplay[type] }}
+                        {{ DATUM_TIME_DISPLAY[type] }}
                     </div>
                 </mat-option>
             }
@@ -26,3 +26,4 @@
     <button mat-button [mat-dialog-close]="null">Cancel</button>
     <button mat-button [mat-dialog-close]="result" [disabled]="result == null">Define</button>
 </mat-dialog-actions>
+

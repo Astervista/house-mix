@@ -1,0 +1,15 @@
+:host {
+    --ink-color: var(--mat-sys-on-background, #000);
+    --accent-color: var(--mat-sys-primary, #000);
+}
+:host ::ng-deep > * {
+    display: none;
+}
+:host ::ng-deep > svg {
+    display: inline;
+
+    .stroke-color-animation {
+        transition: stroke var(--stroke-color-animation-duration, 0s);
+    }
+}
+

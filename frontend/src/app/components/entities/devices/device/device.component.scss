@@ -1,32 +1,48 @@
 @use "dimensions";
+@use "../entity";
 
 :host {
-    display: flex;
-    flex-direction: column;
+    @include entity.container;
+
     align-items: center;
-    justify-items: flex-start;
-    height: 100%;
-    border-radius: 4px;
-    outline: solid 2px var(--mat-sys-primary);
-    padding: dimensions.$margin-xlarge;
-    gap: dimensions.$margin-mlarge;
 }
 
 .preview {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
+    margin: dimensions.$margin-large;
+
+    --highlight-color: var(--house-mix-text-color-30);
+    --stroke-color-animation-duration: 0.2s;
+
+    &.selected {
+        --highlight-color: var(--mat-sys-primary);
+    }
 }
 
 .display-name {
-    font-size: 1.3rem;
+    @include entity.name(true)
 }
 
-.buttons {
+.info {
     display: flex;
+    padding: dimensions.$margin-medium;
     gap: dimensions.$margin-medium;
-    justify-content: center;
+    align-items: center;
+    font-weight: 100;
     align-self: stretch;
+
+    .info-type {
+        flex-grow: 1;
+        margin-right: dimensions.$indent-small;
+    }
+
+    mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+    }
 }
