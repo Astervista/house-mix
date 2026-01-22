@@ -1,28 +1,23 @@
 @use "dimensions";
 @use "colors";
 
-:host {
-}
+@mixin datum-type-circle {
 
-.type-circle {
     @include colors.datum-type-colors();
 
     width: 14px;
     height: 14px;
     border-radius: 20px;
     border: 2px solid var(--type-color, var(--mat-sys-on-background));
+    transition: background-color 0.2s;
+
+    &.small {
+        width: 10px;
+        height: 10px;
+    }
 
     &.selected {
         background: var(--type-color, var(--mat-sys-on-background));
     }
-}
 
-.type-container {
-    display: flex;
-    align-items: center;
-    gap: dimensions.$margin-mlarge;
-}
-
-mat-checkbox {
-    padding-bottom: 5px;
 }

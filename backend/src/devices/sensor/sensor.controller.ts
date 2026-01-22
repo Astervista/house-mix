@@ -7,7 +7,7 @@ import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {type SensorEditChanges} from "@common/devices/sensor/rest-classes";
 
-@Controller('device/sensor')
+@Controller('device/sensors')
 export class SensorController {
     
     constructor(

@@ -8,13 +8,6 @@
     flex-grow: 1;
 }
 
-.main-title {
-    font-size: 30px;
-    font-weight: 300;
-    text-align: center;
-    margin: dimensions.$margin-xxlarge 0;
-}
-
 .groups-container {
     display: flex;
     flex-wrap: wrap;
@@ -35,9 +28,8 @@
     padding: dimensions.$margin-large;
 }
 
-
 .device-title {
-    padding: dimensions.$margin-large;
+    padding: dimensions.$margin-xlarge;
     font-size: 20px;
     font-weight: 200;
 }

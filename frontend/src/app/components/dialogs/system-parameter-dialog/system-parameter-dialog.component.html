@@ -1,0 +1,22 @@
+<h2 mat-dialog-title>Add a system parameter</h2>
+<mat-dialog-content>
+    <house-mix-entity-names-inputs
+        [forbiddenNames]="data.forbiddenNames"
+        nameHint="A codename for the parameter"
+        displayNameHint="A name displayed with the parameter">
+
+    </house-mix-entity-names-inputs>
+    <house-mix-datum-input>
+
+    </house-mix-datum-input>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        [disabled]="formGroup == null || formGroup.invalid"
+        (click)="confirm()">add</button>
+</mat-dialog-actions>

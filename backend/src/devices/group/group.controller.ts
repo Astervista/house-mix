@@ -1,10 +1,10 @@
 import {BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {GroupService} from "./group.service";
-import {AddActuatorBody, type ChangeParentChange, DeleteGroupChildFate, type DeleteGroupOptions, type GroupCreateOptions, type GroupEditChanges} from "@common/devices/group/rest-classes";
+import {type ChangeParentChange, DeleteGroupChildFate, type DeleteGroupOptions, type GroupCreateOptions, type GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 
-@Controller('group')
+@Controller('groups')
 export class GroupController {
     
     constructor(private readonly groupService: GroupService) {}
@@ -78,19 +78,6 @@ export class GroupController {
         data: ChangeParentChange
     ): Promise<void> {
         await this.groupService.changeParent(name, data.parent, EntityType.GROUP);
-    }
-    
-    @Post(":name/actuator/:actuatorName")
-    @HttpCode(HttpStatus.OK)
-    public async addActuator(
-        @Param("name")
-        name: string,
-        @Param("actuatorName")
-        actuatorName: string,
-        @Body()
-        options: AddActuatorBody | null
-    ): Promise<void> {
-        await this.groupService.addDevice(name, actuatorName, EntityType.ACTUATOR, options?.move ?? false);
     }
 
 }

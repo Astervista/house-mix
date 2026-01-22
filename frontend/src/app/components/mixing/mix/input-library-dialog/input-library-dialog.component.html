@@ -1,16 +1,22 @@
 <h2 mat-dialog-title>Select an input</h2>
 <mat-dialog-content>
     <div class="option-list">
-        @for (exp of availableExports; track exp) {
+        @for (exp of data; track exp) {
             <div
                 class="export-option"
                 [class.selected]="selectedExport == exp"
-                (click)="selectedExport = exp">{{exp.name}} from {{exp.origin}} {{exp.originId}}
+                (click)="selectedExport = exp">{{ exp.name }} from {{ exp.origin }} {{ exp.originId }}
             </div>
         }
     </div>
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button [mat-dialog-close]="null">Cancel</button>
-    <button mat-button [mat-dialog-close]="selectedExport" [disabled]="selectedExport == null">Select</button>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button mat-button
+            (click)="closeDialog(selectedExport)" [disabled]="selectedExport == null">
+        Select
+    </button>
 </mat-dialog-actions>

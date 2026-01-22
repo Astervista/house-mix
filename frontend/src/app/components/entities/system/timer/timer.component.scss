@@ -1,0 +1,31 @@
+@use "dimensions";
+@use "../../entity";
+@use "graphical-elements";
+
+:host {
+    @include entity.container;
+
+    min-width: 100px;
+    gap: dimensions.$margin-medium;
+    padding-bottom: dimensions.$margin-medium;
+}
+
+
+.display-name {
+    @include entity.name(true)
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    padding: dimensions.$margin-mlarge;
+    gap: dimensions.$margin-medium;
+
+    .timer-type {
+        font-size: 18px;
+    }
+
+    .timer-value {
+        font-weight: 200;
+    }
+}

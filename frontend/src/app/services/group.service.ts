@@ -2,12 +2,12 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {Group} from '@common/devices/group/group';
-import {ChangeParentChange, DeleteGroupOptions, GroupCreateOptions, GroupEditChanges, EntityPathParams} from '@common/devices/group/rest-classes';
+import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, EntityPathParams, DeleteGroupOptions} from '@common/devices/group/rest-classes';
 
 @Injectable({
                 providedIn: 'root'
             })
-@BasePath('/group')
+@BasePath('/groups')
 export class GroupService {
 
     constructor(private httpClient: HttpClient) { }

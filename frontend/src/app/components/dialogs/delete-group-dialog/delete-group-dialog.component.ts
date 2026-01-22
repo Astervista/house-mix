@@ -1,5 +1,5 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatRadioButton, MatRadioGroup} from '@angular/material/radio';
 import {AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {MatError, MatFormField, MatLabel} from '@angular/material/input';
@@ -8,6 +8,7 @@ import {MatButton} from '@angular/material/button';
 import {DeleteGroupChildFate, DeleteGroupOptions} from '@common/devices/group/rest-classes';
 import {GroupInfo, groupsToDialogSelect} from '../change-group-dialog/change-group-dialog.component';
 import {Group} from '@common/devices/group/group';
+import {MatDialogComponent} from '../../../utils/better-mat-dialog';
 
 @Component({
                selector:    'house-mix-delete-group-dialog',
@@ -22,14 +23,14 @@ import {Group} from '@common/devices/group/group';
                    MatOption,
                    MatError,
                    MatDialogActions,
-                   MatDialogClose,
+
                    MatDialogContent,
                    MatButton
                ],
                templateUrl: './delete-group-dialog.component.html',
                styleUrl:    './delete-group-dialog.component.scss'
            })
-export class DeleteGroupDialogComponent {
+export class DeleteGroupDialogComponent extends MatDialogComponent<DeleteGroupDialogData, DeleteGroupOptions>{
 
     protected fateResult: DeleteGroupOptions | null = null;
 
@@ -47,8 +48,10 @@ export class DeleteGroupDialogComponent {
     protected groups: GroupInfo[] = [];
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) public data: DeleteGroupDialogData
+        @Inject(MAT_DIALOG_DATA) data: DeleteGroupDialogData,
+        matDialogRef: MatDialogRef<DeleteGroupDialogComponent, DeleteGroupOptions>
     ) {
+        super(data, matDialogRef);
         this.formGroup.valueChanges.subscribe((values: { orphanFate: DeleteGroupChildFate | null, parentGroup: string | null }) => {
             if (this.data.toDelete.hasChildren) {
                 if (this.formGroup.invalid) {

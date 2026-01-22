@@ -1,6 +1,3 @@
-export class AddActuatorBody {
-    public move?: boolean = false;
-}
 
 export interface GroupCreateOptions {
     parent?: string;
@@ -12,6 +9,7 @@ export interface GroupEditChanges {
     displayName?: string;
 }
 
+// TODO: should be moved
 export interface EntityPathParams {
     name: string;
 }

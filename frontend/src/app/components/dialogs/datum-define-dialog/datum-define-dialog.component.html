@@ -1,0 +1,28 @@
+<h2 mat-dialog-title>{{ data.title ?? 'Define a new output' }}</h2>
+<mat-dialog-content>
+    <mat-form-field >
+        <mat-label>Name</mat-label>
+        <input matInput [formControl]="nameFormControl">
+        <mat-hint>Choose a name</mat-hint>
+        @if (this.nameFormControl.hasError("required")) {
+            <mat-error>The name is required</mat-error>
+        } @else if (this.nameFormControl.hasError("forbiddenName")) {
+            <mat-error>This name is already in use</mat-error>
+        }
+    </mat-form-field>
+    <house-mix-datum-input>
+
+    </house-mix-datum-input>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button mat-button
+            (click)="closeDialog(result)"
+            [disabled]="result == null || nameFormControl.invalid">
+        Define
+    </button>
+</mat-dialog-actions>
+

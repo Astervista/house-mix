@@ -6,48 +6,37 @@ import {DeleteGroupChildFate, DeleteGroupOptions, GroupEditChanges} from "@commo
 import {EntityType} from "@common/devices/constants";
 import {Device} from "@common/devices/device";
 import {SensorService} from "../sensor/sensor.service";
+import {PersistentDataService} from "../../helpers/file/persistent-data-service";
+
 
 const SAVE_FILE = "devices/group.json";
 
 @Injectable()
-export class GroupService {
-    private readonly groupData: Promise<GroupData>;
+export class GroupService extends PersistentDataService<GroupData, GroupDataJSON> {
     
     constructor(
-        private fileService: FileService,
+        fileService: FileService,
         @Inject(forwardRef(() => ActuatorService))
         private actuatorService: ActuatorService,
         @Inject(forwardRef(() => SensorService))
         private sensorService: SensorService
     ) {
-        this.groupData = fileService
-            .readDataFile<GroupDataJSON>(SAVE_FILE)
-            .then((data: GroupDataJSON | null) => {
-                if (data != null) {
-                    return new GroupData(data);
-                } else {
-                    return new GroupData();
-                }
-            });
-    }
-    
-    private saveData(data: GroupData): void {
-        void this.fileService.saveDataFile(SAVE_FILE, data.toJSON());
+        super(fileService, SAVE_FILE, GroupData);
     }
     
     public async getAllGroups(): Promise<Group[]> {
-        return (await this.groupData).groups.slice();
+        return (await this.data).groups.slice();
     }
     
     public async getGroupByName(name: string): Promise<Group | null> {
-        return (await this.groupData).groups.find(a => a.name === name) ?? null;
+        return (await this.data).groups.find(a => a.name === name) ?? null;
     }
     
     public async createGroup(group: Group, parentName: string | null): Promise<void> {
         if ((group.groups.length > 0) || (group.actuators.length > 0) || (group.sensors.length > 0)) {
             throw new BadRequestException(undefined, "A new group cannot be created already with children");
         }
-        const data               = await this.groupData;
+        const data               = await this.data;
         const alreadyExisting    = data.groups.some(otherGroup => otherGroup.name === group.name);
         let parent: Group | null = null;
         if (parentName != null) {
@@ -61,14 +50,14 @@ export class GroupService {
             if (parent != null) {
                 parent.addGroup(group.name);
             }
-            this.saveData(data);
+            this.saveData();
         } else {
             throw new ConflictException();
         }
     }
     
     public async editGroup(oldName: string, edit: GroupEditChanges): Promise<void> {
-        const data        = await this.groupData;
+        const data        = await this.data;
         const newName     = edit.name;
         const groupToEdit = data.groups.find(otherGroup => otherGroup.name === oldName);
         if (groupToEdit == null) {
@@ -88,7 +77,7 @@ export class GroupService {
             if (edit.displayName != null) {
                 groupToEdit.displayName = edit.displayName;
             }
-            this.saveData(data);
+            this.saveData();
         } else {
             throw new ConflictException();
         }
@@ -98,7 +87,7 @@ export class GroupService {
         name: string,
         options: DeleteGroupOptions
     ): Promise<void> {
-        const data          = await this.groupData;
+        const data          = await this.data;
         const groupToDelete = data.groups.find(otherGroup => otherGroup.name === name);
         if (groupToDelete == null) {
             throw new NotFoundException();
@@ -144,11 +133,11 @@ export class GroupService {
         if (parentGroup != null) {
             parentGroup.removeGroup(name);
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async changeParent(entityToMove: string, newParentName: string | null, entityType: EntityType): Promise<void> {
-        const data = await this.groupData;
+        const data = await this.data;
         let elementToMove: Group | Device | null;
         switch (entityType) {
             case EntityType.GROUP: {
@@ -175,7 +164,7 @@ export class GroupService {
             }
             if ((entityType == EntityType.GROUP) && (elementToMove instanceof Group)) {
                 const descendants = elementToMove.getAllDescendants(data.groups);
-                if (descendants.includes(entityToMove)) {
+                if (descendants.includes(newParentName)) {
                     throw new BadRequestException(undefined, "Cannot move a group into one of its own descendants");
                 }
             }
@@ -209,14 +198,14 @@ export class GroupService {
                     break;
             }
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async addDevice(groupName: string, deviceName: string, entityType: EntityType, move: boolean, mustExist: boolean = true): Promise<void> {
         if (entityType == EntityType.GROUP) {
             throw new InternalServerErrorException();
         }
-        const data            = await this.groupData;
+        const data            = await this.data;
         let containingGroup : Group | null;
         if (entityType == EntityType.ACTUATOR) {
             containingGroup = data.groups.find(otherGroup => otherGroup.containsActuator(deviceName)) ?? null;
@@ -255,11 +244,11 @@ export class GroupService {
             }
             targetGroup.addSensor(deviceName);
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async removeDevice(name: string, entityType: EntityType): Promise<void> {
-        const data = await this.groupData;
+        const data = await this.data;
         let elementToRemove: Device | null = null;
         if (entityType == EntityType.ACTUATOR) {
             elementToRemove = await this.actuatorService.getActuatorByName(name);
@@ -282,19 +271,19 @@ export class GroupService {
             }
             await this.sensorService.deleteSensor(name);
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async actuatorRenamed(oldName: string, newName: string): Promise<void> {
-        const data = await this.groupData;
+        const data = await this.data;
         data.groups.forEach(group => { group.actuatorRenamed(oldName, newName) })
-        this.saveData(data);
+        this.saveData();
     }
     
     public async sensorRenamed(oldName: string, newName: string): Promise<void> {
-        const data = await this.groupData;
+        const data = await this.data;
         data.groups.forEach(group => { group.sensorRenamed(oldName, newName) })
-        this.saveData(data);
+        this.saveData();
     }
     
 }

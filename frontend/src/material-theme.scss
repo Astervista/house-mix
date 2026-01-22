@@ -346,18 +346,6 @@ mat-dialog-content.mat-mdc-dialog-content {
     display: flex;
     flex-direction: column;
 }
-.mdc-checkbox .mdc-checkbox__native-control:focus:focus:not(:checked)~.mdc-checkbox__background,
-.mdc-checkbox .mdc-checkbox__native-control:focus:focus:not(:indeterminate)~.mdc-checkbox__background {
-        border: 1px solid var(--mat-sys-primary);
-}
-.mdc-checkbox {
-    .mdc-checkbox__background {
-        border: 1px solid var(--house-mix-text-color-50);
-    }
-}
-.mdc-checkbox__checkmark>.mdc-checkbox__checkmark-path {
-    stroke-width: 1.5px;
-}
 
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {

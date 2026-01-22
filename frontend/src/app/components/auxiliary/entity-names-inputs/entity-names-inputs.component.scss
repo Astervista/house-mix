@@ -8,3 +8,7 @@
         gap: dimensions.$margin-medium;
     }
 }
+
+mat-form-field + div {
+    margin-top: dimensions.$indent-msmall;
+}

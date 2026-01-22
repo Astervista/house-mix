@@ -1,0 +1,80 @@
+<h2 mat-dialog-title>Add a system timer</h2>
+<mat-dialog-content>
+    <house-mix-entity-names-inputs
+        [forbiddenNames]="data.forbiddenNames"
+        [horizontal]="true"
+        nameHint="A codename for the timer"
+        displayNameHint="A name displayed with the timer">
+
+    </house-mix-entity-names-inputs>
+    <div class="second-row">
+        <mat-radio-group
+            [formControl]="typeFormControl">
+            <p>Timer frequency</p>
+            <div class="radio-button-list">
+                <mat-radio-button [value]="TimerType.DAILY">Every day</mat-radio-button>
+                <mat-radio-button [value]="TimerType.HOURLY">Every hour</mat-radio-button>
+                <mat-radio-button [value]="TimerType.MINUTE_INTERVAL">At an interval</mat-radio-button>
+            </div>
+        </mat-radio-group>
+        <div class="number-container">
+            @if (typeFormControl.value != null) {
+                @if (typeFormControl.value == TimerType.DAILY) {
+                    <mat-form-field>
+                        <mat-label>Hour</mat-label>
+                        <input
+                            matInput
+                            type="number"
+                            [formControl]="hourFormControl">
+                        @if (hourFormControl.hasError("max")) {
+                            <mat-error>The hour must be below 24</mat-error>
+                        } @else if (hourFormControl.hasError("min")) {
+                            <mat-error>The hour must be positive</mat-error>
+                        } @else if (hourFormControl.hasError("required")) {
+                            <mat-error>Choose a valid hour</mat-error>
+                        }
+                        <mat-hint>The hour at which the timer gets activated</mat-hint>
+                    </mat-form-field>
+                }
+                <mat-form-field>
+                    <mat-label>{{ typeFormControl.value == TimerType.MINUTE_INTERVAL ? "Interval in minutes" : "Minute" }}</mat-label>
+                    <input
+                        matInput
+                        type="number"
+                        [formControl]="minuteFormControl">
+                    @if (minuteFormControl.hasError("max")) {
+                        <mat-error>{{
+                                typeFormControl.value == TimerType.MINUTE_INTERVAL
+                                    ? "The interval must be less than 1440 minutes (one day)"
+                                    : "The minute must be below 59"
+                            }}
+                        </mat-error>
+                    } @else if (minuteFormControl.hasError("min")) {
+                        <mat-error>The value must be positive</mat-error>
+                    } @else if (minuteFormControl.hasError("required")) {
+                        <mat-error>Choose a valid value</mat-error>
+                    }
+                    <mat-hint>{{
+                            typeFormControl.value == TimerType.MINUTE_INTERVAL
+                                ? "The interval in minutes between timer activations"
+                                : "The minute at which the timer gets activated"
+                        }}
+                    </mat-hint>
+                </mat-form-field>
+            } @else if (typeFormControl.hasError("required")) {
+                <mat-hint>Choose a frequency to continue</mat-hint>
+            }
+        </div>
+    </div>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        [disabled]="formGroup == null || formGroup.invalid"
+        (click)="confirm()">add
+    </button>
+</mat-dialog-actions>

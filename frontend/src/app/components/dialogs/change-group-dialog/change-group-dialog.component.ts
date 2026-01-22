@@ -1,17 +1,20 @@
 import {Component, Inject} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton} from '@angular/material/button';
 import {MatFormField, MatLabel} from '@angular/material/input';
 import {MatOption} from '@angular/material/core';
 import {MatSelect} from '@angular/material/select';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
+import {MatDialogComponent} from '../../../utils/better-mat-dialog';
+
+export type ChangeGroupDialogResult = string | null | TopmostResult;
 
 @Component({
                selector:    'house-mix-change-group-dialog',
                imports:     [
                    MatDialogContent,
                    MatDialogActions,
-                   MatDialogClose,
+
                    MatButton,
                    MatDialogTitle,
                    MatFormField,
@@ -23,15 +26,17 @@ import {FormControl, ReactiveFormsModule} from '@angular/forms';
                templateUrl: './change-group-dialog.component.html',
                styleUrl:    './change-group-dialog.component.scss'
            })
-export class ChangeGroupDialogComponent {
+export class ChangeGroupDialogComponent extends MatDialogComponent<ChangeGroupDialogData, ChangeGroupDialogResult>{
 
-    protected parentGroupFormControl: FormControl<string | null | TopmostResult> = new FormControl<string | null | TopmostResult>(this.data.sonOfGroup ?? TOPMOST);
+    protected parentGroupFormControl: FormControl<ChangeGroupDialogResult> = new FormControl<ChangeGroupDialogResult>(this.data.sonOfGroup ?? TOPMOST);
 
     protected groups: GroupInfo[] = [];
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) public data: ChangeGroupDialogData
+        @Inject(MAT_DIALOG_DATA) data: ChangeGroupDialogData,
+        dialogRef: MatDialogRef<ChangeGroupDialogComponent, ChangeGroupDialogResult>
     ) {
+        super(data, dialogRef);
         this.groups =
             groupsToDialogSelect(data.groupNames, data.groupDisplays)
                 .filter(a => a.name != this.data.self);

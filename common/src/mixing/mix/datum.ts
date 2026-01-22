@@ -168,8 +168,9 @@ export class ExportedDatumJSON extends DatumJSON {
 }
 
 export enum DatumOrigin {
-    EVENT = "EVENT",
     GROUP = "GROUP",
+    SENSOR = "SENSOR",
+    SYSTEM_PARAMETER = "SYSTEM_PARAMETER"
 }
 
 export enum DatumType {

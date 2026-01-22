@@ -1,39 +1,30 @@
 import {Injectable} from "@nestjs/common";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {FileService} from "../../helpers/file/file.service";
+import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 
 const SAVE_FILE = "mixing/mix.json";
 
 @Injectable()
-export class MixService {
+export class MixService extends PersistentDataService<MixData, MixDataJSON>{
     
-    private readonly mixData: Promise<MixData>;
-    
-    constructor(private fileService: FileService) {
-        this.mixData = fileService
-            .readDataFile<MixDataJSON>(SAVE_FILE)
-            .then((data: MixDataJSON | null) => {
-                if (data != null) {
-                    return new MixData(data);
-                } else {
-                    return new MixData();
-                }
-            });
+    constructor(fileService: FileService) {
+        super(fileService, SAVE_FILE, MixData)
     }
     
     public async getAllMixes(): Promise<Mix[]> {
-        return (await this.mixData).mixes.slice();
+        return (await this.data).mixes.slice();
     }
     
     public async getMixById(id: number): Promise<Mix | null> {
-        return (await this.mixData).mixes.find(a => a.id === id) ?? null;
+        return (await this.data).mixes.find(a => a.id === id) ?? null;
     }
     
     public async createMix(mix: Mix): Promise<Mix> {
-        const data = await this.mixData;
+        const data = await this.data;
         mix.id = data.nextId++;
         data.mixes.push(mix);
-        void this.fileService.saveDataFile(SAVE_FILE, data);
+        this.saveData();
         return mix;
     }
     
@@ -54,6 +45,13 @@ class MixData {
             this.mixes = [];
             this.nextId = 0;
         }
+    }
+    
+    public toJSON(): MixDataJSON {
+        return {
+            mixes: this.mixes.map((mix: Mix) => mix.toJSON()),
+            nextId: this.nextId
+        };
     }
     
 }

@@ -5,8 +5,8 @@
     class="children-radio-button"
     [formControl]="topLevelFormControl">
     <div class="radio-button-list">
-        <mat-radio-button class="example-radio-button" [value]="true">Top-level</mat-radio-button>
-        <mat-radio-button class="example-radio-button" [value]="false">Inside a group</mat-radio-button>
+        <mat-radio-button [value]="true">Top-level</mat-radio-button>
+        <mat-radio-button [value]="false">Inside a group</mat-radio-button>
     </div>
 </mat-radio-group>
 @if (this.topLevelFormControl.value == false) {

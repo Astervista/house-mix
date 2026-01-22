@@ -1,17 +1,7 @@
 import {Component} from '@angular/core';
 import {Router} from '@angular/router';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
-import {MatDialog} from '@angular/material/dialog';
-import {
-    AddEntityDialogComponent,
-    AddEntityDialogData,
-    AddEntityDialogResultActuator,
-    AddEntityDialogResultGroup,
-    AddEntityDialogResultSensor,
-    EditEntityDialogResultActuator,
-    EditEntityDialogResultGroup,
-    EditEntityDialogResultSensor
-} from '../dialogs/add-entity-dialog/add-entity-dialog.component';
+import {AddEntityDialogComponent} from '../dialogs/add-entity-dialog/add-entity-dialog.component';
 import {Group} from '@common/devices/group/group';
 import {Actuator} from '@common/devices/actuator/actuator';
 import {Sensor} from '@common/devices/sensor/sensor';
@@ -23,13 +13,14 @@ import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {SNACKBAR_TIMEOUT} from '../../utils/constants';
 import {GroupComponent} from '../entities/devices/group/group.component';
-import {ChangeGroupDialogComponent, ChangeGroupDialogData, TopmostResult} from '../dialogs/change-group-dialog/change-group-dialog.component';
-import {DeleteGroupDialogComponent, DeleteGroupDialogData} from '../dialogs/delete-group-dialog/delete-group-dialog.component';
-import {DeleteGroupChildFate, DeleteGroupOptions} from '@common/devices/group/rest-classes';
+import {ChangeGroupDialogComponent} from '../dialogs/change-group-dialog/change-group-dialog.component';
+import {DeleteGroupDialogComponent} from '../dialogs/delete-group-dialog/delete-group-dialog.component';
+import {DeleteGroupChildFate} from '@common/devices/group/rest-classes';
 import {DeviceService} from '../../services/device.service';
 import {DeviceComponent} from '../entities/devices/device/device.component';
-import {ConfirmDialogComponent, ConfirmDialogData} from '../dialogs/confirm-dialog/confirm-dialog.component';
+import {ConfirmDialogComponent} from '../dialogs/confirm-dialog/confirm-dialog.component';
 import {MatIcon} from '@angular/material/icon';
+import {BetterMatDialog} from '../../utils/better-mat-dialog';
 
 
 @Component({
@@ -58,7 +49,7 @@ export class HomeComponent {
 
     constructor(
         private router: Router,
-        private matDialog: MatDialog,
+        private matDialog: BetterMatDialog,
         private groupService: GroupService,
         private deviceService: DeviceService,
         private snackbar: MatSnackBar
@@ -166,26 +157,29 @@ export class HomeComponent {
                 break;
             }
             case ToolbarAction.SYSTEM: {
-                this.goTo("system")
+                this.goTo('system');
                 break;
             }
             case ToolbarAction.ADD_GROUP: {
-                this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, AddEntityDialogResultGroup>
-                (
-                    AddEntityDialogComponent,
-                    {
-                        data: {
-                            entityType:     EntityType.GROUP,
-                            sonOfGroup:     this.selectedGroup?.name ?? null,
-                            groupNames:     this.allGroups.map(group => group.name),
-                            groupDisplays:  this.allGroups.map(group => group.displayName),
-                            forbiddenNames: this.allGroups.map(group => group.name)
+                this.matDialog
+                    .open(
+                        AddEntityDialogComponent,
+                        {
+                            data: {
+                                entityType:     EntityType.GROUP,
+                                sonOfGroup:     this.selectedGroup?.name ?? null,
+                                groupNames:     this.allGroups.map(group => group.name),
+                                groupDisplays:  this.allGroups.map(group => group.displayName),
+                                forbiddenNames: this.allGroups.map(group => group.name)
+                            }
                         }
-                    }
-                )
+                    )
                     .afterClosed()
                     .subscribe(result => {
                         if (result != null) {
+                            if ((result.type != EntityType.GROUP) || (result.edit)) {
+                                return;
+                            }
                             this
                                 .groupService
                                 .createGroup(
@@ -232,8 +226,7 @@ export class HomeComponent {
             }
             case ToolbarAction.ADD_ACTUATOR:
             case ToolbarAction.ADD_SENSOR: {
-                this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, AddEntityDialogResultActuator | AddEntityDialogResultSensor>
-                (
+                this.matDialog.open(
                     AddEntityDialogComponent,
                     {
                         data: {
@@ -248,6 +241,9 @@ export class HomeComponent {
                     .afterClosed()
                     .subscribe(result => {
                         if (result != null) {
+                            if (result.edit) {
+                                return;
+                            }
                             if (id == ToolbarAction.ADD_ACTUATOR && result.type == EntityType.ACTUATOR) {
                                 this
                                     .deviceService
@@ -341,8 +337,7 @@ export class HomeComponent {
                     if (selectedObject instanceof Group) {
                         const descendants     = selectedObject.getAllDescendants(this.allGroups);
                         const availableGroups = this.allGroups.filter(group => !descendants.includes(group.name));
-                        this.matDialog.open<DeleteGroupDialogComponent, DeleteGroupDialogData, DeleteGroupOptions>
-                        (
+                        this.matDialog.open(
                             DeleteGroupDialogComponent,
                             {
                                 data: {
@@ -435,8 +430,7 @@ export class HomeComponent {
                             });
                     } else if (selectedObject instanceof Actuator) {
 
-                        this.matDialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>
-                        (
+                        this.matDialog.open(
                             ConfirmDialogComponent,
                             {
                                 data: {
@@ -484,8 +478,7 @@ export class HomeComponent {
                             });
                     } else if (selectedObject instanceof Sensor) {
 
-                        this.matDialog.open<ConfirmDialogComponent, ConfirmDialogData, boolean>
-                        (
+                        this.matDialog.open(
                             ConfirmDialogComponent,
                             {
                                 data: {
@@ -539,8 +532,7 @@ export class HomeComponent {
                 const selectedObject = this.selectedObject;
                 if (selectedObject != null) {
                     if (selectedObject instanceof Group) {
-                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultGroup>
-                        (
+                        this.matDialog.open(
                             AddEntityDialogComponent,
                             {
                                 data: {
@@ -559,6 +551,9 @@ export class HomeComponent {
                             .afterClosed()
                             .subscribe(result => {
                                 if (result != null) {
+                                    if (result.type != EntityType.GROUP || !result.edit) {
+                                        return;
+                                    }
                                     this
                                         .groupService
                                         .editGroup(
@@ -603,8 +598,7 @@ export class HomeComponent {
                                 }
                             });
                     } else if (selectedObject instanceof Actuator) {
-                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultActuator>
-                        (
+                        this.matDialog.open(
                             AddEntityDialogComponent,
                             {
                                 data: {
@@ -626,6 +620,9 @@ export class HomeComponent {
                             .afterClosed()
                             .subscribe(result => {
                                 if (result != null) {
+                                    if (result.type != EntityType.ACTUATOR || !result.edit) {
+                                        return;
+                                    }
                                     this
                                         .deviceService
                                         .editActuator(
@@ -680,8 +677,7 @@ export class HomeComponent {
                                 }
                             });
                     } else if (selectedObject instanceof Sensor) {
-                        this.matDialog.open<AddEntityDialogComponent, AddEntityDialogData, EditEntityDialogResultSensor>
-                        (
+                        this.matDialog.open(
                             AddEntityDialogComponent,
                             {
                                 data: {
@@ -703,6 +699,9 @@ export class HomeComponent {
                             .afterClosed()
                             .subscribe(result => {
                                 if (result != null) {
+                                    if (result.type != EntityType.SENSOR || !result.edit) {
+                                        return;
+                                    }
                                     this
                                         .deviceService
                                         .editSensor(
@@ -770,8 +769,7 @@ export class HomeComponent {
                     } else {
                         availableGroups = this.allGroups;
                     }
-                    this.matDialog.open<ChangeGroupDialogComponent, ChangeGroupDialogData, string | null | TopmostResult>
-                    (
+                    this.matDialog.open(
                         ChangeGroupDialogComponent,
                         {
                             data: {
@@ -917,8 +915,8 @@ export class HomeComponent {
 
 enum ToolbarAction {
     DEVICES      = 'devices',
-    MIXES      = 'mixes',
-    SYSTEM      = 'system',
+    MIXES        = 'mixes',
+    SYSTEM       = 'system',
     DELETE       = 'delete',
     EDIT         = 'edit',
     MOVE         = 'move',

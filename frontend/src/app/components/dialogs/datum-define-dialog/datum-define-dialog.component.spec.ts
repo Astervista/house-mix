@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { OutputDefineDialogComponent } from './output-define-dialog.component';
+import { DatumDefineDialogComponent } from './datum-define-dialog.component';
 
 describe('OutputDefineDialogComponent', () => {
-  let component: OutputDefineDialogComponent;
-  let fixture: ComponentFixture<OutputDefineDialogComponent>;
+  let component: DatumDefineDialogComponent;
+  let fixture: ComponentFixture<DatumDefineDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [OutputDefineDialogComponent]
+      imports: [DatumDefineDialogComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(OutputDefineDialogComponent);
+    fixture = TestBed.createComponent(DatumDefineDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

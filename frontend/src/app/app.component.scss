@@ -1,5 +1,14 @@
+@use "dimensions";
+
 :host {
     height: 100%;
     display: flex;
     flex-direction: column;
+}
+
+.main-title {
+    font-size: 30px;
+    font-weight: 300;
+    text-align: center;
+    margin: dimensions.$margin-xxlarge 0;
 }

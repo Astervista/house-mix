@@ -1,0 +1,24 @@
+<span
+    class="display-name"
+    matTooltipPosition="above"
+    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+    [matTooltip]="`Codename: ${ timer.name}`">
+    {{ timer.displayName }}</span>
+<div class="content">
+    <span class="timer-type">
+        {{SYSTEM_TIMER_TYPE_DISPLAY[timer.type]}}
+    </span>
+    <span class="timer-value">
+        @switch (timer.type) {
+            @case (TimerType.DAILY) {
+                At {{ timer.getNextOccurrence() | date:"HH:mm" }}
+            }
+            @case (TimerType.HOURLY) {
+                At {{ timer.getNextOccurrence() | date:":mm"}}
+            }
+            @case (TimerType.MINUTE_INTERVAL) {
+                Every {{ timer.occurrence }} minutes
+            }
+        }
+    </span>
+</div>

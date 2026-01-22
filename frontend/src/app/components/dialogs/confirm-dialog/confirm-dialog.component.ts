@@ -2,9 +2,10 @@ import {Component, Inject} from "@angular/core";
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from "@angular/material/dialog";
 import {MatButton} from "@angular/material/button";
 import {NgClass} from "@angular/common";
+import {MatDialogComponent} from '../../../utils/better-mat-dialog';
 
 export interface ConfirmDialogData extends DefaultDialogData {
-    warn?: boolean; // If true, show confirm button as red (warn)
+    warn?: boolean; // If true, show the confirm button as red (warn)
 }
 
 export interface DefaultDialogData {
@@ -26,17 +27,12 @@ export interface DefaultDialogData {
                ],
                styleUrls:   ["./confirm-dialog.component.scss"]
            })
-export class ConfirmDialogComponent {
+export class ConfirmDialogComponent extends MatDialogComponent<ConfirmDialogData, boolean>{
     constructor(
-        public dialogRef: MatDialogRef<ConfirmDialogComponent, boolean>,
-        @Inject(MAT_DIALOG_DATA) public data: ConfirmDialogData
-    ) {}
-
-    protected onConfirm(): void {
-        this.dialogRef.close(true);
+        @Inject(MAT_DIALOG_DATA) data: ConfirmDialogData,
+        dialogRef: MatDialogRef<ConfirmDialogComponent, boolean>
+    ) {
+        super(data, dialogRef);
     }
 
-    protected onCancel(): void {
-        this.dialogRef.close(false);
-    }
 }

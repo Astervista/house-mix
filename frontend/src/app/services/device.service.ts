@@ -15,39 +15,39 @@ export class DeviceService {
 
     constructor(private httpClient: HttpClient) { }
 
-    @Get("/actuator/", { result: Actuator, resultIsArray: true })
+    @Get("/actuators/", { result: Actuator, resultIsArray: true })
     public getActuators!: () => Promise<Actuator[]>;
 
     @Post<Actuator, null>(
-        '/actuator/',
+        '/actuators/',
         {
             queryParams: {
                 parent: false
             }
         }
     )
-    public createActuator!: (group: Actuator, options?: ActuatorCreateOptions) => Promise<void>;
+    public createActuator!: (actuator: Actuator, options?: ActuatorCreateOptions) => Promise<void>;
 
     @Patch<ActuatorEditChanges, null>(
-        '/actuator/:name'
+        '/actuators/:name'
     )
     public editActuator!: (changes: ActuatorEditChanges, params: EntityPathParams) => Promise<void>;
 
     @Delete<null, null>(
-        '/actuator/:name/'
+        '/actuators/:name/'
     )
     public deleteActuator!: (params: EntityPathParams) => Promise<void>;
 
     @Patch<ChangeParentChange, null>(
-        '/actuator/:name/parent'
+        '/actuators/:name/parent'
     )
     public changeActuatorParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
 
-    @Get("/sensor/", { result: Sensor, resultIsArray: true })
+    @Get("/sensors/", { result: Sensor, resultIsArray: true })
     public getSensors!: () => Promise<Sensor[]>;
 
     @Post<Sensor, null>(
-        '/sensor/',
+        '/sensors/',
         {
             queryParams: {
                 parent: false
@@ -57,17 +57,17 @@ export class DeviceService {
     public createSensor!: (group: Sensor, options?: SensorCreateOptions) => Promise<void>;
 
     @Patch<SensorEditChanges, null>(
-        '/sensor/:name'
+        '/sensors/:name'
     )
     public editSensor!: (changes: SensorEditChanges, params: EntityPathParams) => Promise<void>;
 
     @Delete<null, null>(
-        '/sensor/:name/'
+        '/sensors/:name/'
     )
     public deleteSensor!: (params: EntityPathParams) => Promise<void>;
 
     @Patch<ChangeParentChange, null>(
-        '/sensor/:name/parent'
+        '/sensors/:name/parent'
     )
     public changeSensorParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
 

@@ -7,7 +7,7 @@ import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {type ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
 
-@Controller('device/actuator')
+@Controller('device/actuators')
 export class ActuatorController {
     
     constructor(

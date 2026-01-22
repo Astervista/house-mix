@@ -6,41 +6,32 @@ import {GroupService} from "../group/group.service";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
 import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
+import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 
 const SAVE_FILE = "devices/sensor.json";
 
 @Injectable()
-export class SensorService {
-    
-    private readonly sensorData: Promise<SensorData>;
+export class SensorService extends PersistentDataService<SensorData, SensorDataJSON> {
     
     constructor(
-        private fileService: FileService,
+        fileService: FileService,
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
         private mixService: MixService,
     ) {
-        this.sensorData = fileService
-            .readDataFile<SensorDataJSON>(SAVE_FILE)
-            .then((data: SensorDataJSON | null) => {
-                if (data != null) {
-                    return new SensorData(data);
-                } else {
-                    return new SensorData();
-                }
-            });
+        super(fileService, SAVE_FILE, SensorData);
     }
     
     public async getAllSensors(): Promise<Sensor[]> {
-        return (await this.sensorData).sensors.slice();
+        return (await this.data).sensors.slice();
     }
     
     public async getSensorByName(name: string): Promise<Sensor | null> {
-        return (await this.sensorData).sensors.find(a => a.name === name) ?? null;
+        return (await this.data).sensors.find(a => a.name === name) ?? null;
     }
     
     public async createSensor(sensor: Sensor, parentName: string | null): Promise<void> {
-        const data = await this.sensorData;
+        const data = await this.data;
         const alreadyExisting = data.sensors.some(otherSensor => otherSensor.name === sensor.name);
         if (alreadyExisting) {
             throw new ConflictException();
@@ -50,15 +41,15 @@ export class SensorService {
         }
         data.sensors.push(sensor);
         
-        this.saveData(data)
+        this.saveData()
     }
     
     public async sensorExists(sensorName: string): Promise<boolean> {
-        return (await this.sensorData).sensors.some(a => a.name === sensorName);
+        return (await this.data).sensors.some(a => a.name === sensorName);
     }
     
     public async deleteSensor(name: string): Promise<void> {
-        const data = await this.sensorData;
+        const data = await this.data;
         const sensorToDelete = data.sensors.find(otherSensor => otherSensor.name === name);
         if (sensorToDelete == null) {
             throw new NotFoundException();
@@ -67,11 +58,11 @@ export class SensorService {
         if (toDeleteIndex !== -1) {
             data.sensors.splice(toDeleteIndex, 1);
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async editSensor(oldName: string, edit: SensorEditChanges): Promise<void> {
-        const data        = await this.sensorData;
+        const data        = await this.data;
         const newName     = edit.name;
         const sensorToEdit = data.sensors.find(otherSensor => otherSensor.name === oldName);
         if (sensorToEdit == null) {
@@ -108,14 +99,10 @@ export class SensorService {
                     sensorToEdit.exposes.push(change.datum);
                 }
             }
-            this.saveData(data);
+            this.saveData();
         } else {
             throw new ConflictException();
         }
-    }
-    
-    private saveData(data: SensorData): void {
-        void this.fileService.saveDataFile(SAVE_FILE, data.toJSON());
     }
     
 }

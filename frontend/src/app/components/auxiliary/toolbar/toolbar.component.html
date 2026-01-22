@@ -27,6 +27,7 @@
         @case (ToolBarElementType.BUTTON) {
             <button
                 mat-icon-button
+                matTooltipPosition="above"
                 [matTooltip]="element.hint"
                 [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                 [matMenuTriggerFor]="getMenu(element.id)"

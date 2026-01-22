@@ -1,0 +1,81 @@
+<house-mix-toolbar
+    [elements]="toolbarElements"
+    (elementSelected)="toolbarClick(asToolbarAction($event))">
+
+</house-mix-toolbar>
+<div
+    class="main-content"
+    (click)="this.selected = null">
+    <div class="section-title">
+        <span>
+            System parameters
+        </span>
+        <button
+            mat-icon-button
+            matTooltip="Add a parameter"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+            (click)="addParameter()">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+    <div
+        class="section-content"
+        [class.fixed-height]="parametersLoadingStatus != LoadingStatus.LOADED || this.parameters.length == 0">
+        @if (this.parametersLoadingStatus == LoadingStatus.LOADED) {
+            @if (this.parameters.length > 0) {
+                @for (parameter of this.parameters; track parameter.name) {
+                    <house-mix-parameter
+                        [parameter]="parameter"
+                        [selected]="this.selected == parameter"
+                        (click)="this.selected = parameter; $event.stopPropagation()">
+
+                    </house-mix-parameter>
+                }
+            } @else {
+                <span class="no-items">No parameter has been defined yet</span>
+            }
+        } @else {
+            <house-mix-loading-scrim
+                [loadingStatus]="parametersLoadingStatus">
+
+            </house-mix-loading-scrim>
+        }
+    </div>
+    <div class="section-title">
+        <span>
+            Timers
+        </span>
+        <button
+            mat-icon-button
+            matTooltip="Add a timer"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+            (click)="addTimer()">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+    <div
+        class="section-content"
+        [class.fixed-height]="timersLoadingStatus != LoadingStatus.LOADED || this.timers.length == 0">
+        @if (this.timersLoadingStatus == LoadingStatus.LOADED) {
+            @if (this.timers.length > 0) {
+                @for (timer of this.timers; track timer.name) {
+                    <house-mix-timer
+                        [timer]="timer"
+                        [selected]="this.selected == timer"
+                        (click)="this.selected = timer; $event.stopPropagation()">
+
+                    </house-mix-timer>
+                }
+            } @else {
+                <span class="no-items">No timer has been defined yet</span>
+            }
+        } @else {
+            <house-mix-loading-scrim
+                [loadingStatus]="timersLoadingStatus">
+
+            </house-mix-loading-scrim>
+        }
+    </div>
+</div>

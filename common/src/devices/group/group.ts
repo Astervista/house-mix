@@ -129,9 +129,9 @@ export class Group {
     
     public static fromJSON(JSON: GroupJSON): Group {
         const group = new Group(JSON.name, JSON.displayName);
-        group._groups.push(...JSON.groups);
-        group._actuators.push(...JSON.actuators);
-        group._sensors.push(...JSON.sensors);
+        group._groups.push(...new Set(JSON.groups));
+        group._actuators.push(...new Set(JSON.actuators));
+        group._sensors.push(...new Set(JSON.sensors));
         return group;
     }
 }

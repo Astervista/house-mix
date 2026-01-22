@@ -12,6 +12,14 @@
     </mat-form-field>
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button [mat-dialog-close]="null">Cancel</button>
-    <button mat-button [mat-dialog-close]="parentGroupFormControl.value" [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null)">Move</button>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        (click)="closeDialog(parentGroupFormControl.value)"
+        [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null)">
+        Move
+    </button>
 </mat-dialog-actions>

@@ -84,7 +84,8 @@
     </div>
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button [mat-dialog-close]="null">Cancel</button>
+    <button mat-button
+            (click)="closeDialog()">Cancel</button>
     <button mat-button (click)="confirm()" [disabled]="result == null">Select</button>
 
 </mat-dialog-actions>

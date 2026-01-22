@@ -5,17 +5,17 @@ import {ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, Con
 import {firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
 import {Datum, DatumOrigin, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
-import {MatDialog, MatDialogRef} from '@angular/material/dialog';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
 import {MEASURES, MixUiManager} from './mix-ui-manager';
 import {MatFabButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {DatePipe} from '@angular/common';
-import {ConstantEditDialogComponent, ConstantEditDialogData, ConstantEditDialogResponse} from './constant-edit-dialog/constant-edit-dialog.component';
-import {OutputDefineDialogComponent, OutputDefineDialogData} from './output-define-dialog/output-define-dialog.component';
-import {ELABORATION_NODE_DISPLAY_NAME, ElaborationNodeLibraryItem, getColorVarNameForType} from '../constants';
+import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-dialog.component';
+import {ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType} from '../constants';
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
+import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
+import {BetterMatDialog} from '../../../utils/better-mat-dialog';
 
 
 @Component({
@@ -43,7 +43,7 @@ export class MixComponent implements OnInit {
         private route: ActivatedRoute,
         protected mixService: MixingService,
         private elementRef: ElementRef<HTMLElement>,
-        private matDialog: MatDialog
+        private matDialog: BetterMatDialog
     ) {
         let id: number;
         firstValueFrom(this.route.queryParams)
@@ -69,8 +69,6 @@ export class MixComponent implements OnInit {
             )
             .then(() => {
                 this.availableExports   = [
-                    new ExportedDatum('Date and time', DatumType.DATE_TIME, false, DatumOrigin.EVENT, 1),
-                    new ExportedDatum('Outside light', DatumType.NUMBER, false, DatumOrigin.EVENT, 2),
                     new ExportedDatum('Scene', DatumType.BOOLEAN, false, DatumOrigin.GROUP, 1),
                     new ExportedDatum('Scene', DatumType.TIME, false, DatumOrigin.GROUP, 2)
                 ];
@@ -93,7 +91,7 @@ export class MixComponent implements OnInit {
                           .availableExports
                           .filter(
                               exp => !mix.imports.some(imp => imp.equals(exp)));
-            const dialogRef     = this.matDialog.open<InputLibraryDialogComponent, ExportedDatum[], ExportedDatum>(InputLibraryDialogComponent, {data: unusedExports});
+            const dialogRef     = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
             dialogRef
                 .afterClosed()
                 .subscribe(selectedDatum => {
@@ -108,15 +106,14 @@ export class MixComponent implements OnInit {
 
     protected addNode(): void {
         if (this.mix) {
-            const dialogRef: MatDialogRef<NodeLibraryDialogComponent, ElaborationNodeLibraryItem>
-                      = this.matDialog.open<NodeLibraryDialogComponent, null, ElaborationNodeLibraryItem>(NodeLibraryDialogComponent);
+            const dialogRef = this.matDialog.open(NodeLibraryDialogComponent, {});
             dialogRef.afterClosed().subscribe(result => {
                 if ((result != null) && (this.mix != null)) {
                     let newNode: ElaborationNode;
                     if (!result.special) {
                         newNode = new result.constructor(this.mix.nodes.length);
                     } else {
-                        newNode = new ElaborationNodeNullGuard(this.mix.nodes.length, {dataType: result.datumType})
+                        newNode = new ElaborationNodeNullGuard(this.mix.nodes.length, {dataType: result.datumType});
                     }
                     for (const input of newNode.inputs) {
                         if (!input.nullable) {
@@ -134,7 +131,7 @@ export class MixComponent implements OnInit {
                     this.mix.nodes.push(newNode);
                     this.uiManager.addNode(newNode);
                 }
-            })
+            });
         }
     }
 
@@ -144,8 +141,8 @@ export class MixComponent implements OnInit {
             const dialogRef =
                       this
                           .matDialog
-                          .open<OutputDefineDialogComponent, OutputDefineDialogData, ExportedDatum>(
-                              OutputDefineDialogComponent,
+                          .open(
+                              DatumDefineDialogComponent,
                               {
                                   data: {
                                       forbiddenNames: mix.outputs.map(input => input.name)
@@ -217,22 +214,22 @@ export class MixComponent implements OnInit {
     }
 
     protected editNodeInputConstant(node: ElaborationNode, input: Datum): void {
-        this.editConstant({external: false, node, datum: input})
+        this.editConstant({external: false, node, datum: input});
     }
 
     protected clearNodeInputConstant(node: ElaborationNode, input: Datum): void {
-        this.clearConstant({external: false, node, datum: input})
+        this.clearConstant({external: false, node, datum: input});
     }
 
     protected editExternalOutputConstant(output: Datum): void {
-        this.editConstant({external: true, datum: output})
+        this.editConstant({external: true, datum: output});
     }
 
     protected clearExternalOutputConstant(output: Datum): void {
-        this.clearConstant({external: true, datum: output})
+        this.clearConstant({external: true, datum: output});
     }
 
-    private editConstant(connector: {external: true, datum: Datum} | {external: false, node: ElaborationNode, datum: Datum}): void {
+    private editConstant(connector: { external: true, datum: Datum } | { external: false, node: ElaborationNode, datum: Datum }): void {
         if (this.mix == null) {
             return;
         }
@@ -277,10 +274,10 @@ export class MixComponent implements OnInit {
                     } else {
                         this.mix.connections.push(
                             {
-                                sourceType:         ConnectionSourceType.CONSTANT,
-                                sourceValue:        true,
-                                drainType:          ConnectionDrainType.OUTPUT,
-                                outputName: connector.datum.name
+                                sourceType:  ConnectionSourceType.CONSTANT,
+                                sourceValue: true,
+                                drainType:   ConnectionDrainType.OUTPUT,
+                                outputName:  connector.datum.name
                             }
                         );
                     }
@@ -312,8 +309,8 @@ export class MixComponent implements OnInit {
                                   && a.outputName == connector.datum.name
                         ) as (ConnectionSourceFromConstant & ConnectionDrainToOutput) | undefined;
                 }
-                const dialogRef: MatDialogRef<ConstantEditDialogComponent, ConstantEditDialogResponse>       =
-                          this.matDialog.open<ConstantEditDialogComponent, ConstantEditDialogData, ConstantEditDialogResponse>(
+                const dialogRef =
+                          this.matDialog.open(
                               ConstantEditDialogComponent,
                               {
                                   data: {
@@ -343,10 +340,10 @@ export class MixComponent implements OnInit {
                                     } else {
                                         this.mix?.connections.push(
                                             {
-                                                sourceType:         ConnectionSourceType.CONSTANT,
-                                                sourceValue:        value.value,
-                                                drainType:          ConnectionDrainType.OUTPUT,
-                                                outputName: connector.datum.name
+                                                sourceType:  ConnectionSourceType.CONSTANT,
+                                                sourceValue: value.value,
+                                                drainType:   ConnectionDrainType.OUTPUT,
+                                                outputName:  connector.datum.name
                                             }
                                         );
                                     }
@@ -359,7 +356,7 @@ export class MixComponent implements OnInit {
         }
     }
 
-    private clearConstant(connector: {external: true, datum: Datum} | {external: false, node: ElaborationNode, datum: Datum}): void {
+    private clearConstant(connector: { external: true, datum: Datum } | { external: false, node: ElaborationNode, datum: Datum }): void {
 
         if (this.mix == null) {
             return;
@@ -399,7 +396,7 @@ export class MixComponent implements OnInit {
     protected readonly getColorVarNameForType: (type: DatumType) => string = getColorVarNameForType;
     protected readonly ConnectionSourceType: typeof ConnectionSourceType   = ConnectionSourceType;
     protected readonly DatumType: typeof DatumType                         = DatumType;
-    protected readonly Datum: typeof Datum           = Datum;
-    protected readonly ELABORATION_NODE_DISPLAY_NAME = ELABORATION_NODE_DISPLAY_NAME;
+    protected readonly Datum: typeof Datum                                 = Datum;
+    protected readonly ELABORATION_NODE_DISPLAY_NAME                       = ELABORATION_NODE_DISPLAY_NAME;
 }
 

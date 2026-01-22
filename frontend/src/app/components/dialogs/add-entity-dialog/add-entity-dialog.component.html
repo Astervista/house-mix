@@ -4,7 +4,9 @@
         [horizontal]="this.data.entityType != EntityType.GROUP"
         [originalName]="this.data.edit?.name ?? null"
         [originalDisplayName]="this.data.edit?.displayName ?? null"
-        [forbiddenNames]="this.data.forbiddenNames">
+        [forbiddenNames]="this.data.forbiddenNames"
+        [nameHint]="nameInputHint"
+        [displayNameHint]="displayNameInputHint">
     </house-mix-entity-names-inputs>
     @if (this.data.entityType != EntityType.GROUP) {
         <div class="device-info-container">
@@ -154,12 +156,12 @@
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button
-            [mat-dialog-close]="null">
+        (click)="closeDialog()">
         Cancel
     </button>
     <button
         mat-button
-        [mat-dialog-close]="result"
+        (click)="closeDialog(result)"
         [disabled]="confirmDisabled">
         {{ this.data.edit == null ? 'Create' : 'Edit' }}
     </button>

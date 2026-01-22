@@ -32,9 +32,6 @@ export class DeviceComponent {
         this.onSelectEmitter.emit(this.device);
     }
 
-    constructor(
-    ) {}
-
     public isActuator(device: Device = this.device): device is Actuator {
         return device instanceof Actuator;
     }

@@ -1,0 +1,22 @@
+<span
+    class="display-name"
+    matTooltipPosition="above"
+    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+    [matTooltip]="`Codename: ${ parameter.name}`">
+    {{ parameter.displayName }}</span>
+<div class="row">
+    <span
+        class="type-circle"
+        [class.selected]="this.selected"
+        [style.--type-color]="getColorVarNameForType(parameter.datum.type)">
+    </span>
+    {{ DATUM_TYPE_DISPLAY[parameter.datum.type] }}
+</div>
+<span class="row nullable">
+    {{ parameter.datum.nullable ? "Nullable" : "Non-null" }}
+</span>
+<span class="current-value">
+    <span class="title">Current value</span>
+    <!--TODO: stylize the value -->
+    <span class="value">{{ parameter.value }}</span>
+</span>

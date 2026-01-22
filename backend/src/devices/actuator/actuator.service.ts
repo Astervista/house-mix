@@ -6,41 +6,33 @@ import {GroupService} from "../group/group.service";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
 import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
+import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 
 const SAVE_FILE = "devices/actuator.json";
 
 @Injectable()
-export class ActuatorService {
+export class ActuatorService extends PersistentDataService<ActuatorData, ActuatorDataJSON> {
     
-    private readonly actuatorData: Promise<ActuatorData>;
     
     constructor(
-        private fileService: FileService,
+        fileService: FileService,
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
         private mixService: MixService,
     ) {
-        this.actuatorData = fileService
-            .readDataFile<ActuatorDataJSON>(SAVE_FILE)
-            .then((data: ActuatorDataJSON | null) => {
-                if (data != null) {
-                    return new ActuatorData(data);
-                } else {
-                    return new ActuatorData();
-                }
-            });
+        super(fileService, SAVE_FILE, ActuatorData);
     }
     
     public async getAllActuators(): Promise<Actuator[]> {
-        return (await this.actuatorData).actuators.slice();
+        return (await this.data).actuators.slice();
     }
     
     public async getActuatorByName(name: string): Promise<Actuator | null> {
-        return (await this.actuatorData).actuators.find(a => a.name === name) ?? null;
+        return (await this.data).actuators.find(a => a.name === name) ?? null;
     }
     
     public async createActuator(actuator: Actuator, parentName: string | null): Promise<void> {
-        const data = await this.actuatorData;
+        const data = await this.data;
         const alreadyExisting = data.actuators.some(otherActuator => otherActuator.name === actuator.name);
         if (alreadyExisting) {
             throw new ConflictException();
@@ -50,15 +42,15 @@ export class ActuatorService {
         }
         data.actuators.push(actuator);
         
-        this.saveData(data)
+        this.saveData()
     }
     
     public async actuatorExists(actuatorName: string): Promise<boolean> {
-        return (await this.actuatorData).actuators.some(a => a.name === actuatorName);
+        return (await this.data).actuators.some(a => a.name === actuatorName);
     }
     
     public async deleteActuator(name: string): Promise<void> {
-        const data = await this.actuatorData;
+        const data = await this.data;
         const actuatorToDelete = data.actuators.find(otherActuator => otherActuator.name === name);
         if (actuatorToDelete == null) {
             throw new NotFoundException();
@@ -67,11 +59,11 @@ export class ActuatorService {
         if (toDeleteIndex !== -1) {
             data.actuators.splice(toDeleteIndex, 1);
         }
-        this.saveData(data);
+        this.saveData();
     }
     
     public async editActuator(oldName: string, edit: ActuatorEditChanges): Promise<void> {
-        const data        = await this.actuatorData;
+        const data        = await this.data;
         const newName     = edit.name;
         const actuatorToEdit = data.actuators.find(otherActuator => otherActuator.name === oldName);
         if (actuatorToEdit == null) {
@@ -108,14 +100,10 @@ export class ActuatorService {
                     actuatorToEdit.exposes.push(change.datum);
                 }
             }
-            this.saveData(data);
+            this.saveData();
         } else {
             throw new ConflictException();
         }
-    }
-    
-    private saveData(data: ActuatorData): void {
-        void this.fileService.saveDataFile(SAVE_FILE, data.toJSON());
     }
     
 }

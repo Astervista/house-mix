@@ -1,0 +1,49 @@
+@use "dimensions";
+@use "../../entity";
+@use "graphical-elements";
+
+:host {
+    @include entity.container;
+
+    min-width: 100px;
+    gap: dimensions.$margin-medium;
+    padding-bottom: dimensions.$margin-medium;
+}
+
+
+.display-name {
+    @include entity.name(true)
+}
+
+.type-circle {
+    @include graphical-elements.datum-type-circle;
+}
+
+.row {
+
+    display: flex;
+    align-items: center;
+    margin: 0 dimensions.$margin-medium;
+    padding: dimensions.$margin-medium;
+    gap: dimensions.$indent-msmall
+}
+
+.nullable {
+    font-weight: 200;
+}
+
+.current-value {
+
+    border-top: solid 1px var(--house-mix-entity-border-color);
+    transition:  border-top-color 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    padding: dimensions.$margin-medium;
+    gap: dimensions.$indent-msmall;
+
+    .title {
+        font-weight: 200;
+        flex-grow: 1;
+    }
+
+}

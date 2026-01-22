@@ -22,6 +22,8 @@ export class EntityNamesInputsComponent implements OnInit {
     @Input() public forbiddenNames: string[]           = [];
     @HostBinding("class.horizontal")
     @Input() public horizontal: boolean = false;
+    @Input() public nameHint: string | null = null;
+    @Input() public displayNameHint: string | null = null;
 
     public nameFormControl: FormControl<string | null>        = new FormControl<string | null>(
         null,

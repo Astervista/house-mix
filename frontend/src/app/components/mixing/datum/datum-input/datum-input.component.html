@@ -1,0 +1,32 @@
+<mat-form-field>
+    <mat-label>Data type</mat-label>
+    <mat-select [formControl]="typeFormControl">
+        @if (typeFormControl.value != null) {
+            <mat-select-trigger>
+                <div
+                    class="type-container">
+                            <span class="type-circle small selected"
+                                  [style.--type-color]="getColorVarNameForType(typeFormControl.value)"></span>
+                    {{ DATUM_TYPE_DISPLAY[typeFormControl.value] }}
+                </div>
+            </mat-select-trigger>
+        }
+        @for (type of Object.values(DatumType); track type) {
+            <mat-option [value]="type">
+                <div
+                    class="type-container">
+                        <span class="type-circle"
+                              [class.selected]="typeFormControl.value == type"
+                              [style.--type-color]="getColorVarNameForType(type)"></span>
+                    {{ DATUM_TYPE_DISPLAY[type] }}
+                </div>
+            </mat-option>
+        }
+    </mat-select>
+    @if (typeFormControl.invalid) {
+        <mat-error>
+            You must define a type
+        </mat-error>
+    }
+</mat-form-field>
+<mat-checkbox [formControl]="nullableFormControl">Nullable</mat-checkbox>

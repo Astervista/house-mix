@@ -1,0 +1,22 @@
+@use "dimensions";
+@use "graphical-elements";
+
+:host {
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-mlarge;
+}
+
+.type-circle {
+    @include graphical-elements.datum-type-circle;
+}
+
+.type-container {
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-mlarge;
+}
+
+mat-checkbox {
+    padding-bottom: 5px;
+}

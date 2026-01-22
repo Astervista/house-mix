@@ -3,7 +3,7 @@ import {MixService} from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {Datum} from "@common/mixing/mix/datum";
 
-@Controller('mixing/mix')
+@Controller('mixing/mixes')
 export class MixController {
     
     constructor(private readonly mixService: MixService) {}

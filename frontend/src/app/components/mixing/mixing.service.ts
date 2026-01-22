@@ -11,7 +11,7 @@ export class MixingService {
 
     constructor(private httpClient: HttpClient) { }
 
-    @Get('/mix/id/:id/', { result: Mix, resultIsArray: false })
+    @Get('/mixes/:id/', { result: Mix, resultIsArray: false })
     public getMix!: (pathParams: { id: number }) => Promise<Mix>;
 
 }

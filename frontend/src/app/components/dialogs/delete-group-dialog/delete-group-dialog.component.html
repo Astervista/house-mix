@@ -10,9 +10,9 @@
             class="children-radio-button"
             [formControl]="orphanFateFormControl">
             <div class="radio-button-list">
-                <mat-radio-button class="example-radio-button" [value]="DeleteGroupChildFate.CURRENT_LEVEL">In the group containing the deleted group</mat-radio-button>
-                <mat-radio-button class="example-radio-button" [value]="DeleteGroupChildFate.ROOT_LEVEL">At the root level</mat-radio-button>
-                <mat-radio-button class="example-radio-button" [value]="DeleteGroupChildFate.CHOOSE_WHERE">In another group</mat-radio-button>
+                <mat-radio-button [value]="DeleteGroupChildFate.CURRENT_LEVEL">In the group containing the deleted group</mat-radio-button>
+                <mat-radio-button [value]="DeleteGroupChildFate.ROOT_LEVEL">At the root level</mat-radio-button>
+                <mat-radio-button [value]="DeleteGroupChildFate.CHOOSE_WHERE">In another group</mat-radio-button>
             </div>
         </mat-radio-group>
         @if (this.orphanFateFormControl.value == DeleteGroupChildFate.CHOOSE_WHERE) {
@@ -29,12 +29,15 @@
     }
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button [mat-dialog-close]="null">Cancel</button>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
     <button
         mat-button
         class="confirm"
         [disabled]="fateResult == null"
-        [mat-dialog-close]="fateResult">
+        (click)="closeDialog(fateResult)">
         Delete
     </button>
 </mat-dialog-actions>
