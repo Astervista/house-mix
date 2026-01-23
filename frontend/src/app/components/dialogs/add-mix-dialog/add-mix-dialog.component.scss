@@ -1,4 +1,5 @@
 @use "dimensions";
+@use "../../entities/entity";
 
 .phase-selection {
     display: flex;
@@ -169,6 +170,54 @@
 .choice-list {
     display: flex;
     align-items: center;
-    gap: dimensions.$margin-medium;
+    gap: dimensions.$margin-large;
     padding: dimensions.$margin-medium;
+    position: relative;
+    align-content: space-around;
+    min-height: 80px;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.device-display {
+    @include entity.container;
+
+    cursor: pointer;
+    flex-direction: row;
+    align-items: center;
+    padding: dimensions.$margin-medium dimensions.$margin-mlarge;
+    gap: dimensions.$margin-medium;
+
+    --highlight-color: var(--house-mix-text-color-30);
+    --stroke-color-animation-duration: 0.2s;
+
+    &.group {
+        padding: dimensions.$margin-xlarge;
+    }
+
+    &.selected {
+        --highlight-color: var(--mat-sys-primary);
+    }
+
+    .device-icon {
+        width: 30px;
+        height: 30px;
+    }
+
+    .device-info {
+        display: flex;
+        flex-direction: column;
+        gap: dimensions.$margin-msmall;
+        padding: dimensions.$margin-msmall;
+
+        .name {
+            font-size: 17px;
+            font-weight: 300;
+        }
+
+        .type {
+            font-size: 14px;
+            font-weight: 200;
+        }
+    }
 }

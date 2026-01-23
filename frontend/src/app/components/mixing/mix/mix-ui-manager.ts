@@ -6,7 +6,7 @@ import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mix
 interface Line {
     from: Point;
     to: Point;
-};
+}
 
 export class MixUiManager {
 
@@ -537,7 +537,7 @@ export class MixUiManager {
                     };
                 }
 
-                if ((replacingConnection != null) && (replacingConnection.sourceType == ConnectionSourceType.NODE)) {
+                if (replacingConnection?.sourceType == ConnectionSourceType.NODE) {
                     const sourceNode  = this.mix.nodes.find(otherNode => otherNode.id == replacingConnection.sourceNodeId);
                     const sourceDatum = sourceNode?.outputs.find(output => output.name == replacingConnection.sourceNodeOutputName);
                     if (sourceNode != null && sourceDatum != null) {
@@ -886,7 +886,7 @@ export class MixUiManager {
                 if (newConnection) {
                     this.mix.connections.push(newConnection);
                     this.addConnection(newConnection);
-                    if (this.currentDragging.replacingConnection != null && this.currentDragging.replacingConnection.sourceType == ConnectionSourceType.CONSTANT) {
+                    if (this.currentDragging.replacingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
                         this.mix.connections.splice(this.mix.connections.indexOf(this.currentDragging.replacingConnection), 1);
                         this.removeConnection(this.currentDragging.replacingConnection);
                     }

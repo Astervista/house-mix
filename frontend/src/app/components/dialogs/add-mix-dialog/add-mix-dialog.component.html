@@ -91,20 +91,125 @@
         </span>
         <div class="choice-list">
             @if (showActuators) {
-                <span>element act</span>
-                <span>element act</span>
-                <span>element act</span>
-                <span>element act</span>
+                @if (actuatorsLoadingStatus != LoadingStatus.LOADED) {
+                    <house-mix-loading-scrim
+                        [loadingStatus]="actuatorsLoadingStatus"
+                        (loadingSet)="loadActuators()"
+                        (reload)="loadActuators(true)">
+                    </house-mix-loading-scrim>
+                } @else if (actuators == null || actuators.length == 0) {
+                    <span>No actuators available. This may be because there are no actuators in the system,<br>or because all the actuators already have a mix assigned to them</span>
+                } @else {
+                    @for (actuator of actuators; track actuator.name) {
+                        <div
+                            class="device-display"
+                             [class.selected]="selectedElement == actuator"
+                             (click)="selectedElement = actuator">
+                            <house-mix-dynamic-svg
+                                class="device-icon"
+                                [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[actuator.type]}`">
+                            </house-mix-dynamic-svg>
+                            <div class="device-info">
+                                <span
+                                    class="name"
+                                    matTooltipPosition="above"
+                                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                                    [matTooltip]="`Codename: ${actuator.name}`">{{ actuator.displayName }}</span>
+                                <span
+                                    class="type">{{ ACTUATOR_TYPE_DISPLAY[actuator.type] }}</span>
+                            </div>
+                        </div>
+                    }
+                }
             } @else if (showSensors) {
-                <span>element sens</span>
-                <span>element sens</span>
-                <span>element sens</span>
-                <span>element sens</span>
-            } @else {
-                <span>element group</span>
-                <span>element group</span>
-                <span>element group</span>
-                <span>element group</span>
+                @if (sensorsLoadingStatus != LoadingStatus.LOADED) {
+                    <house-mix-loading-scrim
+                        [loadingStatus]="sensorsLoadingStatus"
+                        (loadingSet)="loadSensors()"
+                        (reload)="loadSensors(true)">
+                    </house-mix-loading-scrim>
+                } @else if (sensors == null || sensors.length == 0) {
+                    <span>No sensors available. This may be because there are no sensors in the system,<br>or because all the sensors already have a mix assigned to them</span>
+                } @else {
+                    @for (sensor of sensors; track sensor.name) {
+                        <div
+                            class="device-display"
+                            [class.selected]="selectedElement == sensor"
+                            (click)="selectedElement = sensor">
+                            <house-mix-dynamic-svg
+                                class="device-icon"
+                                [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[sensor.type]}`">
+                            </house-mix-dynamic-svg>
+                            <div class="device-info">
+                                <span
+                                    class="name"
+                                    matTooltipPosition="above"
+                                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                                    [matTooltip]="`Codename: ${sensor.name}`">{{ sensor.displayName }}</span>
+                                <span
+                                    class="type">{{ SENSOR_TYPE_DISPLAY[sensor.type] }}</span>
+                            </div>
+                        </div>
+                    }
+                }
+            } @else if (selectedPhase == MixPhase.SENSORS) {
+                @if (leftGroupsLoadingStatus != LoadingStatus.LOADED) {
+                    <house-mix-loading-scrim
+                        [loadingStatus]="leftGroupsLoadingStatus"
+                        (loadingSet)="loadGroups(true)"
+                        (reload)="loadGroups(true, true)">
+                    </house-mix-loading-scrim>
+                } @else if (leftGroups == null || leftGroups.length == 0) {
+                    <span>No groups available. This may be because there are no groups in the system,<br>or because all the groups already have a mix assigned to them for the sensor's phase</span>
+                } @else {
+                    @for (group of leftGroups; track group.name) {
+                        <div
+                            class="device-display group"
+                            [class.selected]="selectedElement == group"
+                            (click)="selectedElement = group">
+                            <house-mix-dynamic-svg
+                                class="device-icon"
+                                [src]="`/mixing/group.svg`">
+                            </house-mix-dynamic-svg>
+                            <div class="device-info">
+                                <span
+                                    class="name"
+                                    matTooltipPosition="above"
+                                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                                    [matTooltip]="`Codename: ${group.name}`">{{ group.displayName }}</span>
+                            </div>
+                        </div>
+                    }
+                }
+            } @else if (selectedPhase == MixPhase.ACTUATORS) {
+                @if (rightGroupsLoadingStatus != LoadingStatus.LOADED) {
+                    <house-mix-loading-scrim
+                        [loadingStatus]="rightGroupsLoadingStatus"
+                        (loadingSet)="loadGroups(false)"
+                        (reload)="loadGroups(false, true)">
+                    </house-mix-loading-scrim>
+                } @else if (rightGroups == null || rightGroups.length == 0) {
+                    <span>No groups available. This may be because there are no groups in the system,<br>or because all the groups already have a mix assigned to them for the actuator's phase</span>
+                } @else {
+                    @for (group of rightGroups; track group.name) {
+                        <div
+                            class="device-display group"
+                            [class.selected]="selectedElement == group"
+                            (click)="selectedElement = group">
+                            <house-mix-dynamic-svg
+                                class="device-icon"
+                                [src]="`/mixing/group.svg`">
+                            </house-mix-dynamic-svg>
+                            <div class="device-info">
+                                <span
+                                    class="name"
+                                    matTooltipPosition="above"
+                                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                                    [matTooltip]="`Codename: ${group.name}`">{{ group.displayName }}</span>
+                            </div>
+                        </div>
+                    }
+                }
             }
         </div>
     }
@@ -116,6 +221,7 @@
     </button>
     <button
         mat-button
+        [disabled]="result == null"
         (click)="confirm()">Create
     </button>
 </mat-dialog-actions>

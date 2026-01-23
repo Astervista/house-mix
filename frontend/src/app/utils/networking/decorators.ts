@@ -36,7 +36,9 @@ export function BasePath(path: string) {
         path = `/${path}`;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
     return (constructor: Function): void => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/dot-notation
         constructor.prototype['__basePath'] = path;
     };
 
@@ -48,7 +50,7 @@ function serializeUrlParam(value: unknown): string {
             throw new Error(`Missing parameter`);
         case 'object':
             if (value == null) {
-                throw new Error(`Missing parameter`);
+                return "null"
             }
             if (typeof value.toString == 'function') {
                 // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -142,7 +144,7 @@ export function Get<T>(path: string, options: GetOptions<T>) {
 
             for (const [paramName, paramRequired] of queryParamEntries) {
                 const value = queryParams[paramName];
-                if (value == null) {
+                if (value === undefined) {
                     if (paramRequired) {
                         throw new Error(`Missing query parameter ${paramName}`)
                     }

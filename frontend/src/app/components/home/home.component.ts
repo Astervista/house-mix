@@ -70,8 +70,8 @@ export class HomeComponent {
 
                      deviceService
                          .getSensors()
-                         .then((actuators) => {
-                             this.allSensors.push(...actuators);
+                         .then((sensors) => {
+                             this.allSensors.push(...sensors);
                          })
                  ]
             )

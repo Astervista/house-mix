@@ -1,7 +1,6 @@
 <mat-form-field>
     <mat-label>Codename</mat-label>
     <input matInput placeholder=" " [formControl]="nameFormControl">
-    <!-- TODO: Not only groups -->
     <mat-hint>{{nameHint ?? "A unique codename" }}</mat-hint>
     @if (nameFormControl.hasError('required')) {
         <mat-error>A codename is required</mat-error>

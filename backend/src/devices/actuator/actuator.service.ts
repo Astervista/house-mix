@@ -7,6 +7,7 @@ import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
 import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
+import {GetDevicesOptions} from "@common/devices/rest-classes";
 
 const SAVE_FILE = "devices/actuator.json";
 
@@ -18,13 +19,24 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         fileService: FileService,
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
-        private mixService: MixService,
+        private mixService: MixService
     ) {
         super(fileService, SAVE_FILE, ActuatorData);
     }
     
-    public async getAllActuators(): Promise<Actuator[]> {
-        return (await this.data).actuators.slice();
+    public async getAllActuators(options: GetDevicesOptions = {}): Promise<Actuator[]> {
+        return (await this.data)
+            .actuators
+            .filter(
+                actuator => {
+                    if (options.mix !== undefined) {
+                        if (actuator.mix !== options.mix) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            );
     }
     
     public async getActuatorByName(name: string): Promise<Actuator | null> {
@@ -32,7 +44,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
     }
     
     public async createActuator(actuator: Actuator, parentName: string | null): Promise<void> {
-        const data = await this.data;
+        const data            = await this.data;
         const alreadyExisting = data.actuators.some(otherActuator => otherActuator.name === actuator.name);
         if (alreadyExisting) {
             throw new ConflictException();
@@ -42,7 +54,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         }
         data.actuators.push(actuator);
         
-        this.saveData()
+        this.saveData();
     }
     
     public async actuatorExists(actuatorName: string): Promise<boolean> {
@@ -50,7 +62,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
     }
     
     public async deleteActuator(name: string): Promise<void> {
-        const data = await this.data;
+        const data             = await this.data;
         const actuatorToDelete = data.actuators.find(otherActuator => otherActuator.name === name);
         if (actuatorToDelete == null) {
             throw new NotFoundException();
@@ -63,8 +75,8 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
     }
     
     public async editActuator(oldName: string, edit: ActuatorEditChanges): Promise<void> {
-        const data        = await this.data;
-        const newName     = edit.name;
+        const data           = await this.data;
+        const newName        = edit.name;
         const actuatorToEdit = data.actuators.find(otherActuator => otherActuator.name === oldName);
         if (actuatorToEdit == null) {
             throw new NotFoundException();
@@ -85,7 +97,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
                 actuatorToEdit.zigbeeAddress = edit.zigbeeAddress;
             }
             if (edit.type != null) {
-                actuatorToEdit.type = edit.type
+                actuatorToEdit.type = edit.type;
             }
             if (edit.exposes != null) {
                 const exposeChanges = actuatorToEdit.calculateExposesChanges(edit.exposes.map(expose => Datum.fromJSON(expose)));
@@ -123,10 +135,10 @@ class ActuatorData {
     
     public toJSON(): ActuatorDataJSON {
         return {
-            actuators: this.actuators.map((actuator: Actuator) => actuator.toJSON()),
-        }
+            actuators: this.actuators.map((actuator: Actuator) => actuator.toJSON())
+        };
     }
-
+    
 }
 
 interface ActuatorDataJSON {

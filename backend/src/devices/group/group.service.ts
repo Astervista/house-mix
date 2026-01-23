@@ -2,7 +2,7 @@ import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, 
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {FileService} from "../../helpers/file/file.service";
 import {ActuatorService} from "../actuator/actuator.service";
-import {DeleteGroupChildFate, DeleteGroupOptions, GetGroupOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
+import {DeleteGroupChildFate, DeleteGroupOptions, GetGroupsOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 import {Device} from "@common/devices/device";
 import {SensorService} from "../sensor/sensor.service";
@@ -24,7 +24,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         super(fileService, SAVE_FILE, GroupData);
     }
     
-    public async getAllGroups(options: GetGroupOptions = {}): Promise<Group[]> {
+    public async getAllGroups(options: GetGroupsOptions = {}): Promise<Group[]> {
         return (await this.data)
             .groups
             .filter(group => {

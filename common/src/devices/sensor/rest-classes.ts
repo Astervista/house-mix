@@ -11,7 +11,6 @@ export class SensorCreateOptions {
     public parent?: string;
 }
 
-// TODO: We need validation
 export class SensorEditChanges extends DeviceEditChanges {
     
     @IsOptional()

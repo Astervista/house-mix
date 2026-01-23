@@ -1,11 +1,15 @@
-import {IsArray, IsNotEmpty, Matches, IsOptional, IsEnum, ValidateIf, Transform, IsInt} from "rest-decorators";
+import {IsInt, IsNotEmpty, IsOptional, Matches, Transform, ValidateIf} from "rest-decorators";
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
-export class GetGroupOptions {
+export class GetGroupsOptions {
     
-    @Transform(({ value }) => {
-        if (value === undefined) return undefined; // param not provided
-        if (value === 'null') return null;         // explicit null
+    @Transform(({value}) => {
+        if (value === undefined) {
+            return undefined;
+        } // param not provided
+        if (value === "null") {
+            return null;
+        }         // explicit null
         return Number(value);                      // number
     })
     @ValidateIf((_, value) => value !== null)    // skip validation if null
@@ -13,9 +17,13 @@ export class GetGroupOptions {
     @IsOptional()
     public actuatorMix?: number | null;
     
-    @Transform(({ value }) => {
-        if (value === undefined) return undefined; // param not provided
-        if (value === 'null') return null;         // explicit null
+    @Transform(({value}) => {
+        if (value === undefined) {
+            return undefined;
+        } // param not provided
+        if (value === "null") {
+            return null;
+        }         // explicit null
         return Number(value);                      // number
     })
     @ValidateIf((_, value) => value !== null)    // skip validation if null

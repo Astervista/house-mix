@@ -54,7 +54,12 @@ export class MixingComponent {
                     )
                     .afterClosed()
                     .subscribe(result => {
-
+                        if (result != null) {
+                            // Navigate to /mixing/exit/new/ with the result as query param
+                            void this.router.navigate(['/mixing/edit/new/'], {
+                                queryParams: result
+                            });
+                        }
                     });
                 break;
             }

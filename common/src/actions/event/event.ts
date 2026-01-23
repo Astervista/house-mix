@@ -84,6 +84,8 @@ export class EventDeviceStatusChange extends Event {
     public parseValue(eventPayloadJSON: unknown): unknown {
         let value: unknown;
         switch (this.parsingFunction) {
+            // TODO: Left this here - is it really necessary?
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             case EventDeviceStatusChangeParsingFunction.EXTRACT_ACTION: {
                 value = (eventPayloadJSON as {action: string}).action;
             }

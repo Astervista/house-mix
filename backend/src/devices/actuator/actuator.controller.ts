@@ -6,6 +6,7 @@ import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
+import {GetDevicesOptions} from "@common/devices/rest-classes";
 
 @Controller('device/actuators')
 export class ActuatorController {
@@ -17,8 +18,11 @@ export class ActuatorController {
     
     @Get("")
     @ApiOkResponse({ type: [Array<ActuatorJSON>] })
-    public async getAll(): Promise<ActuatorJSON[]> {
-        const actuators = await this.actuatorService.getAllActuators();
+    public async getAll(
+        @Query()
+        query: GetDevicesOptions
+    ): Promise<ActuatorJSON[]> {
+        const actuators = await this.actuatorService.getAllActuators(query);
         return actuators.map(dev => dev.toJSON());
     }
     

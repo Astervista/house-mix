@@ -229,8 +229,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                     || values.zigbeeAddress == null
                     || this.formGroup.invalid
                     || (
-                        (this.data.edit != null)
-                        && (values.name == this.data.edit.name)
+                        (values.name == this.data.edit?.name)
                         && (values.displayName == this.data.edit.displayName)
                         && (values.actuatorType == this.data.edit.actuatorType)
                         && (values.zigbeeAddress == this.data.edit.zigbeeAddress)
@@ -256,8 +255,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                     || values.zigbeeAddress == null
                     || this.formGroup.invalid
                     || (
-                        (this.data.edit != null)
-                        && (values.name == this.data.edit.name)
+                        (values.name == this.data.edit?.name)
                         && (values.displayName == this.data.edit.displayName)
                         && (values.sensorType == this.data.edit.sensorType)
                         && (values.zigbeeAddress == this.data.edit.zigbeeAddress)

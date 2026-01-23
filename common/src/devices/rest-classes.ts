@@ -1,4 +1,4 @@
-import {IsArray, IsNotEmpty, IsOptional, Matches, Type, ValidateNested} from "rest-decorators";
+import {IsArray, IsInt, IsNotEmpty, IsOptional, Matches, Transform, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {DatumJSON} from "../mixing/mix/datum";
 
 export class DeviceEditChanges {
@@ -24,4 +24,18 @@ export class DeviceEditChanges {
                     })
     @Type(() => DatumJSON)
     public exposes?: DatumJSON[];
+}
+
+export class GetDevicesOptions {
+    
+    @Transform(({ value }) => {
+        if (value === undefined) return undefined; // param not provided
+        if (value === 'null') return null;         // explicit null
+        return Number(value);                      // number
+    })
+    @ValidateIf((_, value) => value !== null)    // skip validation if null
+    @IsInt()
+    @IsOptional()
+    public mix?: number | null;
+    
 }

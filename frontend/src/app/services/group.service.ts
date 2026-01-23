@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {Group} from '@common/devices/group/group';
-import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, EntityPathParams, DeleteGroupOptions} from '@common/devices/group/rest-classes';
+import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, EntityPathParams, DeleteGroupOptions, GetGroupsOptions} from '@common/devices/group/rest-classes';
 
 @Injectable({
                 providedIn: 'root'
@@ -16,10 +16,14 @@ export class GroupService {
         '/',
         {
             result:        Group,
-            resultIsArray: true
+            resultIsArray: true,
+            queryParams: {
+                sensorMix: false,
+                actuatorMix: false
+            }
         }
     )
-    public getAllGroups!: () => Promise<Group[]>;
+    public getAllGroups!: (options?: GetGroupsOptions) => Promise<Group[]>;
 
     @Post<Group, null>(
         '/',

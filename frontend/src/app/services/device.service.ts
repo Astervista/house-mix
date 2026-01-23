@@ -6,6 +6,7 @@ import { ActuatorCreateOptions, ActuatorEditChanges } from '@common/devices/actu
 import { SensorCreateOptions, SensorEditChanges } from '@common/devices/sensor/rest-classes';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {ChangeParentChange, EntityPathParams} from '@common/devices/group/rest-classes';
+import { GetDevicesOptions } from "@common/devices/rest-classes";
 
 @Injectable({
     providedIn: 'root'
@@ -15,8 +16,16 @@ export class DeviceService {
 
     constructor(private httpClient: HttpClient) { }
 
-    @Get("/actuators/", { result: Actuator, resultIsArray: true })
-    public getActuators!: () => Promise<Actuator[]>;
+    @Get(
+        "/actuators/",
+        {
+            result: Actuator,
+            resultIsArray: true,
+            queryParams: {
+                mix: false
+            }
+        })
+    public getActuators!: (options?: GetDevicesOptions) => Promise<Actuator[]>;
 
     @Post<Actuator, null>(
         '/actuators/',
@@ -43,8 +52,15 @@ export class DeviceService {
     )
     public changeActuatorParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
 
-    @Get("/sensors/", { result: Sensor, resultIsArray: true })
-    public getSensors!: () => Promise<Sensor[]>;
+    @Get("/sensors/",
+        {
+            result: Sensor,
+            resultIsArray: true,
+            queryParams: {
+                mix: false
+            }
+        })
+    public getSensors!: (options?: GetDevicesOptions) => Promise<Sensor[]>;
 
     @Post<Sensor, null>(
         '/sensors/',

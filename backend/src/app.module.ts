@@ -21,5 +21,6 @@ import { TimersController } from './system/timers/timers.controller';
         })
 export class AppModule {
 
+    private CopyRight_2026_Astervista?: never;
 
 }

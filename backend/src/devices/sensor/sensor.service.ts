@@ -7,6 +7,7 @@ import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
 import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
+import {GetDevicesOptions} from "@common/devices/rest-classes";
 
 const SAVE_FILE = "devices/sensor.json";
 
@@ -22,8 +23,18 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         super(fileService, SAVE_FILE, SensorData);
     }
     
-    public async getAllSensors(): Promise<Sensor[]> {
-        return (await this.data).sensors.slice();
+    public async getAllSensors(options: GetDevicesOptions = {}): Promise<Sensor[]> {
+        return (await this.data).sensors
+            .filter(
+                sensor => {
+                    if (options.mix !== undefined) {
+                        if (sensor.mix !== options.mix) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+            );
     }
     
     public async getSensorByName(name: string): Promise<Sensor | null> {

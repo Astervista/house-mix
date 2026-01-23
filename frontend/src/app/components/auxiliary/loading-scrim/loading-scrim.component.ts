@@ -33,9 +33,13 @@ export class LoadingScrimComponent {
     @Input() public set loadingStatus(value: LoadingStatus) {
         this.error   = (value === LoadingStatus.ERROR);
         this.visible = (value !== LoadingStatus.LOADED);
+        if (value === LoadingStatus.LOADING) {
+            this.loadingSet.emit();
+        }
     }
 
     @Output() public reload: EventEmitter<void> = new EventEmitter<void>();
+    @Output() public loadingSet: EventEmitter<void> = new EventEmitter<void>();
 
     protected onClick(event: MouseEvent): void {
         if (this.error) {

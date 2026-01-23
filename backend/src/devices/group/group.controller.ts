@@ -1,7 +1,7 @@
 import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {GroupService} from "./group.service";
-import {ChangeParentChange, DeleteGroupChildFate, DeleteGroupOptions, GetGroupOptions, GroupCreateOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
+import {ChangeParentChange, DeleteGroupChildFate, DeleteGroupOptions, GetGroupsOptions, GroupCreateOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 import {UNIQUE_NAME_PATTERN} from "@common/utils/constants";
 
@@ -13,7 +13,7 @@ export class GroupController {
     @Get("/")
     public async getAll(
         @Query()
-        query: GetGroupOptions
+        query: GetGroupsOptions
     ): Promise<GroupJSON[]> {
         const groups = await this.groupService.getAllGroups(query);
         return groups.map(dev => dev.toJSON());

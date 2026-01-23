@@ -6,6 +6,7 @@ import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
+import {GetDevicesOptions} from "@common/devices/rest-classes";
 
 @Controller('device/sensors')
 export class SensorController {
@@ -17,8 +18,11 @@ export class SensorController {
     
     @Get("")
     @ApiOkResponse({ type: [Array<SensorJSON>] })
-    public async getAll(): Promise<SensorJSON[]> {
-        const sensors = await this.sensorService.getAllSensors();
+    public async getAll(
+        @Query()
+        query: GetDevicesOptions
+    ): Promise<SensorJSON[]> {
+        const sensors = await this.sensorService.getAllSensors(query);
         return sensors.map(dev => dev.toJSON());
     }
     
