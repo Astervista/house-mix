@@ -1,6 +1,5 @@
 import {Component} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
-import {MatDatepickerModule} from '@angular/material/datepicker';
 
 @Component({
                selector:    'house-mix-root',

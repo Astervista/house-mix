@@ -1,14 +1,16 @@
-import {IsArray, IsNotEmpty, Matches} from "class-decorators";
+import {IsArray, IsNotEmpty, Matches, IsInt, IsPositive, ValidateIf} from "rest-decorators";
 
 export class Group {
     
     private readonly _groups: string[] = [];
     private readonly _actuators: string[] = [];
     private readonly _sensors: string[] = [];
+    public sensorMix: number | null = null;
+    public actuatorMix: number | null = null;
     
     constructor(
         public name: string,
-        public displayName: string
+        public displayName: string,
     ) {
     }
     
@@ -123,7 +125,9 @@ export class Group {
             displayName: this.displayName,
             groups: this._groups.slice(),
             actuators: this._actuators.slice(),
-            sensors: this._sensors.slice()
+            sensors: this._sensors.slice(),
+            sensorMix: this.sensorMix,
+            actuatorMix: this.actuatorMix
         }
     }
     
@@ -132,6 +136,8 @@ export class Group {
         group._groups.push(...new Set(JSON.groups));
         group._actuators.push(...new Set(JSON.actuators));
         group._sensors.push(...new Set(JSON.sensors));
+        group.sensorMix = JSON.sensorMix;
+        group.actuatorMix = JSON.actuatorMix;
         return group;
     }
 }
@@ -157,6 +163,16 @@ export class GroupJSON {
     @IsArray()
     @Matches(/^[a-z\-0-9_]+$/, { each: true})
     public sensors: string[] = [];
+    
+    @ValidateIf((o: GroupJSON) => o.sensorMix !== null)
+    @IsInt()
+    @IsPositive()
+    public sensorMix: number | null = null;
+    
+    @ValidateIf((o: GroupJSON) => o.actuatorMix !== null)
+    @IsInt()
+    @IsPositive()
+    public actuatorMix: number | null = null;
     
     constructor(name: string, displayName: string) {
         this.name = name;

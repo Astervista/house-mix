@@ -1,4 +1,4 @@
-import {IsDefined, IsPositive, ValidateIf} from "class-decorators";
+import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {Datum, DatumJSON, ExportedDatum, ExportedDatumJSON} from "./datum";
 import {ElaborationNode, ElaborationNodeJSON} from "./elaboration-node";
 
@@ -245,7 +245,7 @@ export class Mix {
         mix.inputs      = mixJson.inputs.map(input => Datum.fromJSON(input));
         mix.outputs     = mixJson.outputs.map(output => Datum.fromJSON(output));
         mix.nodes       = mixJson.nodes.map(node => ElaborationNode.fromJSON(node));
-        mix.connections = mixJson.connections.slice(0);
+        mix.connections = mixJson.connections.map(connection => ConnectionJSON.toConnection(connection));
         mix.imports     = mixJson.imports.map(input => ExportedDatum.fromJSON(input));
         return mix;
     }
@@ -258,13 +258,40 @@ export class MixJSON {
     @IsPositive()
     public id: number | "NEW";
     
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => DatumJSON)
     public inputs: DatumJSON[]  = [];
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => DatumJSON)
     public outputs: DatumJSON[] = [];
     
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => ExportedDatumJSON)
     public imports: ExportedDatumJSON[] = [];
     
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => ElaborationNodeJSON)
     public nodes: ElaborationNodeJSON[] = [];
-    public connections: Connection[]    = [];
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => ConnectionJSON)
+    public connections: ConnectionJSON[]    = [];
     
     constructor(id: number | "NEW") {
         this.id = id;
@@ -314,3 +341,161 @@ export interface ConnectionDrainToNode {
 type ConnectionDrain = ConnectionDrainToOutput | ConnectionDrainToNode
 
 export type Connection = ConnectionSource & ConnectionDrain;
+
+export class ConnectionJSON {
+    
+    @IsEnum(ConnectionSourceType)
+    public sourceType: ConnectionSourceType;
+    
+    @IsEnum(ConnectionDrainType)
+    public drainType: ConnectionDrainType;
+    
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    public inputName?: string;
+    
+    @IsOptional()
+    @IsInt()
+    @IsPositive()
+    public sourceNodeId?: number;
+    
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    public sourceNodeOutputName?: string;
+    
+    @Allow()
+    public sourceValue?: unknown;
+    
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    public outputName?: string;
+    
+    @IsOptional()
+    @IsInt()
+    @IsPositive()
+    public drainNodeId?: number;
+    
+    @IsOptional()
+    @IsString()
+    @IsNotEmpty()
+    public drainNodeInputName?: string;
+    
+    constructor(sourceType: ConnectionSourceType, drainType: ConnectionDrainType) {
+        this.sourceType = sourceType;
+        this.drainType = drainType;
+    }
+    
+    public static toConnection(connectionJSON: ConnectionJSON): Connection {
+        if (ConnectionJSON.isValid(connectionJSON)) {
+            let sourceResult: ConnectionSource;
+            let drainResult: ConnectionDrain;
+            switch (connectionJSON.sourceType) {
+                case ConnectionSourceType.INPUT: {
+                    sourceResult = {
+                        sourceType: ConnectionSourceType.INPUT,
+                        inputName: connectionJSON.inputName
+                    };
+                    break
+                }
+                case ConnectionSourceType.NODE: {
+                    sourceResult = {
+                        sourceType:   ConnectionSourceType.NODE,
+                        sourceNodeId: connectionJSON.sourceNodeId,
+                        sourceNodeOutputName: connectionJSON.sourceNodeOutputName
+                    }
+                    break;
+                }
+                case ConnectionSourceType.CONSTANT: {
+                    sourceResult = {
+                        sourceType: ConnectionSourceType.CONSTANT,
+                        sourceValue: connectionJSON.sourceValue
+                    }
+                    break
+                }
+            }
+            switch (connectionJSON.drainType) {
+                case ConnectionDrainType.OUTPUT: {
+                    drainResult = {
+                        drainType:  ConnectionDrainType.OUTPUT,
+                        outputName: connectionJSON.outputName
+                    };
+                    break;
+                }
+                case ConnectionDrainType.NODE: {
+                    drainResult = {
+                        drainType: ConnectionDrainType.NODE,
+                        drainNodeId: connectionJSON.drainNodeId,
+                        drainNodeInputName: connectionJSON.drainNodeInputName
+                    }
+                    break;
+                }
+            }
+            return {
+                ...sourceResult,
+                ...drainResult
+            }
+        } else {
+            throw new Error("The collection provided is not valid");
+        }
+    }
+    
+    public static isValid(connection: ConnectionJSON): connection is Connection {
+        switch (connection.sourceType) {
+            case ConnectionSourceType.INPUT:
+                if (
+                    connection.sourceValue != undefined ||
+                    connection.sourceNodeId != undefined ||
+                    connection.sourceNodeOutputName != undefined ||
+                    connection.inputName == undefined
+                ) {
+                    return false
+                }
+                break;
+            case ConnectionSourceType.NODE:
+                if (
+                    connection.sourceValue != undefined ||
+                    connection.sourceNodeId == undefined ||
+                    connection.sourceNodeOutputName == undefined ||
+                    connection.inputName != undefined
+                ) {
+                    return false
+                }
+                break;
+            case ConnectionSourceType.CONSTANT:
+                if (
+                    connection.sourceValue == undefined ||
+                    connection.sourceNodeId != undefined ||
+                    connection.sourceNodeOutputName != undefined ||
+                    connection.inputName != undefined
+                ) {
+                    return false
+                }
+                break;
+        }
+        switch (connection.drainType) {
+            case ConnectionDrainType.OUTPUT:
+                if (
+                    connection.drainNodeId != undefined ||
+                    connection.drainNodeInputName != undefined ||
+                    connection.outputName == undefined
+                ) {
+                    return false
+                }
+                break;
+            case ConnectionDrainType.NODE:
+                if (
+                    connection.drainNodeId == undefined ||
+                    connection.drainNodeInputName == undefined ||
+                    connection.outputName != undefined
+                ) {
+                    return false
+                }
+                break;
+        }
+        return true;
+    }
+    
+}

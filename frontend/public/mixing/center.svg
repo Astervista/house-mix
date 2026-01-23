@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <defs>
+        <style>
+            .st0 {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .st0, .st1 {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .st1 {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <circle r="10" cx="50" cy="50" class="st0"></circle>
+    <circle r="27.5" cx="50" cy="50" class="st1 stroke-color-animation"></circle>
+    <circle r="45" cx="50" cy="50" class="st0"></circle>
+</svg>

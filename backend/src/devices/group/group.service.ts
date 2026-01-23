@@ -2,7 +2,7 @@ import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, 
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {FileService} from "../../helpers/file/file.service";
 import {ActuatorService} from "../actuator/actuator.service";
-import {DeleteGroupChildFate, DeleteGroupOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
+import {DeleteGroupChildFate, DeleteGroupOptions, GetGroupOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 import {Device} from "@common/devices/device";
 import {SensorService} from "../sensor/sensor.service";
@@ -24,8 +24,22 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         super(fileService, SAVE_FILE, GroupData);
     }
     
-    public async getAllGroups(): Promise<Group[]> {
-        return (await this.data).groups.slice();
+    public async getAllGroups(options: GetGroupOptions = {}): Promise<Group[]> {
+        return (await this.data)
+            .groups
+            .filter(group => {
+                if (options.actuatorMix !== undefined) {
+                    if (group.actuatorMix !== options.actuatorMix) {
+                        return false;
+                    }
+                }
+                if (options.sensorMix !== undefined) {
+                    if (group.sensorMix !== options.sensorMix) {
+                        return false;
+                    }
+                }
+                return true
+            });
     }
     
     public async getGroupByName(name: string): Promise<Group | null> {

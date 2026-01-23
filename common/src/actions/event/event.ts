@@ -1,5 +1,5 @@
 import {Datum, DatumType} from "../../mixing/mix/datum";
-import {IsPositive, Min} from "class-validator";
+import {IsPositive, Min} from "rest-decorators";
 
 export abstract class Event {
     

@@ -95,7 +95,7 @@ export class SystemComponent {
             case ToolbarAction.DELETE:
                 return this.selected != null;
             case ToolbarAction.DEVICES:
-            case ToolbarAction.MIXES:
+            case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
                 return true;
         }
@@ -111,7 +111,8 @@ export class SystemComponent {
                 this.goTo('home');
                 break;
             }
-            case ToolbarAction.MIXES: {
+            case ToolbarAction.MIXING: {
+                this.goTo('mixing');
                 break;
             }
             case ToolbarAction.SYSTEM: {
@@ -264,7 +265,7 @@ export class SystemComponent {
 
 enum ToolbarAction {
     DEVICES = 'devices',
-    MIXES   = 'mixes',
+    MIXING  = 'mixing',
     SYSTEM  = 'system',
     DELETE  = 'delete'
 }
@@ -280,7 +281,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'instant_mix',
-        id:    ToolbarAction.MIXES,
+        id:    ToolbarAction.MIXING,
         hint:  'Mixing',
         order: 0
     },

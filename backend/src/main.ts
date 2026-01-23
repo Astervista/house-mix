@@ -8,7 +8,12 @@ async function bootstrap(): Promise<void> {
         logger: new ConsoleLogger()
     });
     
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(new ValidationPipe(
+        {
+            transform: true,
+            whitelist: true,
+        }
+    ));
   
     app.enableCors({
                      origin: 'http://localhost:4201',

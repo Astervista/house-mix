@@ -1,8 +1,9 @@
-import {BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {GroupService} from "./group.service";
-import {type ChangeParentChange, DeleteGroupChildFate, type DeleteGroupOptions, type GroupCreateOptions, type GroupEditChanges} from "@common/devices/group/rest-classes";
+import {ChangeParentChange, DeleteGroupChildFate, DeleteGroupOptions, GetGroupOptions, GroupCreateOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
+import {UNIQUE_NAME_PATTERN} from "@common/utils/constants";
 
 @Controller('groups')
 export class GroupController {
@@ -10,8 +11,11 @@ export class GroupController {
     constructor(private readonly groupService: GroupService) {}
     
     @Get("/")
-    public async getAll(): Promise<GroupJSON[]> {
-        const groups = await this.groupService.getAllGroups();
+    public async getAll(
+        @Query()
+        query: GetGroupOptions
+    ): Promise<GroupJSON[]> {
+        const groups = await this.groupService.getAllGroups(query);
         return groups.map(dev => dev.toJSON());
     }
     
@@ -65,9 +69,20 @@ export class GroupController {
         @Param('name')
         name: string,
         @Body()
-        options: DeleteGroupOptions | null
+        options: unknown
     ): Promise<void> {
-        await this.groupService.deleteGroup(name, options ?? {fate: DeleteGroupChildFate.CURRENT_LEVEL});
+        let cleanOptions: DeleteGroupOptions;
+        if (options != null) {
+            validateDeleteGroupOptions(options);
+            if (options.fate == DeleteGroupChildFate.CHOOSE_WHERE) {
+                cleanOptions = {fate: DeleteGroupChildFate.CHOOSE_WHERE, parent: options.parent};
+            } else {
+                cleanOptions = {fate: options.fate};
+            }
+        } else {
+            cleanOptions = {fate: DeleteGroupChildFate.CURRENT_LEVEL};
+        }
+        await this.groupService.deleteGroup(name, cleanOptions);
     }
     
     @Patch("/:name/parent")
@@ -81,3 +96,38 @@ export class GroupController {
     }
 
 }
+
+function validateDeleteGroupOptions(obj: unknown): asserts obj is DeleteGroupOptions {
+    if (typeof obj !== 'object' || obj === null) {
+        throw new BadRequestException("Body must be an object");
+    }
+    
+    const o = obj as Record<string, unknown>;
+    
+    if (o["fate"] === DeleteGroupChildFate.CHOOSE_WHERE) {
+        if (typeof o["parent"] !== 'string') {
+            throw new BadRequestException("Moving the orphans to a specific group requires a parent to be specified");
+        }
+        if (!UNIQUE_NAME_PATTERN.test(o["parent"])) {
+            throw new BadRequestException("The new parent name is not a valid unique identifier");
+        }
+        return;
+    } else if (
+        o["fate"] === DeleteGroupChildFate.CURRENT_LEVEL ||
+        o["fate"] === DeleteGroupChildFate.ROOT_LEVEL
+    ) {
+        if (o["parent"] !== undefined) {
+            if (o["fate"] === DeleteGroupChildFate.CURRENT_LEVEL) {
+                throw new BadRequestException("Moving the orphans to the current level cannot have a new parent set, because it's determined by the current level");
+            } else {
+                throw new BadRequestException("When moving the orphans to root, parent cannot be set, since the root is not a group");
+            }
+        }
+        return;
+    } else if (
+        o["fate"] !== null
+    ) {
+        throw new BadRequestException("Invalid fate");
+    }
+}
+

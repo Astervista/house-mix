@@ -1,15 +1,20 @@
 import {ActuatorType} from "./actuator";
-import {DatumJSON} from "../../mixing/mix/datum";
+import {IsEnum, IsNotEmpty, IsOptional, Matches} from "rest-decorators";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
+import {DeviceEditChanges} from "../rest-classes";
 
-export interface ActuatorCreateOptions {
-    parent?: string;
+export class ActuatorCreateOptions {
+    
+    @IsOptional()
+    @IsNotEmpty()
+    @Matches(UNIQUE_NAME_PATTERN)
+    public parent?: string;
 }
 
-// TODO: We need validation
-export interface ActuatorEditChanges {
-    name?: string;
-    displayName?: string;
-    zigbeeAddress?: string;
-    type?: ActuatorType;
-    exposes?: DatumJSON[];
+export class ActuatorEditChanges extends DeviceEditChanges {
+    
+    @IsOptional()
+    @IsEnum(ActuatorType)
+    public type?: ActuatorType;
+    
 }

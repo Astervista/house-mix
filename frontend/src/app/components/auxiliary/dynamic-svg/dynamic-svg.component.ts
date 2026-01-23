@@ -1,4 +1,4 @@
-import {Component, HostBinding, Input, ViewEncapsulation} from '@angular/core';
+import {Component, HostBinding, Input} from '@angular/core';
 import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
 import {HttpClient} from '@angular/common/http';
 import {catchError, of} from 'rxjs';

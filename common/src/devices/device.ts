@@ -1,4 +1,4 @@
-import {IsNotEmpty, Matches} from "class-decorators";
+import {IsArray, IsNotEmpty, Matches, Type, ValidateNested} from "rest-decorators";
 import {Datum, DatumChange, DatumChangeType, DatumJSON} from "../mixing/mix/datum";
 
 export class Device {
@@ -9,24 +9,24 @@ export class Device {
     }
     
     public calculateExposesChanges(newExposes: Datum[]): DatumChange[] {
-        const changes: { change: DatumChangeType, datum: Datum }[] = [];
+        const changes: DatumChange[] = [];
         for (const oldExpose of this.exposes) {
             const newVersion = newExposes.find(a => a.name === oldExpose.name);
             if (newVersion == null) {
-                changes.push({change: DatumChangeType.DELETED, datum: oldExpose});
+                changes.push(new DatumChange( DatumChangeType.DELETED,  oldExpose));
             } else {
                 if (newVersion.type !== oldExpose.type || newVersion.nullable !== oldExpose.nullable) {
-                    changes.push({change: DatumChangeType.DELETED, datum: oldExpose});
-                    changes.push({change: DatumChangeType.NEW, datum: newVersion});
+                    changes.push(new DatumChange( DatumChangeType.DELETED,  oldExpose));
+                    changes.push(new DatumChange( DatumChangeType.NEW,  newVersion));
                 }
             }
         }
         for (const newExpose of newExposes) {
             if (!this.exposes.some(a => a.name === newExpose.name)) {
-                changes.push({change: DatumChangeType.NEW, datum: newExpose});
+                changes.push(new DatumChange( DatumChangeType.NEW,newExpose));
             }
         }
-        return changes;
+        return changes
     }
     
     public toJSON(): DeviceJSON {
@@ -56,6 +56,11 @@ export class DeviceJSON {
     @IsNotEmpty()
     public displayName: string;
     
+    @IsArray()
+    @ValidateNested({
+        each: true
+    })
+    @Type(() => DatumJSON)
     public exposes: DatumJSON[] = [];
     
     constructor(zigbeeAddress: string, name: string, displayName: string) {

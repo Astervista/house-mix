@@ -1,4 +1,4 @@
-import {Body, Controller, Delete, Get, Param, Post} from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, Param, Post} from "@nestjs/common";
 import {SystemTimer, SystemTimerJSON} from "@common/system/timer/system-timer";
 import {TimersService} from "./timers.service";
 
@@ -24,6 +24,9 @@ export class TimersController {
         @Body()
         data: SystemTimerJSON
     ): Promise<void> {
+        if (!SystemTimer.checkOccurrence(data.occurrence, data.type)) {
+            throw new BadRequestException("The occurrence is out of range for the chosen type")
+        }
         await this.timersService.createTimer(SystemTimer.fromJSON(data));
     }
     

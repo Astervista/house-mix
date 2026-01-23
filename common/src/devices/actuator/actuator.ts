@@ -1,8 +1,9 @@
 import {Device, DeviceJSON} from "../device";
 import {Datum} from "../../mixing/mix/datum";
+import {IsEnum, IsInt, IsPositive, ValidateIf} from "rest-decorators";
 
 export class Actuator extends Device {
-
+    
     public mix: number | null = null;
     
     constructor(
@@ -39,17 +40,20 @@ export class Actuator extends Device {
     }
 }
 
-export class ActuatorJSON extends DeviceJSON {
-    
-    // TODO: Checking
-    public mix: number | null = null;
-    
-    public type: string = ActuatorType.UNKNOWN;
-    
-}
-
 export enum ActuatorType {
     BULB = "BULB",
     STRIP = "STRIP",
     UNKNOWN = "UNKNOWN",
+}
+
+export class ActuatorJSON extends DeviceJSON {
+    
+    @ValidateIf((o: ActuatorJSON) => o.mix !== null)
+    @IsInt()
+    @IsPositive()
+    public mix: number | null = null;
+    
+    @IsEnum(ActuatorType)
+    public type: string = ActuatorType.UNKNOWN;
+    
 }

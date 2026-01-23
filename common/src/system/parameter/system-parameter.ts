@@ -1,4 +1,5 @@
 import {Datum, DatumJSON} from "../../mixing/mix/datum";
+import {IsNotEmpty, ValidateNested, Type, Allow} from "rest-decorators";
 
 export class SystemParameter {
     
@@ -50,12 +51,14 @@ export class SystemParameter {
 
 export class SystemParameterJSON {
     
-    //TODO: Type checking
-    
+    @IsNotEmpty()
     public displayName: string;
     
+    @ValidateNested()
+    @Type(() => DatumJSON)
     public datum: DatumJSON;
     
+    @Allow()
     public value: unknown;
     
     constructor(displayName: string, datum: DatumJSON, value: unknown) {

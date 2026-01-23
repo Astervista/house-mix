@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist-fe",
     "paths": {
-      "class-decorators": ["./src/decorators/decorators-mock.ts"]
+      "rest-decorators": ["./src/decorators/decorators-mock.ts"]
     }
   }
 }

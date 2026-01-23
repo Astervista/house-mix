@@ -153,7 +153,8 @@ export class HomeComponent {
             case ToolbarAction.DEVICES: {
                 break;
             }
-            case ToolbarAction.MIXES: {
+            case ToolbarAction.MIXING: {
+                this.goTo('mixing');
                 break;
             }
             case ToolbarAction.SYSTEM: {
@@ -915,7 +916,7 @@ export class HomeComponent {
 
 enum ToolbarAction {
     DEVICES      = 'devices',
-    MIXES        = 'mixes',
+    MIXING       = 'mixing',
     SYSTEM       = 'system',
     DELETE       = 'delete',
     EDIT         = 'edit',
@@ -936,7 +937,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'instant_mix',
-        id:    ToolbarAction.MIXES,
+        id:    ToolbarAction.MIXING,
         hint:  'Mixing',
         order: 0
     },

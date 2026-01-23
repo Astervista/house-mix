@@ -1,1 +1,3 @@
-export {IsNotEmpty, Matches, IsPositive, IsDefined, ValidateIf, IsArray} from "class-validator";
+export * from "class-validator";
+export * from "class-transformer";
+

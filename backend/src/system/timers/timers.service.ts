@@ -2,7 +2,6 @@ import {Injectable, NotFoundException} from "@nestjs/common";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {SystemTimer, SystemTimerJSON} from "@common/system/timer/system-timer";
 import {FileService} from "../../helpers/file/file.service";
-import {SystemParameter} from "@common/system/parameter/system-parameter";
 
 const SAVE_FILE = "system/timers.json";
 

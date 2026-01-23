@@ -2,10 +2,10 @@ import {Body, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Qu
 import {SensorService} from "./sensor.service";
 import {Sensor, SensorJSON} from "@common/devices/sensor/sensor";
 import { ApiOkResponse } from '@nestjs/swagger';
-import type {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest-classes";
+import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest-classes";
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
-import {type SensorEditChanges} from "@common/devices/sensor/rest-classes";
+import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
 
 @Controller('device/sensors')
 export class SensorController {

@@ -1,15 +1,20 @@
 import {SensorType} from "./sensor";
-import {DatumJSON} from "../../mixing/mix/datum";
+import {IsEnum, IsNotEmpty, IsOptional, Matches} from "rest-decorators";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
+import {DeviceEditChanges} from "../rest-classes";
 
-export interface SensorCreateOptions {
-    parent?: string;
+export class SensorCreateOptions {
+    
+    @IsOptional()
+    @IsNotEmpty()
+    @Matches(UNIQUE_NAME_PATTERN)
+    public parent?: string;
 }
 
 // TODO: We need validation
-export interface SensorEditChanges {
-    name?: string;
-    displayName?: string;
-    zigbeeAddress?: string;
-    type?: SensorType;
-    exposes?: DatumJSON[];
+export class SensorEditChanges extends DeviceEditChanges {
+    
+    @IsOptional()
+    @IsEnum(SensorType)
+    public type?: SensorType;
 }

@@ -1,7 +1,6 @@
 import {Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post} from "@nestjs/common";
 import {MixService} from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
-import {Datum} from "@common/mixing/mix/datum";
 
 @Controller('mixing/mixes')
 export class MixController {

@@ -1,0 +1,121 @@
+<h2 mat-dialog-title>Create a new mix</h2>
+<mat-dialog-content>
+    <div class="phase-selection">
+        <div
+            class="first-half-container"
+            [class.selected]="selectedPhase == MixPhase.SENSORS"
+            (click)="selectedPhase = MixPhase.SENSORS">
+            <house-mix-dynamic-svg
+                class="sensor-icon"
+                src="devices/sensors/sensor.svg">
+            </house-mix-dynamic-svg>
+            <svg class="arrow" viewBox="0 0 50 30">
+                <path class="arrow-path" d="M5 15h39 m-9-10l10 10l-10 10"></path>
+            </svg>
+        </div>
+        <div
+            class="center-container selected"
+            [class.selected-left]="selectedPhase != MixPhase.ACTUATORS"
+            [class.selected-right]="selectedPhase != MixPhase.SENSORS"
+            (click)="selectedPhase = MixPhase.CENTER">
+            <house-mix-dynamic-svg
+                class="sensor-icon"
+                src="mixing/center.svg">
+            </house-mix-dynamic-svg>
+        </div>
+        <div
+            class="second-half-container"
+            [class.selected]="selectedPhase == MixPhase.ACTUATORS"
+            (click)="selectedPhase = MixPhase.ACTUATORS">
+            <svg class="arrow" viewBox="0 0 50 30">
+                <path class="arrow-path" d="M5 15h39 m-9-10l10 10l-10 10"></path>
+            </svg>
+            <house-mix-dynamic-svg
+                class="sensor-icon"
+                src="devices/actuators/actuator.svg">
+            </house-mix-dynamic-svg>
+        </div>
+    </div>
+    <p class="phase-description">
+        @switch (selectedPhase) {
+            @case (MixPhase.SENSORS) {
+                Create a mix between the sensors and the center, to process sensor data
+            }
+            @case (MixPhase.CENTER) {
+                Create a mix in the center
+            }
+            @case (MixPhase.ACTUATORS) {
+                Create a mix between the center and the actuator, to generate data for the actuators
+            }
+        }
+    </p>
+    @if (selectedPhase != MixPhase.CENTER) {
+        <div class="entity-selection">
+            <div class="box"
+                 [class.disabled]="selectedPhase != MixPhase.SENSORS"
+                 [class.selected]="selectedPhase == MixPhase.SENSORS && selectedTarget == MixTarget.DEVICE"
+                 (click)="selectedTarget = MixTarget.DEVICE">
+                <house-mix-dynamic-svg
+                    class="sensor-icon"
+                    src="devices/sensors/sensor.svg">
+                </house-mix-dynamic-svg>
+            </div>
+            <div class="box"
+                 [class.selected]="selectedTarget == MixTarget.GROUP"
+                 (click)="selectedTarget = MixTarget.GROUP">
+                <house-mix-dynamic-svg
+                    class="sensor-icon"
+                    src="mixing/group.svg">
+                </house-mix-dynamic-svg>
+            </div>
+            <div class="box"
+                 [class.disabled]="selectedPhase != MixPhase.ACTUATORS"
+                 [class.selected]="selectedPhase == MixPhase.ACTUATORS && selectedTarget == MixTarget.DEVICE"
+                 (click)="selectedTarget = MixTarget.DEVICE">
+                <house-mix-dynamic-svg
+                    class="sensor-icon"
+                    src="devices/actuators/actuator.svg">
+                </house-mix-dynamic-svg>
+            </div>
+        </div>
+        @let showSensors = selectedTarget == MixTarget.DEVICE && selectedPhase == MixPhase.SENSORS;
+        @let showActuators = selectedTarget == MixTarget.DEVICE && selectedPhase == MixPhase.ACTUATORS;
+        <span class="choice-description">
+            @if (showActuators) {
+                Available actuators
+            } @else if (showSensors) {
+                Available sensors
+            } @else {
+                Available groups
+            }
+        </span>
+        <div class="choice-list">
+            @if (showActuators) {
+                <span>element act</span>
+                <span>element act</span>
+                <span>element act</span>
+                <span>element act</span>
+            } @else if (showSensors) {
+                <span>element sens</span>
+                <span>element sens</span>
+                <span>element sens</span>
+                <span>element sens</span>
+            } @else {
+                <span>element group</span>
+                <span>element group</span>
+                <span>element group</span>
+                <span>element group</span>
+            }
+        </div>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        (click)="confirm()">Create
+    </button>
+</mat-dialog-actions>

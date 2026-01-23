@@ -19,7 +19,7 @@
             "@common/*": [
                 "../common/dist/*"
             ],
-            "class-decorators": [
+            "rest-decorators": [
                 "../common/dist/decorators/decorators-mock.js"
             ]
         },

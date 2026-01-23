@@ -16,7 +16,7 @@
     "baseUrl": "./",
     "paths": {
       "@common/*": ["../common/src/*"],
-      "class-decorators": ["../common/src/decorators/decorators"]
+      "rest-decorators": ["../common/src/decorators/decorators"]
     },
     "incremental": true,
     "skipLibCheck": true,

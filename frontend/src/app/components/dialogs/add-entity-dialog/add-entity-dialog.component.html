@@ -40,16 +40,18 @@
                             </mat-select-trigger>
                         }
                         @for (type of Object.values(ActuatorType); track type) {
+                            @if (type != ActuatorType.UNKNOWN) {
                             <mat-option [value]="type">
-                                <div class="device-type-container">
-                                    <house-mix-dynamic-svg
-                                        class="device-type-icon"
-                                        [class.selected]="actuatorTypeFormControl.value == type"
-                                        [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[type]}`">
-                                    </house-mix-dynamic-svg>
-                                    <span>{{ ACTUATOR_TYPE_DISPLAY[type] }}</span>
-                                </div>
-                            </mat-option>
+                                    <div class="device-type-container">
+                                        <house-mix-dynamic-svg
+                                            class="device-type-icon"
+                                            [class.selected]="actuatorTypeFormControl.value == type"
+                                            [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[type]}`">
+                                        </house-mix-dynamic-svg>
+                                        <span>{{ ACTUATOR_TYPE_DISPLAY[type] }}</span>
+                                    </div>
+                                </mat-option>
+                            }
                         }
                     </mat-select>
                     @if (actuatorTypeFormControl.hasError('required')) {

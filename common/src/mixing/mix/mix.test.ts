@@ -10,29 +10,35 @@ describe("Composition", () => {
                 inputs:      [
                     {
                         type: DatumType.NUMBER,
-                        name: "discount"
+                        name: "discount",
+                        nullable: false,
                     },
                     {
                         type: DatumType.NUMBER,
-                        name: "costPerHour"
+                        name: "costPerHour",
+                        nullable: false,
                     },
                     {
                         type: DatumType.NUMBER,
-                        name: "time"
+                        name: "time",
+                        nullable: false,
                     }
                 ],
                 outputs:     [
                     {
                         type: DatumType.NUMBER,
-                        name: "pay"
+                        name: "pay",
+                        nullable: false,
                     },
                     {
                         type: DatumType.NUMBER,
-                        name: "time"
+                        name: "time",
+                        nullable: false,
                     },
                     {
                         type: DatumType.NUMBER,
-                        name: "VAT"
+                        name: "VAT",
+                        nullable: false,
                     }
                 ],
                 imports: [],

@@ -1,0 +1,174 @@
+@use "dimensions";
+
+.phase-selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: dimensions.$indent-msmall;
+    --highlight-color: var(--house-mix-text-color-30);
+    --stroke-color-animation-duration: 0.2s;
+
+    house-mix-dynamic-svg {
+        width: 50px;
+        height: 50px;
+    }
+
+    .second-half-container,
+    .center-container,
+    .first-half-container {
+        display: flex;
+        align-items: center;
+        padding: dimensions.$margin-xlarge;
+        cursor: pointer;
+
+        > .arrow {
+            margin: 0 30px;
+            width: 50px;
+            .arrow-path {
+                stroke: var(--house-mix-text-color-50);
+                fill: none;
+                stroke-width: 2;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+                transition: stroke-width 0.2s ease-in-out, stroke 0.2s;
+            }
+        }
+
+        &.selected {
+            --highlight-color: var(--mat-sys-primary);
+
+            >.arrow .arrow-path {
+                stroke:  var(--mat-sys-primary);
+                stroke-width: 3;
+            }
+        }
+    }
+
+    .first-half-container {
+
+        border-top-left-radius: 5px;
+        border-bottom-left-radius: 5px;
+        border: solid 3px transparent;
+        border-right-width: 0;
+
+        &.selected {
+            border-top-color: var(--mat-sys-primary);
+            border-left-color: var(--mat-sys-primary);
+            border-bottom-color: var(--mat-sys-primary);
+        }
+
+    }
+
+    .center-container {
+
+        border: solid 3px transparent;
+        border-top-color: var(--mat-sys-primary);
+        border-bottom-color: var(--mat-sys-primary);
+        border-left-width: 0;
+        border-right-width: 0;
+        padding: 0;
+
+        house-mix-dynamic-svg {
+            margin: dimensions.$margin-xlarge;
+        }
+
+        &.selected-left {
+            border-right-color: var(--mat-sys-primary);
+            border-right-width: 3px;
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+            padding-left: 3px;
+        }
+
+        &.selected-right {
+            border-left-color: var(--mat-sys-primary);
+            border-left-width: 3px;
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+            padding-right: 3px;
+        }
+
+        &.selected-left.selected-right {
+            padding: 0;
+        }
+
+
+    }
+
+    .second-half-container {
+
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+        border: solid 3px transparent;
+        border-left-width: 0;
+
+        &.selected {
+            border-top-color: var(--mat-sys-primary);
+            border-right-color: var(--mat-sys-primary);
+            border-bottom-color: var(--mat-sys-primary);
+        }
+
+
+    }
+
+}
+
+.phase-description {
+    align-self: center;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 500px;
+    min-height: 50px;
+}
+
+.entity-selection {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    margin: dimensions.$margin-xlarge 0;
+
+    --highlight-color: var(--house-mix-text-color-30);
+    --stroke-color-animation-duration: 0.2s;
+
+    .box {
+
+        padding: dimensions.$margin-xlarge;
+        border-radius: 5px;
+        outline-offset: -2.5px;
+        outline: solid 0 var(--mat-sys-primary);
+        transition: outline-width 0.2s ease-in-out;
+        cursor: pointer;
+
+        &.disabled {
+            pointer-events: none;
+            opacity: 0.2;
+        }
+
+        &.selected {
+            --highlight-color: var(--mat-sys-primary);
+            outline: solid 3px var(--mat-sys-primary);
+        }
+
+        house-mix-dynamic-svg {
+            width: 40px;
+            height: 40px;
+            display: block;
+        }
+    }
+}
+
+.choice-description {
+    font-size: 16px;
+    font-weight: 200;
+    margin: dimensions.$margin-medium 0;
+}
+
+.choice-list {
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-medium;
+    padding: dimensions.$margin-medium;
+}

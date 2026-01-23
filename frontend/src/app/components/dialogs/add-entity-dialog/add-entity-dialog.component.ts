@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, Inject, ViewChild} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialog, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Group} from '@common/devices/group/group';

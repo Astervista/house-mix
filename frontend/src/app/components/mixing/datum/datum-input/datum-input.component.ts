@@ -1,11 +1,8 @@
-import {Component, Inject, Input} from '@angular/core';
-import {MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSelectTrigger} from '@angular/material/select';
-import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
-import {MatInput} from '@angular/material/input';
+import {Component} from '@angular/core';
+import {MatError, MatFormField, MatLabel, MatOption, MatSelect, MatSelectTrigger} from '@angular/material/select';
+import {FormControl, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatCheckbox} from '@angular/material/checkbox';
 import {DATUM_TYPE_DISPLAY, getColorVarNameForType} from '../../constants';
-import {MAT_DIALOG_DATA} from '@angular/material/dialog';
-import {OutputDefineDialogData} from '../../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {DatumType} from '@common/mixing/mix/datum';
 
 

@@ -1,3 +1,5 @@
+import {IsEnum, IsInt, IsNotEmpty, IsPositive, Matches} from "rest-decorators";
+
 export class SystemTimer {
     
     private readonly _type: TimerType;
@@ -10,21 +12,10 @@ export class SystemTimer {
         occurrence: number
     ) {
         this._type = type;
-        if (this.checkOccurrence(occurrence)) {
+        if (SystemTimer.checkOccurrence(occurrence, type)) {
             this._occurrence = occurrence;
         } else {
             this._occurrence = SystemTimer.defaultOccurrence(type);
-        }
-    }
-    
-    public checkOccurrence(occurrence: number): boolean {
-        switch (this._type) {
-            case TimerType.DAILY:
-                return occurrence < 60 * 24;
-            case TimerType.HOURLY:
-                return occurrence < 60;
-            case TimerType.MINUTE_INTERVAL:
-                return occurrence < 60 * 24 && occurrence >= 1 && occurrence % 1 == 0;
         }
     }
     
@@ -84,6 +75,17 @@ export class SystemTimer {
         }
     }
     
+    public static checkOccurrence(occurrence: number, type: TimerType): boolean {
+        switch (type) {
+            case TimerType.DAILY:
+                return occurrence < 60 * 24;
+            case TimerType.HOURLY:
+                return occurrence < 60;
+            case TimerType.MINUTE_INTERVAL:
+                return occurrence < 60 * 24 && occurrence >= 1 && occurrence % 1 == 0;
+        }
+    }
+    
     public static defaultOccurrence(type: TimerType): number {
         switch (type) {
             case TimerType.DAILY:
@@ -113,14 +115,18 @@ export enum TimerType {
 
 export class SystemTimerJSON {
     
-    // TODO: Validation
-    
+    @IsNotEmpty()
+    @Matches(/^[a-z\-0-9_]+$/)
     public name: string;
     
+    @IsNotEmpty()
     public displayName: string;
     
+    @IsEnum(TimerType)
     public type: TimerType;
     
+    @IsInt()
+    @IsPositive()
     public occurrence: number;
     
     constructor(

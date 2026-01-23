@@ -15,7 +15,7 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "class-decorators": ["./src/decorators/decorators.ts"]
+      "rest-decorators": ["./src/decorators/decorators.ts"]
     },
     "incremental": true,
     "skipLibCheck": true,

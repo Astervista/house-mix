@@ -1,4 +1,4 @@
-import {IsNotEmpty} from "class-decorators";
+import {IsEnum, IsInt, IsNotEmpty, IsPositive, IsBoolean, ValidateNested, Type} from "rest-decorators";
 import {ElaborationNode} from "./elaboration-node";
 
 export class Datum {
@@ -39,7 +39,7 @@ export class Datum {
         return new Datum(
             datumJSON.name,
             datumJSON.type,
-            datumJSON.nullable == true
+            datumJSON.nullable
         );
     }
     
@@ -121,7 +121,7 @@ export class ExportedDatum extends Datum {
         return new ExportedDatum(
             datumJSON.name,
             datumJSON.type,
-            datumJSON.nullable == true,
+            datumJSON.nullable,
             datumJSON.origin,
             datumJSON.originId
         );
@@ -136,14 +136,24 @@ export class ExportedDatum extends Datum {
     }
 }
 
+export enum DatumType {
+    BOOLEAN   = "BOOLEAN",
+    NUMBER    = "NUMBER",
+    TIME      = "TIME",
+    DATE      = "DATE",
+    DATE_TIME = "DATE_TIME"
+}
+
 export class DatumJSON {
     
     @IsNotEmpty()
     public name: string;
     
+    @IsEnum(DatumType)
     public type: DatumType;
     
-    public nullable?: boolean;
+    @IsBoolean()
+    public nullable: boolean;
     
     constructor(name: string, type: DatumType, nullable: boolean) {
         this.name     = name;
@@ -153,8 +163,20 @@ export class DatumJSON {
     
 }
 
+export enum DatumOrigin {
+    GROUP = "GROUP",
+    SENSOR = "SENSOR",
+    SYSTEM_PARAMETER = "SYSTEM_PARAMETER",
+    TIMER = "TIMER",
+}
+
 export class ExportedDatumJSON extends DatumJSON {
+    
+    @IsEnum(DatumOrigin)
     public origin: DatumOrigin;
+    
+    @IsInt()
+    @IsPositive()
     public originId: number;
     
     constructor(name: string,
@@ -167,26 +189,47 @@ export class ExportedDatumJSON extends DatumJSON {
     }
 }
 
-export enum DatumOrigin {
-    GROUP = "GROUP",
-    SENSOR = "SENSOR",
-    SYSTEM_PARAMETER = "SYSTEM_PARAMETER"
-}
-
-export enum DatumType {
-    BOOLEAN   = "BOOLEAN",
-    NUMBER    = "NUMBER",
-    TIME      = "TIME",
-    DATE      = "DATE",
-    DATE_TIME = "DATE_TIME"
-}
-
 export enum DatumChangeType {
     NEW     = "NEW",
     DELETED = "DELETED"
 }
 
-export interface DatumChange {
-    change: DatumChangeType,
-    datum: Datum
+export class DatumChange {
+    
+    public change: DatumChangeType;
+    
+    public datum: Datum
+    
+    constructor(change: DatumChangeType, datum: Datum) {
+        this.change = change;
+        this.datum = datum;
+    }
+    
+    public toJSON(): DatumChangeJSON {
+        return {
+            change: this.change,
+            datum: this.datum.toJSON()
+        }
+    }
+    
+    public static fromJSON(json: DatumChangeJSON): DatumChange {
+        return new DatumChange(json.change, Datum.fromJSON(json.datum));
+    }
+    
+}
+
+export class DatumChangeJSON {
+    
+    @IsEnum(DatumChangeType)
+    public change: DatumChangeType;
+    
+    @ValidateNested()
+    @Type(() => DatumJSON)
+    public datum: DatumJSON;
+    
+    constructor(change: DatumChangeType, datum: DatumJSON) {
+        this.change = change;
+        this.datum = datum;
+    }
+    
 }
