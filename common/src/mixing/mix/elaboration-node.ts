@@ -1,5 +1,5 @@
 import {Datum, DatumType} from "./datum";
-import {IsEnum, IsInt, IsOptional, IsPositive} from "rest-decorators";
+import {IsEnum, IsInt, IsOptional, IsPositive, Min} from "rest-decorators";
 import {Allow} from "../../decorators/decorators-mock";
 
 export enum ElaborationNodeCode {
@@ -103,8 +103,8 @@ export type ElaborationNodeImplementationConstructor = new (id: number) => Elabo
 
 export class ElaborationNodeJSON {
     
-    @IsPositive()
     @IsInt()
+    @Min(0)
     public id: number;
     
     @IsEnum(ElaborationNodeCode)

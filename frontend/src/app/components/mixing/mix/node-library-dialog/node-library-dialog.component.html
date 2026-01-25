@@ -1,91 +1,97 @@
 <h2 mat-dialog-title>Select a node type to add</h2>
 <mat-dialog-content>
-    <div class="list">
-        @for (item of ELABORATION_NODE_LIBRARY; track item.code) {
-            <div
-                class="node-preview"
-                [class.selected]="result == item"
-                (click)="result = item">
-                <span
-                    class="node-preview-title">
-                    {{ ELABORATION_NODE_DISPLAY_NAME[item.code] }}
-                </span>
-                <span
-                    class="node-preview-description">
-                    {{ item.description }}
-                </span>
-                @if (item.code == ElaborationNodeCode.NULL_GUARD) {
-                    <mat-form-field class="null-guard-input">
-                        <mat-label>Data type</mat-label>
-                        <mat-select [formControl]="nullGuardTypeFormControl">
-                            @for (type of Object.values(DatumType); track type) {
-                                <mat-option [value]="type">
-                                    <div
-                                        class="type-container">
-                                        <span class="type-circle"
-                                              [class.selected]="nullGuardTypeFormControl.value == type"
-                                              [style.--type-color]="getColorVarNameForType(type)"></span>
-                                        {{ DATUM_TIME_DISPLAY[type] }}
-                                    </div>
-                                </mat-option>
+    <mat-accordion>
+        @for (section of ELABORATION_NODE_LIBRARY; track section.sectionName) {
+            <mat-expansion-panel
+                style="margin: 0">
+                <mat-expansion-panel-header>
+                    <mat-panel-title>{{ section.sectionName }}</mat-panel-title>
+                </mat-expansion-panel-header>
+                <div class="list">
+                    @for (item of section.nodes; track item.code) {
+                        <div
+                            class="node-preview"
+                            [class.selected]="result == item"
+                            (click)="result = item">
+                            <span
+                                class="node-preview-title">
+                                {{ ELABORATION_NODE_DISPLAY_NAME[item.code] }}
+                            </span>
+                            <span
+                                class="node-preview-description">
+                                {{ item.description }}
+                            </span>
+                            @if (item.code == ElaborationNodeCode.NULL_GUARD) {
+                                <mat-form-field class="null-guard-input">
+                                    <mat-label>Data type</mat-label>
+                                    <mat-select [formControl]="nullGuardTypeFormControl">
+                                        @for (type of Object.values(DatumType); track type) {
+                                            <mat-option [value]="type">
+                                                <div
+                                                    class="type-container">
+                                                <span class="type-circle"
+                                                      [class.selected]="nullGuardTypeFormControl.value == type"
+                                                      [style.--type-color]="getColorVarNameForType(type)"></span>
+                                                    {{ DATUM_TYPE_DISPLAY[type] }}
+                                                </div>
+                                            </mat-option>
+                                        }
+                                    </mat-select>
+                                </mat-form-field>
                             }
-                        </mat-select>
-                    </mat-form-field>
-                }
-                <div
-                    class="node-preview-exposed-container">
-                    <div
-                        class="node-preview-exposed-side">
-                        @for (input of examples[item.code].inputs; track $index) {
                             <div
-                                class="node-preview-input">
-                                <span class="node-preview-input-circle"
-                                      [style.--type-color]="getColorVarNameForType(input.type)"></span>
-                                @if (!input.nullable) {
-                                    <span class="node-preview-input-circle-non-null"
-                                          [style.--type-color]="getColorVarNameForType(input.type)"></span>
-                                }
+                                class="node-preview-exposed-container">
                                 <div
-                                    class="node-preview-input-info">
-                                    <span class="node-preview-input-name">{{ input.name }}</span>
-                                    <span class="node-preview-input-type">{{ DATUM_TIME_DISPLAY[input.type] }}</span>
-                                    @if (input.nullable) {
-                                        <span class="node-preview-input-type">Nullable</span>
+                                    class="node-preview-exposed-side">
+                                    @for (input of examples[item.code].inputs; track $index) {
+
+                                        <div
+                                            class="input-group">
+                                            <span class="connector-input-circle"
+                                                  [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                                            @if (!input.nullable) {
+                                                <span class="connector-input-circle-non-null"
+                                                      [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                                            }
+                                            <span class="input-name">{{ input.name }}</span>
+                                            <span class="input-type">{{ DATUM_TYPE_DISPLAY[input.type] }}</span>
+                                            @if (input.nullable) {
+                                                <span class="input-type">Nullable</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                <div
+                                    class="node-preview-exposed-side">
+                                    @for (output of examples[item.code].outputs; track $index) {
+                                        <div
+                                            class="output-group">
+                                            <span class="connector-output-circle"
+                                                  [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                                            @if (!output.nullable) {
+                                                <span class="connector-output-circle-non-null"
+                                                      [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                                            }
+                                            <span class="output-name">{{ output.name }}</span>
+                                            <span class="output-type">{{ DATUM_TYPE_DISPLAY[output.type] }}</span>
+                                            @if (output.nullable) {
+                                                <span class="output-type">Nullable</span>
+                                            }
+                                        </div>
                                     }
                                 </div>
                             </div>
-                        }
-                    </div>
-                    <div
-                        class="node-preview-exposed-side">
-                        @for (output of examples[item.code].outputs; track $index) {
-                            <div
-                                class="node-preview-output">
-                                <span class="node-preview-output-circle"
-                                      [style.--type-color]="getColorVarNameForType(output.type)"></span>
-                                @if (!output.nullable) {
-                                    <span class="node-preview-output-circle-non-null"
-                                          [style.--type-color]="getColorVarNameForType(output.type)"></span>
-                                }
-                                <div
-                                    class="node-preview-output-info">
-                                    <span class="node-preview-output-name">{{ output.name }}</span>
-                                    <span class="node-preview-output-type">{{ DATUM_TIME_DISPLAY[output.type] }}</span>
-                                    @if (output.nullable) {
-                                        <span class="node-preview-output-type">Nullable</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
-            </div>
+            </mat-expansion-panel>
         }
-    </div>
+    </mat-accordion>
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button
-            (click)="closeDialog()">Cancel</button>
+            (click)="closeDialog()">Cancel
+    </button>
     <button mat-button (click)="confirm()" [disabled]="result == null">Select</button>
 
 </mat-dialog-actions>

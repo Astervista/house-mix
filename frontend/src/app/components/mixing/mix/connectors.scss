@@ -1,0 +1,41 @@
+@mixin connector {
+
+    .connector-output-circle,
+    .connector-input-circle {
+        width: 12px;
+        height: 12px;
+        border: solid 2px var(--type-color);
+        border-radius: 30px;
+        display: block;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: var(--mat-sys-background);
+    }
+    .connector-output-circle {
+        right: -19px;
+    }
+    .connector-input-circle {
+        left: -19px;
+    }
+
+
+    .connector-output-circle-non-null,
+    .connector-input-circle-non-null {
+        width: 4px;
+        height: 4px;
+        background: var(--type-color);
+        border-radius: 30px;
+        display: block;
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+    .connector-output-circle-non-null {
+        right: -13px;
+    }
+    .connector-input-circle-non-null {
+        left: -13px;
+    }
+
+}

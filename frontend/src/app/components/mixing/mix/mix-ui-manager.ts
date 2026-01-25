@@ -13,17 +13,65 @@ export class MixUiManager {
     public translation: Point = {x: MEASURES.SECTIONS_SEPARATOR + MEASURES.INPUT_WIDTH, y: 0};
     public scale: number      = 1;
 
-    private nodePositions: Map<number, Point> = new Map<number, Point>();
-    private maxNodeXPosition: number          = 0;
+    private nodePositions: Map<ElaborationNode, Point> = new Map<ElaborationNode, Point>();
+    private maxNodeXPosition: number                   = 0;
 
     private connections: Map<Connection, Line> = new Map<Connection, Line>();
 
     private lockedInputs: ElaborationNodeDatum[] = [];
-    private lockedExternalOutputs: Datum[] = [];
+    private lockedExternalOutputs: Datum[]       = [];
 
     public mix: Mix | null = null;
 
     public availableExportsLength: number | null = null;
+
+    public svgElement: HTMLElement | null = null;
+
+    public refreshMix(): void {
+        // Sometimes changes made to the mix are not catchable. This function refreshes these changes
+        const mix = this.mix;
+        if (mix == null) {
+            return;
+        }
+        this.maxNodeXPosition = mix
+            .nodes
+            .reduce((acc, val) => Math.max(acc, this.getNodePosition(val).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0);
+        for (const node of this.nodePositions.keys()) {
+            if (!mix.nodes.includes(node)) {
+                this.nodePositions.delete(node);
+            }
+        }
+        for (const connection of this.connections.keys()) {
+            if (!mix.connections.includes(connection)) {
+                this.connections.delete(connection);
+            }
+        }
+        for (const connection of mix.connections) {
+            this.updateConnection(connection, false);
+        }
+        const toDeleteLockedInputs: ElaborationNodeDatum[] = [];
+        for (const lockedInput of this.lockedInputs) {
+            const connectionTo = mix.connections.find(a => a.drainType == ConnectionDrainType.NODE && a.drainNodeId == lockedInput.node.id);
+            if (connectionTo == null) {
+                toDeleteLockedInputs.push(lockedInput);
+            } else if (connectionTo.sourceType == ConnectionSourceType.CONSTANT) {
+                toDeleteLockedInputs.push(lockedInput);
+            }
+        }
+        toDeleteLockedInputs.forEach(datum => this.lockedInputs.splice(this.lockedInputs.indexOf(datum), 1));
+
+        const toDeleteExternalOutputs: Datum[] = [];
+        for (const lockedExternalOutput of this.lockedExternalOutputs) {
+            const connectionTo = mix.connections.find(a => a.drainType == ConnectionDrainType.OUTPUT && a.outputName == lockedExternalOutput.name);
+            if (connectionTo == null) {
+                toDeleteExternalOutputs.push(lockedExternalOutput);
+            } else if (connectionTo.sourceType == ConnectionSourceType.CONSTANT) {
+                toDeleteExternalOutputs.push(lockedExternalOutput);
+            }
+        }
+        toDeleteExternalOutputs.forEach(datum => this.lockedExternalOutputs.splice(this.lockedExternalOutputs.indexOf(datum), 1));
+
+    }
 
     public addNode(node: ElaborationNode): void {
         let maxX =
@@ -39,12 +87,11 @@ export class MixUiManager {
         }
         const stacks = Math.max(node.inputs.length, node.outputs.length);
         const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
-        this.nodePositions.set(node.id, {x: maxX, y: -height / 2 + MEASURES.NODE_HEADING_HEIGHT / 2});
+        this.nodePositions.set(node, {x: maxX, y: -height / 2 + MEASURES.NODE_HEADING_HEIGHT / 2});
         this.maxNodeXPosition = Math.max(this.maxNodeXPosition, maxX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
         this.mix
             ?.connections
-            .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT).
-            forEach(connection => {this.updateConnection(connection, false)})
+            .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT).forEach(connection => {this.updateConnection(connection, false);});
     }
 
     public addConnection(connection: Connection): void {
@@ -131,6 +178,18 @@ export class MixUiManager {
         }
     }
 
+    public updateEdgeConnections(input: boolean): void {
+        this
+            .mix
+            ?.connections
+            .forEach(connection => {
+                if ((input && connection.sourceType == ConnectionSourceType.INPUT)
+                    || (!input && connection.drainType == ConnectionDrainType.OUTPUT && connection.sourceType != ConnectionSourceType.CONSTANT)) {
+                    this.updateConnection(connection, false);
+                }
+            })
+    }
+
     public isInputLocked(node: ElaborationNode, datum: Datum): boolean {
         return this.lockedInputs.some(a => a.node == node && a.datum == datum);
     }
@@ -140,7 +199,7 @@ export class MixUiManager {
     }
 
     public getNodePosition(node: ElaborationNode): Point {
-        return {...this.nodePositions.get(node.id) ?? {x: 0, y: 0}};
+        return {...this.nodePositions.get(node) ?? {x: 0, y: 0}};
     }
 
     public getNodeConnectorPosition(node: ElaborationNode, connector: Datum, rightFacing: boolean): Point {
@@ -373,7 +432,7 @@ export class MixUiManager {
                                   Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0) ?? 0;
         this.currentDragging ??= {
             type:                 DraggingElementType.NODE,
-            nodeId:               node.id,
+            node:               node,
             startPosition:        {...this.getNodePosition(node)},
             startDrag:            pointerPosition,
             fallBackFurtherNodeX: fallbackNodeX
@@ -410,7 +469,7 @@ export class MixUiManager {
                 from        = this.getNodeConnectorPosition(connector.node, connector.datum, true);
                 newDragging = {
                     type:             DraggingElementType.LINK_FROM_NODE_OUTPUT,
-                    nodeId:           connector.node.id,
+                    node:             connector.node,
                     outputName:       connector.datum.name,
                     connector:        {from, to: {...from}},
                     startDrag:        {...pointerPosition},
@@ -446,12 +505,12 @@ export class MixUiManager {
                         // No connection, we are creating a new one
                         to = this.getNodeConnectorPosition(drainNode, drainDatum, false);
 
-                        newDragging.candidatePartner    = {external: false, node: drainNode, datum: drainDatum, input: true};
+                        newDragging.candidatePartner = {external: false, node: drainNode, datum: drainDatum, input: true};
                     }
                 } else {
                     const output = this.mix.outputs.find(otherOutput => otherOutput.name == replacingConnection.outputName);
                     if (output != null) {
-                        to = this.getExternalConnectorPosition(output, false);
+                        to                           = this.getExternalConnectorPosition(output, false);
                         newDragging.candidatePartner = {external: true, datum: output, input: false};
                     }
                 }
@@ -509,7 +568,7 @@ export class MixUiManager {
 
                     newDragging = {
                         type:             DraggingElementType.LINK_TO_NODE_INPUT,
-                        nodeId:           connector.node.id,
+                        node:             connector.node,
                         inputName:        connector.datum.name,
                         connector:        {from: {...to}, to},
                         startDrag:        {...pointerPosition},
@@ -646,15 +705,19 @@ export class MixUiManager {
         }
     }
 
+    public get draggingBackground(): boolean {
+        return this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND;
+    }
+
     public mouseMove(event: MouseEvent): void {
         const pointerPosition = this.extractTransformedPosition(event);
         if (this.currentDragging == null) {
             return;
         }
         if (this.currentDragging.type == DraggingElementType.NODE) {
-            const nodeId = this.currentDragging.nodeId;
+            const node = this.currentDragging.node;
             const newX   = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
-            this.nodePositions.set(nodeId, {
+            this.nodePositions.set(node, {
                 x: newX,
                 y: this.currentDragging.startPosition.y + pointerPosition.y - this.currentDragging.startDrag.y
             });
@@ -663,8 +726,8 @@ export class MixUiManager {
                 .mix
                 ?.connections
                 .filter(a =>
-                            (a.sourceType == ConnectionSourceType.NODE && a.sourceNodeId == nodeId)
-                            || (a.drainType == ConnectionDrainType.NODE && a.drainNodeId == nodeId)
+                            (a.sourceType == ConnectionSourceType.NODE && a.sourceNodeId == node.id)
+                            || (a.drainType == ConnectionDrainType.NODE && a.drainNodeId == node.id)
                             || (a.drainType == ConnectionDrainType.OUTPUT))
                 .forEach(connection => { this.updateConnection(connection, false); });
 
@@ -723,13 +786,13 @@ export class MixUiManager {
                 if (this.currentDragging.candidatePartner != null) {
                     if (this.currentDragging.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) {
                         if (!this.currentDragging.candidatePartner.external) {
-                            if (this.currentDragging.nodeId == this.currentDragging.candidatePartner.node.id) {
+                            if (this.currentDragging.node == this.currentDragging.candidatePartner.node) {
                                 deleteOld = false;
                                 createNew = false;
                             } else {
                                 newConnection = {
                                     sourceType:           ConnectionSourceType.NODE,
-                                    sourceNodeId:         this.currentDragging.nodeId,
+                                    sourceNodeId:         this.currentDragging.node.id,
                                     sourceNodeOutputName: this.currentDragging.outputName,
                                     drainType:            ConnectionDrainType.NODE,
                                     drainNodeId:          this.currentDragging.candidatePartner.node.id,
@@ -743,7 +806,7 @@ export class MixUiManager {
                         } else {
                             newConnection = {
                                 sourceType:           ConnectionSourceType.NODE,
-                                sourceNodeId:         this.currentDragging.nodeId,
+                                sourceNodeId:         this.currentDragging.node.id,
                                 sourceNodeOutputName: this.currentDragging.outputName,
                                 drainType:            ConnectionDrainType.OUTPUT,
                                 outputName:           this.currentDragging.candidatePartner.datum.name
@@ -771,64 +834,13 @@ export class MixUiManager {
             }
             if (deleteOld) {
                 if (this.currentDragging.replacingConnection != null) {
-                    this.mix.connections.splice(this.mix.connections.indexOf(this.currentDragging.replacingConnection), 1);
+                    this.mix.removeConnection(this.currentDragging.replacingConnection);
                     this.removeConnection(this.currentDragging.replacingConnection);
-
-                    if (this.currentDragging.replacingConnection.drainType == ConnectionDrainType.NODE) {
-                        const input = this.mix.getInputByNodeAndName(this.currentDragging.replacingConnection.drainNodeId, this.currentDragging.replacingConnection.drainNodeInputName);
-                        if ((input != null) && !input.nullable) {
-                            this.mix.connections.push({
-                                                          drainType:          ConnectionDrainType.NODE,
-                                                          drainNodeId:        this.currentDragging.replacingConnection.drainNodeId,
-                                                          drainNodeInputName: this.currentDragging.replacingConnection.drainNodeInputName,
-                                                          sourceType:         ConnectionSourceType.CONSTANT,
-                                                          sourceValue:        Datum.getDefaultForType(input.type)
-                                                      });
-                        }
-                    } else {
-                        const outputName     = this.currentDragging.replacingConnection.outputName;
-                        const externalOutput = this.mix.outputs.find(otherOutput => otherOutput.name == outputName);
-                        if ((externalOutput != null) && !externalOutput.nullable) {
-                            this.mix.connections.push({
-                                                          drainType:   ConnectionDrainType.OUTPUT,
-                                                          outputName,
-                                                          sourceType:  ConnectionSourceType.CONSTANT,
-                                                          sourceValue: Datum.getDefaultForType(externalOutput.type)
-                                                      });
-                        }
-                    }
                 }
             }
             if (createNew) {
                 if (this.currentDragging.candidatePartner != null && newConnection != null) {
-                    let inputConstant: Connection | undefined;
-                    if (newConnection.drainType == ConnectionDrainType.NODE) {
-                        inputConstant =
-                            this
-                                .mix
-                                .connections
-                                .find(candidateConnection =>
-                                          candidateConnection.drainType == ConnectionDrainType.NODE
-                                          && candidateConnection.drainNodeId == newConnection.drainNodeId
-                                          && candidateConnection.drainNodeInputName == newConnection.drainNodeInputName
-                                          && candidateConnection.sourceType == ConnectionSourceType.CONSTANT
-                                );
-                    } else {
-                        inputConstant =
-                            this
-                                .mix
-                                .connections
-                                .find(candidateConnection =>
-                                          candidateConnection.drainType == ConnectionDrainType.OUTPUT
-                                          && candidateConnection.outputName == newConnection.outputName
-                                          && candidateConnection.sourceType == ConnectionSourceType.CONSTANT
-                                );
-                    }
-                    if (inputConstant != null) {
-                        this.mix.connections.splice(this.mix.connections.indexOf(inputConstant), 1);
-                    }
-
-                    this.mix.connections.push(newConnection);
+                    this.mix.addConnection(newConnection);
                     this.addConnection(newConnection);
                 }
             }
@@ -841,13 +853,13 @@ export class MixUiManager {
                     // Dragging to a node output
                     if (this.currentDragging.type == DraggingElementType.LINK_TO_NODE_INPUT) {
                         // Dragging from a node input
-                        if (this.currentDragging.nodeId != this.currentDragging.candidatePartner.node.id) {
+                        if (this.currentDragging.node != this.currentDragging.candidatePartner.node) {
                             newConnection = {
                                 sourceType:           ConnectionSourceType.NODE,
                                 sourceNodeId:         this.currentDragging.candidatePartner.node.id,
                                 sourceNodeOutputName: this.currentDragging.candidatePartner.datum.name,
                                 drainType:            ConnectionDrainType.NODE,
-                                drainNodeId:          this.currentDragging.nodeId,
+                                drainNodeId:          this.currentDragging.node.id,
                                 drainNodeInputName:   this.currentDragging.inputName
                             };
                         }
@@ -869,7 +881,7 @@ export class MixUiManager {
                             sourceType:         ConnectionSourceType.INPUT,
                             inputName:          this.currentDragging.candidatePartner.datum.uniqueName,
                             drainType:          ConnectionDrainType.NODE,
-                            drainNodeId:        this.currentDragging.nodeId,
+                            drainNodeId:        this.currentDragging.node.id,
                             drainNodeInputName: this.currentDragging.inputName
                         };
                     } else {
@@ -884,10 +896,9 @@ export class MixUiManager {
                 }
 
                 if (newConnection) {
-                    this.mix.connections.push(newConnection);
+                    this.mix.addConnection(newConnection);
                     this.addConnection(newConnection);
                     if (this.currentDragging.replacingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
-                        this.mix.connections.splice(this.mix.connections.indexOf(this.currentDragging.replacingConnection), 1);
                         this.removeConnection(this.currentDragging.replacingConnection);
                     }
                 }
@@ -902,10 +913,16 @@ export class MixUiManager {
         if (newScale == this.scale) {
             return;
         }
-        change     = newScale / this.scale;
-        this.translation.x += (wheelEvent.clientX - this.translation.x) * (1 - change);
-        this.translation.y += (wheelEvent.clientY - this.translation.y) * (1 - change);
-        this.scale = newScale;
+        change                         = newScale / this.scale;
+        let element: SVGElement | null = null;
+        if (this.svgElement instanceof SVGElement) {
+            element = this.svgElement;
+        }
+        const clientX = wheelEvent.clientX - (element?.getBoundingClientRect().left ?? 0);
+        const clientY = wheelEvent.clientY - (element?.getBoundingClientRect().top ?? 0);
+        this.translation.x += (clientX - this.translation.x) * (1 - change);
+        this.translation.y += (clientY - this.translation.y) * (1 - change);
+        this.scale    = newScale;
     }
 
 }
@@ -948,7 +965,7 @@ interface CandidateExternalOutput {
 
 interface DraggingNode {
     type: DraggingElementType.NODE,
-    nodeId: number,
+    node: ElaborationNode,
     startPosition: Point,
     startDrag: Point,
     fallBackFurtherNodeX: number,
@@ -962,7 +979,7 @@ interface DraggingBackground {
 
 interface DraggingFromNodeOutput {
     type: DraggingElementType.LINK_FROM_NODE_OUTPUT;
-    nodeId: number;
+    node: ElaborationNode;
     outputName: string;
     connector: Line;
     startDrag: Point;
@@ -985,7 +1002,7 @@ interface DraggingFromExternalInput {
 
 interface DraggingToNodeInput {
     type: DraggingElementType.LINK_TO_NODE_INPUT;
-    nodeId: number;
+    node: ElaborationNode;
     inputName: string;
     connector: Line;
     startDrag: Point;
@@ -1010,11 +1027,12 @@ type DraggingElement = DraggingNode | DraggingBackground | DraggingFromNodeOutpu
 
 export const MEASURES = {
     INPUT_WIDTH:                      200,
-    INPUT_HEIGHT:                     70,
+    INPUT_HEIGHT:                     90,
     ADD_INPUT_HEIGHT:                 50,
     INPUT_SPACING:                    10,
-    INPUT_NAME_TOP:                   25,
-    INPUT_ORIGIN_TOP:                 50,
+    INPUT_ORIGIN_TOP:                 20,
+    INPUT_ORIGIN_NAME_TOP:            39,
+    INPUT_NAME_TOP:                   66,
     CONNECTOR_RADIUS:                 8,
     SECTIONS_SEPARATOR:               180,
     NODE_ADD_RADIUS:                  35,

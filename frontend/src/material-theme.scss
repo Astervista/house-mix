@@ -148,6 +148,10 @@ body {
     @include mat.button-toggle-overrides((
             label-text-weight: 300,
     ));
+    @include mat.expansion-overrides((
+        container-elevation-shadow: none,
+        container-background-color: transparent
+    ))
 }
 
 /* Dark Theme */

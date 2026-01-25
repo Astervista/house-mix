@@ -6,7 +6,7 @@ import {FileService} from "./helpers/file/file.service";
 import {GroupService} from "./devices/group/group.service";
 import {GroupController} from "./devices/group/group.controller";
 import {MixController} from "./mixing/mix/mix.controller";
-import {MixService} from "./mixing/mix/mix.service";
+import MixService from "./mixing/mix/mix.service";
 import {SensorService} from "./devices/sensor/sensor.service";
 import {SensorController} from "./devices/sensor/sensor.controller";
 import {ParametersController} from "./system/parameters/parameters.controller";

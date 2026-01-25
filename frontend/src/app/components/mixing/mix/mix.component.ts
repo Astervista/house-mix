@@ -1,82 +1,162 @@
-import {Component, ElementRef, OnInit} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {Component, ElementRef, OnInit, output} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
-import {ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
-import {firstValueFrom} from 'rxjs';
+import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
+import {connectable, firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
-import {Datum, DatumOrigin, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
+import {Datum, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
 import {MEASURES, MixUiManager} from './mix-ui-manager';
-import {MatFabButton} from '@angular/material/button';
-import {MatIcon} from '@angular/material/icon';
-import {DatePipe} from '@angular/common';
+import {MatButton} from '@angular/material/button';
+import {DatePipe, Location} from '@angular/common';
 import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-dialog.component';
-import {ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType} from '../constants';
+import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay} from '../constants';
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog} from '../../../utils/better-mat-dialog';
-
+import {createMixInfo, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
+import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
+import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
+import {HttpErrorResponse} from '@angular/common/http';
+import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../../auxiliary/toolbar/toolbar.component';
 
 @Component({
                selector:    'house-mix-mix',
                imports:     [
-                   MatFabButton,
-                   MatIcon,
-                   DatePipe
+                   DatePipe,
+                   LoadingScrimComponent,
+                   DynamicSvgComponent,
+                   MatButton,
+                   ToolbarComponent
                ],
                templateUrl: './mix.component.html',
                styleUrl:    './mix.component.scss'
            })
 export class MixComponent implements OnInit {
 
-    protected mixLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
-    protected mix: Mix | null                 = null;
+    protected mix: Mix | null = null;
 
-    protected availableExports: ExportedDatum[] = [];
-
-    protected inputLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
+    protected availableImports: ExportedDatum[] = [];
 
     protected uiManager: MixUiManager = new MixUiManager();
 
+    protected mixPosition?: MixPositionInfo;
+
+    protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
+
+    protected errorType: 'NOT_FOUND' | 'INTERNAL' = 'NOT_FOUND';
+
+    protected selectedElements: SelectedElement[] = [];
+
     constructor(
         private route: ActivatedRoute,
+        private router: Router,
         protected mixService: MixingService,
         private elementRef: ElementRef<HTMLElement>,
-        private matDialog: BetterMatDialog
+        private matDialog: BetterMatDialog,
+        protected location: Location
     ) {
-        let id: number;
-        firstValueFrom(this.route.queryParams)
-            .then((params: Record<string, string>) => {
-                const idParam = params['id'];
-                if (idParam == null) {
-                    throw new Error('Missing id parameter');
-                }
-                id = parseInt(idParam);
-                if (isNaN(id) || !isFinite(id)) {
-                    throw new Error('Invalid id parameter');
-                }
-                return mixService.getMix({id});
-            })
-            .then((mix) => {
-                this.mix           = mix;
-                this.uiManager.mix = mix;
-            })
-            .catch(
-                () => {
-                    this.mixLoadingStatus = LoadingStatus.ERROR;
-                }
+        let id: number | 'NEW' = 'NEW';
+        firstValueFrom(this.route.params)
+            .then(
+                params => {
+                    const idParam: string | null = typeof params['mixId'] == 'string' ? params['mixId'] : null;
+                    if (idParam == null) {
+                        const error = new Error('Missing id parameter');
+                        error.cause = 'ID_PARAMETER_MISSING';
+                        throw error;
+                    }
+                    if (idParam == 'new') {
+                        id = 'NEW';
+                    } else {
+                        id = parseInt(idParam);
+                        if (isNaN(id) || !isFinite(id)) {
+                            const error = new Error('Invalid id parameter');
+                            error.cause = 'ID_PARAMETER_INVALID';
+                            throw error;
+                        }
+                    }
+                })
+            .then(
+                () => firstValueFrom(this.route.queryParams)
             )
-            .then(() => {
-                this.availableExports   = [
-                    new ExportedDatum('Scene', DatumType.BOOLEAN, false, DatumOrigin.GROUP, 1),
-                    new ExportedDatum('Scene', DatumType.TIME, false, DatumOrigin.GROUP, 2)
-                ];
-                this.inputLoadingStatus = LoadingStatus.LOADED;
-            })
-            .catch(() => {
-                this.inputLoadingStatus = LoadingStatus.ERROR;
-            });
+            .then(
+                async (params: Record<string, string>) => {
+                    if (id == 'NEW') {
+                        const mixInfo = createMixInfo(params);
+                        if (mixInfo == null) {
+                            const error = new Error('Wrong mix position info');
+                            error.cause = 'WRONG_MIX_POSITION';
+                            throw error;
+                        }
+                        this.mixPosition = mixInfo;
+                        return new Mix('NEW');
+                    } else {
+                        return mixService.getMix({id});
+                    }
+                })
+            .then(
+                async (mix) => {
+                    // TODO: put this back after creating save states
+
+                    /*                    await this.router.navigate(
+                     [],
+                     {
+                     relativeTo:          this.route,
+                     queryParams:         {},
+                     queryParamsHandling: 'replace'
+                     }
+                     );*/
+                    this.mix           = mix;
+                    this.uiManager.mix = mix;
+                    if (id == 'NEW') {
+                        return this.mixPosition;
+                    } else {
+                        return mixService.getMixPositionInfo({id});
+                    }
+                })
+            .then(
+                (mixPosition) => {
+                    this.mixPosition = mixPosition;
+                })
+            .then(
+                () => {
+                    if (this.mixPosition && this.mix) {
+                        return this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition))
+                                   .then((imports) => {
+                                       this.availableImports = imports;
+                                   });
+                    } else {
+                        throw new Error();
+                    }
+                })
+            .then(
+                () => {
+                    this.loadingStatus = LoadingStatus.LOADED;
+                })
+            .catch(
+                (error: unknown) => {
+                    this.loadingStatus = LoadingStatus.ERROR;
+                    console.error(error);
+                    if (error instanceof HttpErrorResponse) {
+                        if (error.status == 404) {
+                            this.errorType = 'NOT_FOUND';
+                            return;
+                        }
+                    }
+                    if (error instanceof Error) {
+                        if (typeof error.cause == 'string'
+                            && [
+                                'ID_PARAMETER_MISSING',
+                                'ID_PARAMETER_INVALID'
+                            ].includes(error.cause)) {
+                            this.errorType = 'NOT_FOUND';
+                            return;
+                        }
+                    }
+                    this.errorType = 'INTERNAL';
+                });
     }
 
     public ngOnInit(): void {
@@ -88,7 +168,7 @@ export class MixComponent implements OnInit {
         if (mix != null) {
             const unusedExports =
                       this
-                          .availableExports
+                          .availableImports
                           .filter(
                               exp => !mix.imports.some(imp => imp.equals(exp)));
             const dialogRef     = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
@@ -98,8 +178,8 @@ export class MixComponent implements OnInit {
                     if (selectedDatum == null) {
                         return;
                     }
-                    mix.imports.push(selectedDatum);
-                    mix.inputs.push(new Datum(selectedDatum.uniqueName, selectedDatum.type, selectedDatum.nullable));
+                    mix.addImport(selectedDatum);
+                    this.uiManager.updateEdgeConnections(true);
                 });
         }
     }
@@ -115,20 +195,7 @@ export class MixComponent implements OnInit {
                     } else {
                         newNode = new ElaborationNodeNullGuard(this.mix.nodes.length, {dataType: result.datumType});
                     }
-                    for (const input of newNode.inputs) {
-                        if (!input.nullable) {
-                            this.mix.connections.push(
-                                {
-                                    sourceType:         ConnectionSourceType.CONSTANT,
-                                    sourceValue:        Datum.getDefaultForType(input.type),
-                                    drainType:          ConnectionDrainType.NODE,
-                                    drainNodeId:        newNode.id,
-                                    drainNodeInputName: input.name
-                                }
-                            );
-                        }
-                    }
-                    this.mix.nodes.push(newNode);
+                    this.mix.addNode(newNode);
                     this.uiManager.addNode(newNode);
                 }
             });
@@ -155,7 +222,8 @@ export class MixComponent implements OnInit {
                     if (selectedDatum == null) {
                         return;
                     }
-                    mix.outputs.push(selectedDatum);
+                    mix.addOutput(selectedDatum);
+                    this.uiManager.updateEdgeConnections(false);
                 });
         }
     }
@@ -249,7 +317,7 @@ export class MixComponent implements OnInit {
                     if (constantConnection != null) {
                         constantConnection.sourceValue = !(constantConnection.sourceValue as boolean);
                     } else {
-                        this.mix.connections.push(
+                        this.mix.addConnection(
                             {
                                 sourceType:         ConnectionSourceType.CONSTANT,
                                 sourceValue:        true,
@@ -272,7 +340,7 @@ export class MixComponent implements OnInit {
                     if (constantConnection != null) {
                         constantConnection.sourceValue = !(constantConnection.sourceValue as boolean);
                     } else {
-                        this.mix.connections.push(
+                        this.mix.addConnection(
                             {
                                 sourceType:  ConnectionSourceType.CONSTANT,
                                 sourceValue: true,
@@ -328,7 +396,7 @@ export class MixComponent implements OnInit {
                                     constantConnection.sourceValue = value.value;
                                 } else {
                                     if (!connector.external) {
-                                        this.mix?.connections.push(
+                                        this.mix?.addConnection(
                                             {
                                                 sourceType:         ConnectionSourceType.CONSTANT,
                                                 sourceValue:        value.value,
@@ -338,7 +406,7 @@ export class MixComponent implements OnInit {
                                             }
                                         );
                                     } else {
-                                        this.mix?.connections.push(
+                                        this.mix?.addConnection(
                                             {
                                                 sourceType:  ConnectionSourceType.CONSTANT,
                                                 sourceValue: value.value,
@@ -386,10 +454,126 @@ export class MixComponent implements OnInit {
                         ) as (ConnectionSourceFromConstant & ConnectionDrainToNode) | undefined;
             }
             if (constantConnection != null) {
-                this.mix.connections.splice(this.mix.connections.indexOf(constantConnection), 1);
+                this.mix.removeConnection(constantConnection);
             }
         }
     }
+
+    private static areSameSelected(selectedA: SelectedElement, selectedB: SelectedElement): boolean {
+
+        return (selectedA.type == SelectedElementType.NODE && selectedB.type == SelectedElementType.NODE && selectedA.node == selectedB.node)
+               || (selectedA.type == SelectedElementType.INPUT && selectedB.type == SelectedElementType.INPUT && selectedA.exportedDatum == selectedB.exportedDatum)
+               || (selectedA.type == SelectedElementType.OUTPUT && selectedB.type == SelectedElementType.OUTPUT && selectedA.datum == selectedB.datum)
+               || (selectedA.type == SelectedElementType.CONNECTION && selectedB.type == SelectedElementType.CONNECTION && selectedA.connection == selectedB.connection);
+    }
+
+    protected isSelected(selectedElement: SelectedElement): boolean {
+        return this.selectedElements.some(otherElement => {
+            return MixComponent.areSameSelected(selectedElement, otherElement);
+        });
+    }
+
+    protected selectElement(selectedElement: SelectedElement, event?: MouseEvent): void {
+        if (event?.shiftKey == true) {
+            if (!this.isSelected(selectedElement)) {
+                this.selectedElements.push(selectedElement);
+            } else {
+                this.selectedElements = this.selectedElements.filter(otherElement => !MixComponent.areSameSelected(selectedElement, otherElement));
+            }
+        } else {
+            this.selectedElements = [selectedElement];
+        }
+    }
+
+    protected get toolbarElements(): ToolbarElement[] {
+        return this.filterToolbar();
+    }
+
+    private filterToolbar(toFilter: ToolbarElement[] = ALL_TOOLBAR_ELEMENTS): ToolbarElement[] {
+        return toFilter
+            .filter(toolbarElement => this.isToolbarElementVisible(toolbarElement))
+            .map((el) => {
+                if ((el.type == ToolBarElementType.BUTTON) && (el.submenu != null)) {
+                    return {
+                        ...el,
+                        submenu: this.filterToolbar(el.submenu)
+                    };
+                } else {
+                    return el;
+                }
+            });
+    }
+
+
+    private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
+        switch (toolbarElement.id) {
+            case ToolbarAction.BACK as string:
+                return true;
+            case ToolbarAction.SAVE as string:
+            case ToolbarAction.ADD as string:
+            default:
+                // TODO: if a new status is created, use it here too
+                return this.loadingStatus == LoadingStatus.LOADED;
+            case ToolbarAction.DELETE as string:
+                return this.selectedElements.length > 0;
+        }
+    }
+
+
+    protected toolbarClick(id: ToolbarAction): void {
+        switch (id) {
+            case ToolbarAction.BACK:
+                this.location.back();
+                break;
+            case ToolbarAction.DELETE:
+                for (const selectedElement of this.selectedElements) {
+                    switch (selectedElement.type) {
+                        case SelectedElementType.INPUT:
+                            this.mix?.removeInput(selectedElement.exportedDatum);
+                            this.uiManager.refreshMix();
+                            break;
+                        case SelectedElementType.NODE:
+                            this.mix?.removeNode(selectedElement.node);
+                            this.uiManager.refreshMix();
+                            break;
+                        case SelectedElementType.OUTPUT:
+                            this.mix?.removeOutput(selectedElement.datum);
+                            this.uiManager.refreshMix();
+                            break;
+                        case SelectedElementType.CONNECTION:
+                            this.mix?.removeConnection(selectedElement.connection);
+                            this.uiManager.removeConnection(selectedElement.connection);
+                            break;
+                    }
+                }
+                this.selectedElements = [];
+                break;
+            case ToolbarAction.SAVE: {
+                // TODO: Block view and leave loading without removing the svg
+                const mix      = this.mix;
+                const position = this.mixPosition;
+                if (mix != null && position != null) {
+                    this
+                        .mixService
+                        .updateMix(mix, position)
+                        .then((newId: number) => {
+                            // TODO: Correct the url and check if re-saving works
+                            mix.id = newId;
+                        })
+                        .catch((error: unknown) => {
+                            // TODO: Handle handleable errors
+                            console.log(error);
+                        });
+                }
+                break;
+            }
+            case ToolbarAction.ADD:
+                this.addNode();
+                break;
+        }
+    }
+
+    protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
     protected readonly MEASURES: typeof MEASURES                           = MEASURES;
     protected readonly Math: Math                                          = Math;
@@ -398,5 +582,81 @@ export class MixComponent implements OnInit {
     protected readonly DatumType: typeof DatumType                         = DatumType;
     protected readonly Datum: typeof Datum                                 = Datum;
     protected readonly ELABORATION_NODE_DISPLAY_NAME                       = ELABORATION_NODE_DISPLAY_NAME;
+    protected readonly LoadingStatus                                       = LoadingStatus;
+    protected readonly DATUM_ORIGIN_DISPLAY                                = DATUM_ORIGIN_DISPLAY;
+    protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
+    protected readonly SelectedElementType                                 = SelectedElementType;
+    protected readonly output                                              = output;
+    protected readonly connectable                                         = connectable;
 }
 
+type SelectedElement = {
+    type: SelectedElementType.INPUT,
+    exportedDatum: ExportedDatum
+} | {
+    type: SelectedElementType.NODE,
+    node: ElaborationNode
+} | {
+    type: SelectedElementType.OUTPUT,
+    datum: Datum
+} | {
+    type: SelectedElementType.CONNECTION,
+    connection: Connection
+};
+
+enum SelectedElementType {
+    INPUT      = 'INPUT',
+    OUTPUT     = 'OUTPUT',
+    NODE       = 'NODE',
+    CONNECTION = 'CONNECTION'
+}
+
+
+enum ToolbarAction {
+    BACK   = 'back',
+    SAVE   = 'save',
+    ADD    = 'add',
+    DELETE = 'delete'
+}
+
+
+const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'arrow_back',
+        id:    ToolbarAction.BACK,
+        hint:  'Go back',
+        order: 0
+    },
+    {
+        type:  ToolBarElementType.SPACER,
+        id:    'space',
+        order: 1
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'delete',
+        id:    ToolbarAction.DELETE,
+        hint:  'Delete',
+        order: 2
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'add',
+        id:    ToolbarAction.ADD,
+        hint:  'Add node',
+        order: 2
+    },
+    {
+        type:  ToolBarElementType.DIVIDER,
+        id:    'divider-1',
+        order: 3
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'save',
+        id:    ToolbarAction.SAVE,
+        hint:  'Save mix',
+        order: 4
+    }
+];

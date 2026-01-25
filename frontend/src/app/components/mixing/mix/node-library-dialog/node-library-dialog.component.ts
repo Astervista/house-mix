@@ -7,6 +7,7 @@ import {ElaborationNode, ElaborationNodeCode, ElaborationNodeNullGuard} from '@c
 import {DatumType} from '@common/mixing/mix/datum';
 import {MatFormField, MatLabel, MatOption, MatSelect} from '@angular/material/select';
 import {MatDialogComponent} from '../../../../utils/better-mat-dialog';
+import {MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle} from '@angular/material/expansion';
 
 ;
 
@@ -23,7 +24,11 @@ import {MatDialogComponent} from '../../../../utils/better-mat-dialog';
                    MatSelect,
                    MatFormField,
                    ReactiveFormsModule,
-                   MatLabel
+                   MatLabel,
+                   MatExpansionPanelHeader,
+                   MatExpansionPanel,
+                   MatAccordion,
+                   MatExpansionPanelTitle
                ],
   templateUrl: './node-library-dialog.component.html',
   styleUrl: './node-library-dialog.component.scss'
@@ -41,11 +46,13 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
     ) {
         super(undefined, dialogRef);
         const examples: Partial<Record<ElaborationNodeCode, ElaborationNode>> = {};
-        for (const item of ELABORATION_NODE_LIBRARY) {
-            if (item.code != ElaborationNodeCode.NULL_GUARD) {
-                examples[item.code] = new item.constructor(0);
-            } else {
-                examples[item.code] = new item.constructor(0, {dataType: DatumType.BOOLEAN})
+        for (const section of ELABORATION_NODE_LIBRARY) {
+            for (const item of section.nodes) {
+                if (item.code != ElaborationNodeCode.NULL_GUARD) {
+                    examples[item.code] = new item.constructor(0);
+                } else {
+                    examples[item.code] = new item.constructor(0, {dataType: DatumType.BOOLEAN})
+                }
             }
         }
         this.examples = examples as Record<ElaborationNodeCode, ElaborationNode>
@@ -70,8 +77,8 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
     }
 
     protected readonly ELABORATION_NODE_LIBRARY = ELABORATION_NODE_LIBRARY;
-    protected readonly DATUM_TIME_DISPLAY       = DATUM_TYPE_DISPLAY;
-    protected readonly getColorVarNameForType        = getColorVarNameForType;
+    protected readonly DATUM_TYPE_DISPLAY       = DATUM_TYPE_DISPLAY;
+    protected readonly getColorVarNameForType   = getColorVarNameForType;
     protected readonly ELABORATION_NODE_DISPLAY_NAME = ELABORATION_NODE_DISPLAY_NAME;
     protected readonly ElaborationNodeCode = ElaborationNodeCode;
     protected readonly Object    = Object;

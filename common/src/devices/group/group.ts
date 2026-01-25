@@ -1,4 +1,4 @@
-import {IsArray, IsNotEmpty, Matches, IsInt, IsPositive, ValidateIf} from "rest-decorators";
+import {IsArray, IsNotEmpty, Matches, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
 
 export class Group {
     
@@ -166,12 +166,12 @@ export class GroupJSON {
     
     @ValidateIf((o: GroupJSON) => o.sensorMix !== null)
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public sensorMix: number | null = null;
     
     @ValidateIf((o: GroupJSON) => o.actuatorMix !== null)
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public actuatorMix: number | null = null;
     
     constructor(name: string, displayName: string) {

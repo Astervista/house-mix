@@ -148,7 +148,7 @@ body {
     @include generate-color-var-opacities(warning, $warning);
     @include generate-color-var-opacities(correct, $correct);
 
-    --house-mix-border-color: var(--house-mix-text-color-10);
+    --house-mix-border-color: var(--house-mix-text-color-20);
 
     color: var(--house-mix-text-color);
     background: var(--house-mix-background-color);
@@ -161,11 +161,16 @@ body {
     @include generate-color-var-opacities(primary, $primary-light);
     @include generate-color-var-opacities(secondary, $secondary-light);
 
-    --house-mix-jagged-edge-svg-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='12' viewBox='0 0 20 12'><path d='M0,1L10,11L20,1' fill='none' stroke='black'/></svg>")
+    --house-mix-jagged-edge-svg-url: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='20' height='12' viewBox='0 0 20 12'><path d='M0,1L10,11L20,1' fill='none' stroke='black'/></svg>");
+
+    --house-mix-body-background: #ffffff;
+
+    background-color: var(--house-mix-background-color);
 }
 
 html.dark > body {
 
+    --house-mix-body-background: #1A1A1A;
     --house-mix-border-color: var(--house-mix-text-color-20);
 
     @include generate-color-var-opacities(background, $background-color-dark);

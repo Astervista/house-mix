@@ -1,6 +1,6 @@
-import {ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
+import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
 import {FileService} from "../../helpers/file/file.service";
-import {MixService} from "../../mixing/mix/mix.service";
+import MixService from "../../mixing/mix/mix.service";
 import {Sensor, SensorJSON} from "@common/devices/sensor/sensor";
 import {GroupService} from "../group/group.service";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
@@ -18,7 +18,8 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         fileService: FileService,
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
-        private mixService: MixService,
+        @Inject(forwardRef(() => MixService))
+        private mixService: MixService
     ) {
         super(fileService, SAVE_FILE, SensorData);
     }
@@ -116,6 +117,21 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         }
     }
     
+    public async setMixForSensor(sensorName: string, mixId: number | "NEW"): Promise<void> {
+        if (mixId == "NEW") {
+            throw new BadRequestException("Cannot assign a new mix directly");
+        }
+        const sensor = await this.getSensorByName(sensorName);
+        if (sensor == null) {
+            throw new NotFoundException(`Cannot find sensor "${sensorName}"`)
+        } else {
+            if (await this.mixService.getMixById(mixId) == null) {
+                throw new NotFoundException(`Cannot find mix with id ${mixId}`)
+            }
+        }
+        sensor.mix = mixId;
+        this.saveData();
+    }
 }
 
 

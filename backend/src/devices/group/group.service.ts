@@ -7,6 +7,8 @@ import {EntityType} from "@common/devices/constants";
 import {Device} from "@common/devices/device";
 import {SensorService} from "../sensor/sensor.service";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
+import {MixPhase} from "@common/mixing/mix/rest-classes";
+import MixService from "../../mixing/mix/mix.service";
 
 
 const SAVE_FILE = "devices/group.json";
@@ -19,7 +21,9 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         @Inject(forwardRef(() => ActuatorService))
         private actuatorService: ActuatorService,
         @Inject(forwardRef(() => SensorService))
-        private sensorService: SensorService
+        private sensorService: SensorService,
+        @Inject(forwardRef(() => MixService))
+        private mixService: MixService
     ) {
         super(fileService, SAVE_FILE, GroupData);
     }
@@ -38,7 +42,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
                         return false;
                     }
                 }
-                return true
+                return true;
             });
     }
     
@@ -219,14 +223,14 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         if (entityType == EntityType.GROUP) {
             throw new InternalServerErrorException();
         }
-        const data            = await this.data;
-        let containingGroup : Group | null;
+        const data = await this.data;
+        let containingGroup: Group | null;
         if (entityType == EntityType.ACTUATOR) {
             containingGroup = data.groups.find(otherGroup => otherGroup.containsActuator(deviceName)) ?? null;
-        } else  {
+        } else {
             containingGroup = data.groups.find(otherGroup => otherGroup.containsSensor(deviceName)) ?? null;
         }
-        const targetGroup     = data.groups.find(otherGroup => otherGroup.name == groupName);
+        const targetGroup = data.groups.find(otherGroup => otherGroup.name == groupName);
         if (targetGroup == null) {
             throw new NotFoundException(undefined, "Target group does not exist");
         }
@@ -262,7 +266,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     }
     
     public async removeDevice(name: string, entityType: EntityType): Promise<void> {
-        const data = await this.data;
+        const data                         = await this.data;
         let elementToRemove: Device | null = null;
         if (entityType == EntityType.ACTUATOR) {
             elementToRemove = await this.actuatorService.getActuatorByName(name);
@@ -290,16 +294,36 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     
     public async actuatorRenamed(oldName: string, newName: string): Promise<void> {
         const data = await this.data;
-        data.groups.forEach(group => { group.actuatorRenamed(oldName, newName) })
+        data.groups.forEach(group => { group.actuatorRenamed(oldName, newName); });
         this.saveData();
     }
     
     public async sensorRenamed(oldName: string, newName: string): Promise<void> {
         const data = await this.data;
-        data.groups.forEach(group => { group.sensorRenamed(oldName, newName) })
+        data.groups.forEach(group => { group.sensorRenamed(oldName, newName); });
         this.saveData();
     }
     
+    public async setMixForGroup(groupName: string, mixId: number | "NEW", phase: MixPhase.ACTUATORS | MixPhase.SENSORS): Promise<void> {
+        
+        if (mixId == "NEW") {
+            throw new BadRequestException("Cannot assign a new mix directly");
+        }
+        const group = await this.getGroupByName(groupName);
+        if (group == null) {
+            throw new NotFoundException(`Cannot find group "${groupName}"`);
+        } else {
+            if (await this.mixService.getMixById(mixId) == null) {
+                throw new NotFoundException(`Cannot find mix with id ${mixId}`);
+            }
+        }
+        if (phase == MixPhase.SENSORS) {
+            group.sensorMix = mixId;
+        } else {
+            group.actuatorMix = mixId
+        }
+        this.saveData();
+    }
 }
 
 class GroupData {

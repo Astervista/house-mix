@@ -9,6 +9,30 @@
     @include colors.datum-type-colors();
 }
 
+@mixin unselected-style {
+    fill: var(--house-mix-body-background);
+    stroke: var(--house-mix-border-color);
+    stroke-width: 1px;
+    transition: fill .25s, stroke-width .25s, stroke .25s;
+}
+
+@mixin selected-style {
+    stroke-width: 2.5px;
+    stroke: var(--mat-sys-primary);
+}
+
+@mixin clickable-hover-style {
+    stroke-width: 1.75px;
+    stroke: var(--mat-sys-primary-container);
+    fill: var(--mat-sys-surface-container-low);
+}
+
+@mixin clickable-active-style {
+    stroke-width: 2.5px;
+    stroke: var(--mat-sys-primary);
+    fill: var(--mat-sys-surface-container);
+}
+
 .mix-canvas {
     flex-grow: 1;
 
@@ -22,24 +46,30 @@
             &:hover {
                 .output-container,
                 .input-container {
-                    fill: var(--mat-sys-surface-container-low);
+                    @include clickable-hover-style;
                 }
             }
 
             &:active {
                 .output-container,
                 .input-container {
-                    fill: var(--mat-sys-surface-container);
+                    @include clickable-active-style;
                 }
             }
         }
 
         .output-container,
         .input-container {
-            stroke: var(--mat-sys-primary-container);
-            fill: var(--mat-sys-background);
-            stroke-width: 2px;
-            transition: fill .4s;
+            @include unselected-style;
+            cursor: pointer;
+        }
+
+
+        &.selected {
+            .output-container,
+            .input-container {
+                @include selected-style
+            }
         }
 
         .input-text-name,
@@ -48,6 +78,7 @@
             font-size: 20px;
             text-anchor: end;
             dominant-baseline: middle;
+            pointer-events: none;
         }
 
         .add-output-text {
@@ -57,12 +88,22 @@
             dominant-baseline: middle;
         }
 
-        .input-text-origin {
+        .input-text-origin-name {
             fill: var(--mat-sys-surface-tint);
             font-size: 17px;
             font-weight: 200;
             text-anchor: end;
             dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .input-text-origin {
+            fill: var(--mat-sys-surface-tint);
+            font-size: 15px;
+            font-weight: 100;
+            text-anchor: end;
+            dominant-baseline: middle;
+            pointer-events: none;
         }
     }
 
@@ -82,11 +123,16 @@
     .node-group {
         .node-heading,
         .node-container {
-            stroke: var(--mat-sys-primary-container);
-            fill: var(--mat-sys-background);
-            stroke-width: 2px;
-            transition: fill .4s;
+            @include unselected-style;
         }
+
+        &.selected {
+            .node-heading,
+            .node-container {
+                @include selected-style
+            }
+        }
+
         .node-heading-text {
             fill: var(--mat-sys-on-background);
             font-size: 20px;
@@ -116,7 +162,7 @@
 
 
         stroke: var(--connector-type-color, --mat-sys-on-background);
-        fill: var(--mat-sys-background);
+        fill: var(--house-mix-body-background);
         stroke-width: 1.5px;
         transition: stroke-width 0.25s ease-in-out, r 0.2s ease-in-out;
         r: var(--connector-radius);
@@ -165,14 +211,24 @@
 
         &:hover {
             stroke: var(--mat-sys-primary-container);
+
             + .connection {
                 stroke-width: calc(var(--connection-width) * 1.2);
             }
+
+            &.selected {
+                stroke: transparent;
+
+                + .connection {
+                    stroke-width: calc(var(--connection-width) * 3.5);
+                }
+            }
         }
-        &.connection-selected {
-            stroke: var(--mat-sys-primary);
+        &.selected {
+
+
             + .connection {
-                stroke-width: calc(var(--connection-width) * 1.2);
+                stroke: var(--mat-sys-primary);
             }
         }
     }
@@ -182,30 +238,28 @@
         fill: none;
         stroke-width: var(--connection-width);
         stroke-linecap: round;
-        transition: stroke-width 0.25s ease-in-out;
+        transition: stroke-width 0.25s ease-in-out, stroke 0.25s;
         pointer-events: none;
     }
 
     .add-node {
-        stroke: var(--mat-sys-primary-container);
-        fill: var(--mat-sys-background);
-        stroke-width: 2px;
-        transition: fill .4s;
+        @include unselected-style;
+
         cursor: pointer;
 
         &:hover,
         &:active {
-            fill: var(--mat-sys-surface-container-low);
+            @include clickable-hover-style;
         }
 
         &:hover:active {
-            fill: var(--mat-sys-surface-container);
+            @include clickable-active-style;
         }
     }
 
     .add-node-plus {
         stroke-width: 6px;
-        stroke: white;
+        stroke: var(--mat-sys-on-background);
         pointer-events: none;
     }
 
@@ -270,3 +324,28 @@
     }
 }
 
+.error-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+
+    .icon {
+        width: min(200px, 75vw);
+        height: min(200px, 75vw);
+        --highlight-color: var(--mat-sys-error);
+    }
+
+    .text {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 200;
+        max-width: 700px;
+    }
+
+    button {
+        @include colors.error-button;
+    }
+}

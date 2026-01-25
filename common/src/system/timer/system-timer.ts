@@ -1,4 +1,4 @@
-import {IsEnum, IsInt, IsNotEmpty, IsPositive, Matches} from "rest-decorators";
+import {IsEnum, IsInt, IsNotEmpty, IsPositive, Matches, Min} from "rest-decorators";
 
 export class SystemTimer {
     
@@ -126,7 +126,7 @@ export class SystemTimerJSON {
     public type: TimerType;
     
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public occurrence: number;
     
     constructor(

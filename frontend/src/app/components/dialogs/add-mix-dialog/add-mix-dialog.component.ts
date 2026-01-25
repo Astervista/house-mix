@@ -14,6 +14,8 @@ import {GetGroupsOptions} from '@common/devices/group/rest-classes';
 import {ACTUATOR_TYPE_DISPLAY, ACTUATOR_TYPE_ICON, SENSOR_TYPE_DISPLAY, SENSOR_TYPE_ICON} from '../../entities/devices/device/constants';
 import {MatTooltip} from '@angular/material/tooltip';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
+import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
+
 
 @Component({
                selector:    'house-mix-add-mix-dialog',
@@ -29,7 +31,7 @@ import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
                templateUrl: './add-mix-dialog.component.html',
                styleUrl:    './add-mix-dialog.component.scss'
            })
-export class AddMixDialogComponent extends MatDialogComponent<AddMixInfo | null, AddMixInfo> {
+export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | null, MixPositionInfo> {
 
     private _selectedPhase: MixPhase   = MixPhase.SENSORS;
     private _selectedTarget: MixTarget = MixTarget.DEVICE;
@@ -49,8 +51,8 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixInfo | null,
     protected selectedElement: Group | Actuator | Sensor | null = null;
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) data: AddMixInfo,
-        dialogRef: MatDialogRef<AddMixDialogComponent, AddMixInfo>,
+        @Inject(MAT_DIALOG_DATA) data: MixPositionInfo,
+        dialogRef: MatDialogRef<AddMixDialogComponent, MixPositionInfo>,
         private deviceService: DeviceService,
         private groupService: GroupService
     ) {
@@ -189,7 +191,7 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixInfo | null,
         }
     }
 
-    protected get result(): AddMixInfo | null {
+    protected get result(): MixPositionInfo | null {
         if (this.selectedPhase == MixPhase.CENTER) {
             if (this.selectedTarget == MixTarget.CENTER) {
                 return {
@@ -228,20 +230,20 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixInfo | null,
             if (this.selectedPhase == MixPhase.ACTUATORS) {
                 if (this.selectedElement instanceof Group && this.selectedElement.actuatorMix == null) {
                     return {
-                        phase:      this.selectedPhase,
-                        target:     this.selectedTarget,
+                        phase:     this.selectedPhase,
+                        target:    this.selectedTarget,
                         groupName: this.selectedElement.name
-                    }
+                    };
                 } else {
                     return null;
                 }
             } else { //  MixPhase.SENSORS
                 if (this.selectedElement instanceof Group && this.selectedElement.sensorMix == null) {
                     return {
-                        phase:      this.selectedPhase,
-                        target:     this.selectedTarget,
+                        phase:     this.selectedPhase,
+                        target:    this.selectedTarget,
                         groupName: this.selectedElement.name
-                    }
+                    };
                 } else {
                     return null;
                 }
@@ -264,51 +266,4 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixInfo | null,
     protected readonly SENSOR_TYPE_DISPLAY   = SENSOR_TYPE_DISPLAY;
     protected readonly ACTUATOR_TYPE_DISPLAY = ACTUATOR_TYPE_DISPLAY;
     protected readonly ACTUATOR_TYPE_ICON    = ACTUATOR_TYPE_ICON;
-}
-
-export enum MixPhase {
-    SENSORS   = 'SENSORS',
-    CENTER    = 'CENTER',
-    ACTUATORS = 'ACTUATORS'
-}
-
-export enum MixTarget {
-    DEVICE = 'DEVICE',
-    GROUP  = 'GROUP',
-    CENTER = 'CENTER',
-}
-
-export type AddMixInfo = AddMixInfoSensors | AddMixInfoCenter | AddMixInfoActuators;
-
-export type AddMixInfoSensors = AddMixInfoSensorsDevice | AddMixInfoSensorsGroup;
-
-export interface AddMixInfoCenter {
-    phase: MixPhase.CENTER,
-    target: MixTarget.CENTER
-}
-
-export type AddMixInfoActuators = AddMixInfoActuatorsDevice | AddMixInfoActuatorsGroup;
-
-export interface AddMixInfoSensorsDevice {
-    phase: MixPhase.SENSORS,
-    target: MixTarget.DEVICE,
-    sensorName: string
-}
-
-export interface AddMixInfoSensorsGroup {
-    phase: MixPhase.SENSORS,
-    target: MixTarget.GROUP,
-    groupName: string
-}
-
-export interface AddMixInfoActuatorsDevice {
-    phase: MixPhase.ACTUATORS,
-    target: MixTarget.DEVICE,
-    actuatorName: string
-}
-
-export interface AddMixInfoActuatorsGroup {
-    phase: MixPhase.ACTUATORS,
-    target: MixTarget.GROUP,
-    groupName: string
 }

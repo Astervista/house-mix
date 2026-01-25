@@ -1,15 +1,33 @@
-import {Injectable} from "@nestjs/common";
-import {Mix, MixJSON} from "@common/mixing/mix/mix";
+import {BadRequestException, forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException} from "@nestjs/common";
+import {Connection, Mix, MixJSON} from "@common/mixing/mix/mix";
 import {FileService} from "../../helpers/file/file.service";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
+import {MixPhase, MixPositionInfo, MixTarget, PutMixShowableError} from "@common/mixing/mix/rest-classes";
+import {DatumOrigin, DatumType, ExportedDatum} from "@common/mixing/mix/datum";
+import {ParametersService} from "../../system/parameters/parameters.service";
+import {TimersService} from "src/system/timers/timers.service";
+import {SystemOrigin} from "@common/system/constants";
+import {SensorService} from "../../devices/sensor/sensor.service";
+import {GroupService} from "../../devices/group/group.service";
+import {ActuatorService} from "../../devices/actuator/actuator.service";
 
 const SAVE_FILE = "mixing/mix.json";
 
 @Injectable()
-export class MixService extends PersistentDataService<MixData, MixDataJSON>{
+class MixService extends PersistentDataService<MixData, MixDataJSON> {
     
-    constructor(fileService: FileService) {
-        super(fileService, SAVE_FILE, MixData)
+    constructor(
+        fileService: FileService,
+        private parameterService: ParametersService,
+        private timersService: TimersService,
+        @Inject(forwardRef(() => SensorService))
+        private sensorService: SensorService,
+        @Inject(forwardRef(() => ActuatorService))
+        private actuatorService: ActuatorService,
+        @Inject(forwardRef(() => GroupService))
+        private groupService: GroupService
+    ) {
+        super(fileService, SAVE_FILE, MixData);
     }
     
     public async getAllMixes(): Promise<Mix[]> {
@@ -20,15 +38,255 @@ export class MixService extends PersistentDataService<MixData, MixDataJSON>{
         return (await this.data).mixes.find(a => a.id === id) ?? null;
     }
     
-    public async createMix(mix: Mix): Promise<Mix> {
+    public async putMix(mix: Mix, position: MixPositionInfo): Promise<number> {
         const data = await this.data;
-        mix.id = data.nextId++;
-        data.mixes.push(mix);
+        
+        // We either put a new mix in an element that has a null mix or update only if the mix is not new but the id matches
+        
+        let oldMixId: number | null = null;
+        if (position.phase == MixPhase.SENSORS) {
+            if (position.target == MixTarget.DEVICE) {
+                const sensor = await this.sensorService.getSensorByName(position.sensorName);
+                if (sensor == null) {
+                    throw new NotFoundException(`Cannot find sensor ${position.sensorName}`);
+                }
+                oldMixId = sensor.mix;
+            } else { // MixTarget.GROUP
+                const group = await this.groupService.getGroupByName(position.groupName);
+                if (group == null) {
+                    throw new NotFoundException(`Cannot find group ${position.groupName}`);
+                }
+                oldMixId = group.sensorMix;
+            }
+        } else if (position.phase == MixPhase.ACTUATORS) {
+            if (position.target == MixTarget.DEVICE) {
+                const actuator = await this.actuatorService.getActuatorByName(position.actuatorName);
+                if (actuator == null) {
+                    throw new NotFoundException(`Cannot find actuator ${position.actuatorName}`);
+                }
+                oldMixId = actuator.mix;
+            } else { // MixTarget.GROUP
+                const group = await this.groupService.getGroupByName(position.groupName);
+                if (group == null) {
+                    throw new NotFoundException(`Cannot find group ${position.groupName}`);
+                }
+                oldMixId = group.actuatorMix;
+            }
+        } else { // MixPhase.CENTER
+            // TODO: write logic for checking if a mix at the center is already existing
+            throw new InternalServerErrorException("Not yet implemented");
+        }
+        if (oldMixId == null) {
+            if (mix.id != "NEW") {
+                throw new BadRequestException("Cannot set an already created mix to an entity that doesn't have the mix assigned yet");
+            }
+        } else {
+            if (mix.id != oldMixId) {
+                if (mix.id == "NEW") {
+                    throw new BadRequestException("Cannot set a new mix to an entity that already has a mix assigned to it");
+                } else {
+                    throw new BadRequestException("If an entity already has a mix assigned to it, only a mix with the same id can be used to update");
+                }
+            }
+        }
+        const isNew = mix.id == "NEW";
+        if (isNew) {
+            mix.id = data.nextId++;
+        }
+        
+        // Checking the validity of the new mix
+        
+        // Checking if all the imports are actually correct
+        const availableImports = await this.getAvailableImports(position);
+        const unavailableImports  = mix.imports.filter(
+            imp => (
+                !availableImports.some(otherImport => (
+                    imp.equals(otherImport)
+                    && imp.type == otherImport.type
+                    && imp.nullable == otherImport.nullable
+                ))
+            )
+        )
+        if (unavailableImports.length > 0) {
+            throw new BadRequestException(
+                {
+                    showable:          true,
+                    errorType:         PutMixShowableError.IMPORTS_UNAVAILABLE,
+                    unavailableImports,
+                    message:           "The new mix requires imports that are either not existing anymore or outside the scope it is put into"
+                });
+        }
+        const orphanInputs =
+                  mix.inputs.filter(
+                      input =>
+                          !mix.imports.some(imp => imp.uniqueName == input.name)
+                  )
+        if (orphanInputs.length > 0) {
+            throw new BadRequestException(
+                {
+                    showable:          true,
+                    errorType:         PutMixShowableError.INPUTS_WITHOUT_IMPORT,
+                    orphanInputs,
+                    message:           "The new mix has some inputs that are not corresponding to its imports"
+                });
+        }
+        
+        // Checking if some outputs that have been deleted/edited are still needed downstream
+        
+        // TODO: Implement
+        
+        // Checking if the connections are correct
+        if (mix.containsCycles()) {
+            throw new BadRequestException(
+                {
+                    showable:          true,
+                    errorType:         PutMixShowableError.CYCLE,
+                    message:           "The new mix has cycles that are reachable from the inputs"
+                });
+        }
+        const wrongConnections: Connection[] = mix.wrongConnections;
+        if (wrongConnections.length > 0) {
+            throw new BadRequestException(
+                {
+                    showable:          true,
+                    errorType:         PutMixShowableError.WRONG_CONNECTIONS,
+                    wrongConnections,
+                    message:           "Some connections are not correct"
+                });
+        }
+        
+        
+        
+        if (isNew) {
+            data.mixes.push(mix);
+            if (position.phase == MixPhase.SENSORS) {
+                if (position.target == MixTarget.DEVICE) {
+                    await this.sensorService.setMixForSensor(position.sensorName, mix.id);
+                } else { // MixTarget.GROUP
+                    await this.groupService.setMixForGroup(position.groupName, mix.id, position.phase);
+                }
+            } else if (position.phase == MixPhase.ACTUATORS) {
+                if (position.target == MixTarget.DEVICE) {
+                    await this.actuatorService.setMixForActuator(position.actuatorName, mix.id);
+                } else { // MixTarget.GROUP
+                    await this.groupService.setMixForGroup(position.groupName, mix.id, position.phase);
+                }
+            } else { // MixPhase.CENTER
+                // TODO: write logic for adding a mix in the center
+                throw new InternalServerErrorException("Not yet implemented");
+            }
+        } else {
+            const oldPos = data.mixes.findIndex(otherMix => otherMix.id == mix.id);
+            if (oldPos != -1) {
+                data.mixes.splice(oldPos, 1);
+            }
+            data.mixes.push(mix);
+        }
         this.saveData();
-        return mix;
+        const newId = mix.id;
+        if (newId == "NEW") {
+            throw new InternalServerErrorException();
+        }
+        return newId;
     }
     
+    public async getAvailableImports(position: MixPositionInfo): Promise<ExportedDatum[]> {
+        
+        const parameterData =
+                  (await this.parameterService.getAllParameters())
+                      .map((systemParameter): ExportedDatum => {
+                          return new ExportedDatum(
+                              systemParameter.name,
+                              systemParameter.datum.type,
+                              systemParameter.datum.nullable,
+                              DatumOrigin.SYSTEM,
+                              SystemOrigin.PARAMETER,
+                              systemParameter.displayName
+                          );
+                      });
+        const timerData     =
+                  (await this.timersService.getAllTimers())
+                      .map((timer): ExportedDatum => {
+                          return new ExportedDatum(
+                              timer.name,
+                              DatumType.DATE_TIME,
+                              false,
+                              DatumOrigin.SYSTEM,
+                              SystemOrigin.TIMER,
+                              timer.displayName
+                          );
+                      });
+        
+        if (position.phase == MixPhase.SENSORS) {
+            if (position.target == MixTarget.DEVICE) {
+                const sensor = await this.sensorService.getSensorByName(position.sensorName);
+                if (sensor == null) {
+                    throw new NotFoundException(`Could not find sensor with name ${position.sensorName}`);
+                }
+                return [
+                    ...parameterData,
+                    ...timerData,
+                    ...sensor
+                        .exposes
+                        .map(exposed =>
+                                 new ExportedDatum(
+                                     exposed.name,
+                                     exposed.type,
+                                     exposed.nullable,
+                                     DatumOrigin.SENSOR,
+                                     sensor.name,
+                                     exposed.name,
+                                     sensor.displayName
+                                 ))
+                ];
+            }
+        }
+        return [];
+    }
+    
+    public async getMixPosition(id: number): Promise<MixPositionInfo> {
+        const data = await this.data;
+        if (data.mixes.every(mix => mix.id != id)) {
+            throw new NotFoundException("Mix not found")
+        }
+        const sensor = (await this.sensorService.getAllSensors({mix: id}))[0];
+        const actuator = (await this.actuatorService.getAllActuators({mix: id}))[0];
+        const sensorGroup = (await this.groupService.getAllGroups({sensorMix: id}))[0];
+        const actuatorGroup = (await this.groupService.getAllGroups({actuatorMix: id}))[0];
+        if (sensor != null) {
+            return  {
+                phase: MixPhase.SENSORS,
+                target: MixTarget.DEVICE,
+                sensorName: sensor.name
+            }
+        }
+        if (actuator != null) {
+            return  {
+                phase: MixPhase.ACTUATORS,
+                target: MixTarget.DEVICE,
+                actuatorName: actuator.name
+            }
+        }
+        if (sensorGroup != null) {
+            return {
+                phase: MixPhase.SENSORS,
+                target: MixTarget.GROUP,
+                groupName: sensorGroup.name
+            }
+        }
+        if (actuatorGroup != null) {
+            return {
+                phase: MixPhase.ACTUATORS,
+                target: MixTarget.GROUP,
+                groupName: actuatorGroup.name
+            }
+        }
+        // TODO: Check if it's not at the center, otherwise throw
+        throw new NotFoundException("Mix not found")
+    }
 }
+
+export default MixService;
 
 
 class MixData {
@@ -39,17 +297,17 @@ class MixData {
     
     constructor(mixDataJSON?: MixDataJSON) {
         if (mixDataJSON) {
-            this.mixes = mixDataJSON.mixes.map((mixJSON: MixJSON) => Mix.fromJSON(mixJSON));
+            this.mixes  = mixDataJSON.mixes.map((mixJSON: MixJSON) => Mix.fromJSON(mixJSON));
             this.nextId = mixDataJSON.nextId;
         } else {
-            this.mixes = [];
+            this.mixes  = [];
             this.nextId = 0;
         }
     }
     
     public toJSON(): MixDataJSON {
         return {
-            mixes: this.mixes.map((mix: Mix) => mix.toJSON()),
+            mixes:  this.mixes.map((mix: Mix) => mix.toJSON()),
             nextId: this.nextId
         };
     }

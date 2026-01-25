@@ -1,5 +1,6 @@
-import {IsEnum, IsInt, IsNotEmpty, IsPositive, IsBoolean, ValidateNested, Type} from "rest-decorators";
+import {IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, Type, ValidateNested} from "rest-decorators";
 import {ElaborationNode} from "./elaboration-node";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class Datum {
     
@@ -95,11 +96,15 @@ export interface DatumInfo {
 }
 
 export class ExportedDatum extends Datum {
-    constructor(name: string,
-                type: DatumType,
-                nullable: boolean,
-                public origin: DatumOrigin,
-                public originId: number) {
+    constructor(
+        name: string,
+        type: DatumType,
+        nullable: boolean,
+        public origin: DatumOrigin,
+        public originName: string,
+        public displayName?: string,
+        public originDisplayName?: string
+    ) {
         super(name, type, nullable);
     }
     
@@ -109,11 +114,13 @@ export class ExportedDatum extends Datum {
     
     public override toJSON(): ExportedDatumJSON {
         return {
-            name:     this.name,
-            type:     this.type,
-            nullable: this.nullable,
-            origin:   this.origin,
-            originId: this.originId
+            name:       this.name,
+            type:       this.type,
+            nullable:   this.nullable,
+            origin:     this.origin,
+            originName: this.originName,
+            displayName: this.displayName,
+            originDisplayName: this.originDisplayName
         };
     }
     
@@ -123,16 +130,18 @@ export class ExportedDatum extends Datum {
             datumJSON.type,
             datumJSON.nullable,
             datumJSON.origin,
-            datumJSON.originId
+            datumJSON.originName,
+            datumJSON.displayName,
+            datumJSON.originDisplayName
         );
     }
     
     public equals(exp: ExportedDatum): boolean {
-        return this.name === exp.name && this.origin === exp.origin && this.originId === exp.originId;
+        return this.name === exp.name && this.origin === exp.origin && this.originName === exp.originName;
     }
     
     public static uniqueName(datum: ExportedDatum): string {
-        return `${datum.origin}.${datum.originId}.${datum.name}`;
+        return `${datum.origin}.${datum.originName}.${datum.name}`;
     }
 }
 
@@ -164,10 +173,9 @@ export class DatumJSON {
 }
 
 export enum DatumOrigin {
-    GROUP = "GROUP",
-    SENSOR = "SENSOR",
-    SYSTEM_PARAMETER = "SYSTEM_PARAMETER",
-    TIMER = "TIMER",
+    GROUP            = "GROUP",
+    SENSOR           = "SENSOR",
+    SYSTEM = "SYSTEM",
 }
 
 export class ExportedDatumJSON extends DatumJSON {
@@ -175,17 +183,28 @@ export class ExportedDatumJSON extends DatumJSON {
     @IsEnum(DatumOrigin)
     public origin: DatumOrigin;
     
-    @IsInt()
-    @IsPositive()
-    public originId: number;
+    @IsNotEmpty()
+    public originName: string;
+    
+    @IsOptional()
+    @IsString()
+    public displayName?: string;
+    
+    @IsOptional()
+    public originDisplayName?: string;
     
     constructor(name: string,
                 type: DatumType,
                 nullable: boolean,
-                origin: DatumOrigin, originId: number) {
+                origin: DatumOrigin,
+                originName: string,
+                displayName?: string,
+                originDisplayName?: string) {
         super(name, type, nullable);
-        this.origin   = origin;
-        this.originId = originId;
+        this.origin      = origin;
+        this.originName  = originName;
+        this.displayName = displayName;
+        this.originDisplayName = originDisplayName;
     }
 }
 
@@ -198,18 +217,18 @@ export class DatumChange {
     
     public change: DatumChangeType;
     
-    public datum: Datum
+    public datum: Datum;
     
     constructor(change: DatumChangeType, datum: Datum) {
         this.change = change;
-        this.datum = datum;
+        this.datum  = datum;
     }
     
     public toJSON(): DatumChangeJSON {
         return {
             change: this.change,
-            datum: this.datum.toJSON()
-        }
+            datum:  this.datum.toJSON()
+        };
     }
     
     public static fromJSON(json: DatumChangeJSON): DatumChange {
@@ -229,7 +248,7 @@ export class DatumChangeJSON {
     
     constructor(change: DatumChangeType, datum: DatumJSON) {
         this.change = change;
-        this.datum = datum;
+        this.datum  = datum;
     }
     
 }

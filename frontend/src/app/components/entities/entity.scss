@@ -20,15 +20,21 @@
 }
 
 
-@mixin name($full-width: false) {
+@mixin name($full-width: false, $right-align: false) {
     font-size: 20px;
     font-weight: 300;
     padding: dimensions.$margin-mlarge;
     border-bottom: solid 1px var(--house-mix-entity-border-color);
     @if($full-width == false) {
-        border-right: solid 1px var(--house-mix-entity-border-color);
-        border-bottom-right-radius: 3px;
-        align-self: start;
+        @if ($right-align == false) {
+            border-right: solid 1px var(--house-mix-entity-border-color);
+            border-bottom-right-radius: 3px;
+            align-self: start;
+        } @else {
+            border-left: solid 1px var(--house-mix-entity-border-color);
+            border-bottom-left-radius: 3px;
+            align-self: end;
+        }
     } @else {
         align-self: stretch;
     }

@@ -1,10 +1,11 @@
-import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, Type, ValidateIf, ValidateNested} from "rest-decorators";
+import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {Datum, DatumJSON, ExportedDatum, ExportedDatumJSON} from "./datum";
 import {ElaborationNode, ElaborationNodeJSON} from "./elaboration-node";
 
 
 export enum CompositionCalculationErrorType {
     CYCLIC_GRAPH = "CYCLIC_GRAPH",
+    WRONG_CONNECTIONS = "WRONG_CONNECTIONS",
     UNKNOWN_NODE = "UNKNOWN_NODE",
 }
 
@@ -16,8 +17,8 @@ export class CompositionCalculationError extends Error {
 }
 
 export enum CompositionCalculationOutputErrorType {
-    MISSING_OUTPUT    = "MISSING_OUTPUT",
-    WRONG_OUTPUT_TYPE = "WRONG_OUTPUT_TYPE",
+    MISSING_OUTPUT      = "MISSING_OUTPUT",
+    WRONG_OUTPUT_TYPE   = "WRONG_OUTPUT_TYPE",
     UNKNOWN_OUTPUT_NAME = "UNKNOWN_OUTPUT_NAME",
 }
 
@@ -45,13 +46,13 @@ export class Mix {
     
     private _id: number | "NEW";
     
-    public inputs: Datum[]  = [];
-    public outputs: Datum[] = [];
+    private _inputs: Datum[]  = [];
+    private _outputs: Datum[] = [];
     
-    public imports: ExportedDatum[] = [];
+    private _imports: ExportedDatum[] = [];
     
-    public nodes: ElaborationNode[]  = [];
-    public connections: Connection[] = [];
+    private _nodes: ElaborationNode[]  = [];
+    private _connections: Connection[] = [];
     
     constructor(id: number | "NEW") {
         this._id = id;
@@ -67,9 +68,176 @@ export class Mix {
         }
     }
     
+    public get nodes(): readonly ElaborationNode[] {
+        return this._nodes.slice();
+    }
+    
+    public addNode(elaborationNode: ElaborationNode): void {
+        if (this._nodes.includes(elaborationNode)) {
+            return;
+        }
+        this._nodes.push(elaborationNode);
+        for (const input of elaborationNode.inputs) {
+            if (!input.nullable) {
+                this._connections.push({
+                                           sourceType:         ConnectionSourceType.CONSTANT,
+                                           sourceValue:        Datum.getDefaultForType(input.type),
+                                           drainType:          ConnectionDrainType.NODE,
+                                           drainNodeId:        elaborationNode.id,
+                                           drainNodeInputName: input.name
+                                       });
+            }
+        }
+    }
+    
+    public removeNode(elaborationNode: ElaborationNode): void {
+        this._nodes.splice(this._nodes.indexOf(elaborationNode), 1);
+        const incomingConnections =
+                  this
+                      ._connections
+                      .filter((connection): connection is ConnectionSource & ConnectionDrainToNode =>
+                                  connection.drainType == ConnectionDrainType.NODE
+                                  && connection.drainNodeId == elaborationNode.id
+                      );
+        const outgoingConnections =
+                  this
+                      ._connections
+                      .filter((connection): connection is ConnectionSourceFromNode & ConnectionDrain =>
+                                  connection.sourceType == ConnectionSourceType.NODE
+                                  && connection.sourceNodeId == elaborationNode.id
+                      );
+        for (const connection of outgoingConnections) {
+            this.removeConnection(connection);
+        }
+        for (const connection of incomingConnections) {
+            this.removeConnection(connection);
+        }
+    }
+    
+    public get outputs(): readonly Datum[] {
+        return this._outputs.slice();
+    }
+    
+    public addOutput(output: Datum): void {
+        this._outputs.push(output);
+        if (!output.nullable) {
+            this._connections.push({
+                                       sourceType:  ConnectionSourceType.CONSTANT,
+                                       sourceValue: Datum.getDefaultForType(output.type),
+                                       drainType:   ConnectionDrainType.OUTPUT,
+                                       outputName:  output.name
+                                   });
+        }
+    }
+    
+    public removeOutput(output: Datum): void {
+        this._outputs.splice(this._outputs.indexOf(output), 1);
+        for (const connection of this._connections) {
+            if (connection.drainType == ConnectionDrainType.OUTPUT && connection.outputName == output.name) {
+                this.removeConnection(connection);
+            }
+        }
+    }
+    
+    public get imports(): readonly ExportedDatum[] {
+        return this._imports.slice();
+    }
+    
+    public get inputs(): readonly Datum[] {
+        return this._inputs.slice();
+    }
+    
+    public addImport(datum: ExportedDatum): void {
+        if (this._imports.includes(datum)) {
+            return;
+        }
+        this._imports.push(datum);
+        this._inputs.push(new Datum(datum.uniqueName, datum.type, datum.nullable));
+    }
+    
+    public removeInput(input: Datum): void {
+        this._inputs.splice(this._inputs.indexOf(input), 1);
+        for (const connection of this._connections) {
+            if (connection.sourceType == ConnectionSourceType.INPUT && connection.inputName == input.name) {
+                this.removeConnection(connection);
+            }
+        }
+    }
+    
+    public get connections(): readonly Connection[] {
+        return this._connections.slice();
+    }
+    
+    public addConnection(connection: Connection): void {
+        if (this._connections.includes(connection)) {
+            return;
+        }
+        if (connection.drainType == ConnectionDrainType.NODE) {
+            const conflictingConnection =
+                      this._connections.find(
+                          (otherConnection) =>
+                              otherConnection.drainType == ConnectionDrainType.NODE && otherConnection.drainNodeId == connection.drainNodeId &&
+                              otherConnection.drainNodeInputName == connection.drainNodeInputName
+                      );
+            if (conflictingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
+                this._connections.splice(this._connections.indexOf(conflictingConnection), 1);
+            }
+        } else { // ConnectionDrainType.OUTPUT
+            const conflictingConnection =
+                      this._connections.find(
+                          (otherConnection) =>
+                              otherConnection.drainType == ConnectionDrainType.OUTPUT && otherConnection.outputName == connection.outputName
+                      );
+            if (conflictingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
+                this._connections.splice(this._connections.indexOf(conflictingConnection), 1);
+            }
+        }
+        this._connections.push(connection);
+    }
+    
+    public removeConnection(connection: Connection): void {
+        this._connections.splice(this._connections.indexOf(connection), 1);
+        // Transform connections to constant so that no nullable input hangs
+        if (connection.drainType == ConnectionDrainType.NODE) {
+            const drainNode = this._nodes.find(node => node.id == connection.drainNodeId);
+            if (drainNode) {
+                const drainInput = drainNode.inputs.find(input => input.name == connection.drainNodeInputName);
+                if (drainInput) {
+                    if (!drainInput.nullable) {
+                        this._connections
+                            .push({
+                                      sourceType:         ConnectionSourceType.CONSTANT,
+                                      sourceValue:        Datum.getDefaultForType(drainInput.type),
+                                      drainType:          ConnectionDrainType.NODE,
+                                      drainNodeId:        drainNode.id,
+                                      drainNodeInputName: drainInput.name
+                                  });
+                    }
+                }
+            }
+        } else {
+            const drainOutput = this._outputs.find(output => output.name == connection.outputName);
+            if (drainOutput) {
+                if (!drainOutput.nullable) {
+                    this
+                        ._connections
+                        .push({
+                                  sourceType:  ConnectionSourceType.CONSTANT,
+                                  sourceValue: Datum.getDefaultForType(drainOutput.type),
+                                  drainType:   ConnectionDrainType.OUTPUT,
+                                  outputName:  drainOutput.name
+                              });
+                }
+            }
+        }
+    }
+    
     public calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         if (this.containsCycles()) {
             throw new CompositionCalculationError(CompositionCalculationErrorType.CYCLIC_GRAPH);
+        }
+        if (this.wrongConnections.length > 0) {
+            throw new CompositionCalculationError(CompositionCalculationErrorType.WRONG_CONNECTIONS);
         }
         const knownInputs: Map<number, Map<string, unknown>> = new Map<number, Map<string, unknown>>();
         const discoveredNodes: Set<ElaborationNode>          = new Set<ElaborationNode>;
@@ -77,7 +245,7 @@ export class Mix {
         
         const addOutput = (connection: Connection, value: unknown): void => {
             if (connection.drainType == ConnectionDrainType.OUTPUT) {
-                if (this.outputs.some(output => output.name == connection.outputName)) {
+                if (this._outputs.some(output => output.name == connection.outputName)) {
                     results.set(connection.outputName, value);
                 } else {
                     throw new CompositionCalculationOutputError(CompositionCalculationOutputErrorType.UNKNOWN_OUTPUT_NAME, connection.outputName);
@@ -89,7 +257,7 @@ export class Mix {
                     knownInputs.set(connection.drainNodeId, nodeKnownInputs);
                 }
                 nodeKnownInputs.set(connection.drainNodeInputName, value);
-                const node = this.nodes.find(candidateNode => candidateNode.id == connection.drainNodeId);
+                const node = this._nodes.find(candidateNode => candidateNode.id == connection.drainNodeId);
                 if (node == null) {
                     throw new CompositionCalculationError(CompositionCalculationErrorType.UNKNOWN_NODE);
                 }
@@ -131,7 +299,7 @@ export class Mix {
             }
         } while (!unchanged && discoveredNodes.size > 0);
         
-        for (const output of this.outputs) {
+        for (const output of this._outputs) {
             if (!results.has(output.name) && !output.nullable) {
                 throw {type: CompositionCalculationOutputErrorType.MISSING_OUTPUT, outputName: output.name} as CompositionCalculationOutputError;
             }
@@ -145,29 +313,83 @@ export class Mix {
     }
     
     public get sourceConnections(): (ConnectionSourceFromInput & ConnectionDrain)[] {
-        return this.connections.filter((connection: Connection): connection is ConnectionSourceFromInput & ConnectionDrain => {
+        return this._connections.filter((connection: Connection): connection is ConnectionSourceFromInput & ConnectionDrain => {
             return connection.sourceType == ConnectionSourceType.INPUT;
         });
     }
     
     public get constantConnections(): (ConnectionSourceFromConstant & ConnectionDrain)[] {
-        return this.connections.filter((connection: Connection): connection is ConnectionSourceFromConstant & ConnectionDrain => {
+        return this._connections.filter((connection: Connection): connection is ConnectionSourceFromConstant & ConnectionDrain => {
             return connection.sourceType == ConnectionSourceType.CONSTANT;
         });
     }
     
     public getConnectionsFromNode(nodeId: number): (ConnectionSourceFromNode & ConnectionDrain)[] {
         return this
-            .connections
+            ._connections
             .filter((connection: Connection): connection is ConnectionSourceFromNode & ConnectionDrain => {
                 return connection.sourceType == ConnectionSourceType.NODE && connection.sourceNodeId == nodeId;
             });
     }
     
+    public getDrainDatum(connection: Connection): Datum | null {
+        switch (connection.drainType) {
+            case ConnectionDrainType.OUTPUT:
+                return this._outputs.find(output => output.name == connection.outputName) ?? null;
+            case ConnectionDrainType.NODE: {
+                const drainNode = this._nodes.find(node => node.id == connection.drainNodeId);
+                if (drainNode) {
+                    return drainNode.inputs.find(input => input.name == connection.drainNodeInputName) ?? null;
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+    
+    public getSourceDatum(connection: Connection): Datum | null {
+        switch (connection.sourceType) {
+            case ConnectionSourceType.CONSTANT:
+                return null;
+            case ConnectionSourceType.INPUT:
+                return this._inputs.find(input => input.name == connection.inputName) ?? null;
+            case ConnectionSourceType.NODE: {
+                const drainNode = this._nodes.find(node => node.id == connection.sourceNodeId);
+                if (drainNode) {
+                    return drainNode.outputs.find(output => output.name == connection.sourceNodeOutputName) ?? null;
+                } else {
+                    return null;
+                }
+            }
+        }
+    }
+    
+    public get wrongConnections(): Connection[] {
+        return this._connections.filter((connection) => {
+            const drainDatum: Datum | null = this.getDrainDatum(connection);
+            if (drainDatum == null) {
+                return true;
+            }
+            switch (connection.sourceType) {
+                case ConnectionSourceType.CONSTANT: {
+                    return !drainDatum.checkValue(connection.sourceValue);
+                }
+                case ConnectionSourceType.NODE:
+                case ConnectionSourceType.INPUT: {
+                    const sourceDatum: Datum | null = this.getSourceDatum(connection);
+                    return (sourceDatum == null
+                            || (!drainDatum.nullable && sourceDatum.nullable)
+                            || (drainDatum.type != sourceDatum.type));
+                }
+            }
+            return false;
+        });
+    }
+    
     public containsCycles(): boolean {
         const firstChildren = new Set<number>(
             this
-                .connections
+                ._connections
                 .filter((connection: Connection): connection is ConnectionSourceFromInput & ConnectionDrainToNode => {
                     return connection.sourceType == ConnectionSourceType.INPUT && connection.drainType == ConnectionDrainType.NODE;
                 })
@@ -202,19 +424,19 @@ export class Mix {
     
     public wouldAddCycle(connection: Connection): boolean {
         if ((connection.sourceType == ConnectionSourceType.NODE) && (connection.drainType == ConnectionDrainType.NODE)) {
-            if (this.connections.some(otherConnection =>
-                                          otherConnection.drainType == ConnectionDrainType.NODE &&
-                                          otherConnection.drainNodeId == connection.drainNodeId &&
-                                          otherConnection.drainNodeInputName == connection.drainNodeInputName &&
-                                          otherConnection.sourceType == ConnectionSourceType.NODE &&
-                                          otherConnection.sourceNodeId == connection.sourceNodeId &&
-                                      otherConnection.sourceNodeOutputName == connection.sourceNodeOutputName
+            if (this._connections.some(otherConnection =>
+                                           otherConnection.drainType == ConnectionDrainType.NODE &&
+                                           otherConnection.drainNodeId == connection.drainNodeId &&
+                                           otherConnection.drainNodeInputName == connection.drainNodeInputName &&
+                                           otherConnection.sourceType == ConnectionSourceType.NODE &&
+                                           otherConnection.sourceNodeId == connection.sourceNodeId &&
+                                           otherConnection.sourceNodeOutputName == connection.sourceNodeOutputName
             )) {
                 return false;
             }
-            this.connections.push(connection);
+            this._connections.push(connection);
             const result = this.containsCycles();
-            this.connections.pop();
+            this._connections.pop();
             return result;
         } else {
             return false;
@@ -222,7 +444,7 @@ export class Mix {
     }
     
     public getInputByNodeAndName(nodeId: number, inputName: string): Datum | null {
-        const node = this.nodes.find(otherNode => otherNode.id == nodeId);
+        const node = this._nodes.find(otherNode => otherNode.id == nodeId);
         if (node != null) {
             return node.inputs.find(input => input.name == inputName) ?? null;
         }
@@ -232,21 +454,21 @@ export class Mix {
     public toJSON(): MixJSON {
         return {
             id:          this.id,
-            inputs:      this.inputs.slice().map(input => input.toJSON()),
-            outputs:     this.outputs.slice().map(output => output.toJSON()),
-            nodes:       this.nodes.map(node => node.toJSON()),
-            connections: this.connections.slice(),
-            imports:     this.imports.slice().map(input => input.toJSON()),
+            inputs:      this._inputs.slice().map(input => input.toJSON()),
+            outputs:     this._outputs.slice().map(output => output.toJSON()),
+            nodes:       this._nodes.map(node => node.toJSON()),
+            connections: this._connections.slice(),
+            imports:     this._imports.slice().map(input => input.toJSON())
         };
     }
     
     public static fromJSON(mixJson: MixJSON): Mix {
-        const mix       = new Mix(mixJson.id);
-        mix.inputs      = mixJson.inputs.map(input => Datum.fromJSON(input));
-        mix.outputs     = mixJson.outputs.map(output => Datum.fromJSON(output));
-        mix.nodes       = mixJson.nodes.map(node => ElaborationNode.fromJSON(node));
-        mix.connections = mixJson.connections.map(connection => ConnectionJSON.toConnection(connection));
-        mix.imports     = mixJson.imports.map(input => ExportedDatum.fromJSON(input));
+        const mix        = new Mix(mixJson.id);
+        mix._inputs      = mixJson.inputs.map(input => Datum.fromJSON(input));
+        mix._outputs     = mixJson.outputs.map(output => Datum.fromJSON(output));
+        mix._nodes       = mixJson.nodes.map(node => ElaborationNode.fromJSON(node));
+        mix._connections = mixJson.connections.map(connection => ConnectionJSON.toConnection(connection));
+        mix._imports     = mixJson.imports.map(input => ExportedDatum.fromJSON(input));
         return mix;
     }
 }
@@ -254,8 +476,9 @@ export class Mix {
 export class MixJSON {
     
     @IsDefined()
-    @ValidateIf((obj: MixJSON) => obj.id !== 'NEW')
-    @IsPositive()
+    @ValidateIf((obj: MixJSON) => obj.id !== "NEW")
+    @Min(0)
+    @IsInt()
     public id: number | "NEW";
     
     @IsArray()
@@ -263,7 +486,7 @@ export class MixJSON {
                         each: true
                     })
     @Type(() => DatumJSON)
-    public inputs: DatumJSON[]  = [];
+    public inputs: DatumJSON[] = [];
     
     @IsArray()
     @ValidateNested({
@@ -291,7 +514,7 @@ export class MixJSON {
                         each: true
                     })
     @Type(() => ConnectionJSON)
-    public connections: ConnectionJSON[]    = [];
+    public connections: ConnectionJSON[] = [];
     
     constructor(id: number | "NEW") {
         this.id = id;
@@ -299,8 +522,8 @@ export class MixJSON {
 }
 
 export enum ConnectionSourceType {
-    INPUT = "INPUT",
-    NODE = "NODE",
+    INPUT    = "INPUT",
+    NODE     = "NODE",
     CONSTANT = "CONST"
 }
 
@@ -324,7 +547,7 @@ type ConnectionSource = ConnectionSourceFromInput | ConnectionSourceFromNode | C
 
 export enum ConnectionDrainType {
     OUTPUT = "OUTPUT",
-    NODE = "NODE"
+    NODE   = "NODE"
 }
 
 export interface ConnectionDrainToOutput {
@@ -357,7 +580,7 @@ export class ConnectionJSON {
     
     @IsOptional()
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public sourceNodeId?: number;
     
     @IsOptional()
@@ -375,7 +598,7 @@ export class ConnectionJSON {
     
     @IsOptional()
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public drainNodeId?: number;
     
     @IsOptional()
@@ -385,7 +608,7 @@ export class ConnectionJSON {
     
     constructor(sourceType: ConnectionSourceType, drainType: ConnectionDrainType) {
         this.sourceType = sourceType;
-        this.drainType = drainType;
+        this.drainType  = drainType;
     }
     
     public static toConnection(connectionJSON: ConnectionJSON): Connection {
@@ -396,24 +619,24 @@ export class ConnectionJSON {
                 case ConnectionSourceType.INPUT: {
                     sourceResult = {
                         sourceType: ConnectionSourceType.INPUT,
-                        inputName: connectionJSON.inputName
+                        inputName:  connectionJSON.inputName
                     };
-                    break
+                    break;
                 }
                 case ConnectionSourceType.NODE: {
                     sourceResult = {
-                        sourceType:   ConnectionSourceType.NODE,
-                        sourceNodeId: connectionJSON.sourceNodeId,
+                        sourceType:           ConnectionSourceType.NODE,
+                        sourceNodeId:         connectionJSON.sourceNodeId,
                         sourceNodeOutputName: connectionJSON.sourceNodeOutputName
-                    }
+                    };
                     break;
                 }
                 case ConnectionSourceType.CONSTANT: {
                     sourceResult = {
-                        sourceType: ConnectionSourceType.CONSTANT,
+                        sourceType:  ConnectionSourceType.CONSTANT,
                         sourceValue: connectionJSON.sourceValue
-                    }
-                    break
+                    };
+                    break;
                 }
             }
             switch (connectionJSON.drainType) {
@@ -426,17 +649,17 @@ export class ConnectionJSON {
                 }
                 case ConnectionDrainType.NODE: {
                     drainResult = {
-                        drainType: ConnectionDrainType.NODE,
-                        drainNodeId: connectionJSON.drainNodeId,
+                        drainType:          ConnectionDrainType.NODE,
+                        drainNodeId:        connectionJSON.drainNodeId,
                         drainNodeInputName: connectionJSON.drainNodeInputName
-                    }
+                    };
                     break;
                 }
             }
             return {
                 ...sourceResult,
                 ...drainResult
-            }
+            };
         } else {
             throw new Error("The collection provided is not valid");
         }
@@ -451,7 +674,7 @@ export class ConnectionJSON {
                     connection.sourceNodeOutputName != undefined ||
                     connection.inputName == undefined
                 ) {
-                    return false
+                    return false;
                 }
                 break;
             case ConnectionSourceType.NODE:
@@ -461,7 +684,7 @@ export class ConnectionJSON {
                     connection.sourceNodeOutputName == undefined ||
                     connection.inputName != undefined
                 ) {
-                    return false
+                    return false;
                 }
                 break;
             case ConnectionSourceType.CONSTANT:
@@ -471,7 +694,7 @@ export class ConnectionJSON {
                     connection.sourceNodeOutputName != undefined ||
                     connection.inputName != undefined
                 ) {
-                    return false
+                    return false;
                 }
                 break;
         }
@@ -482,7 +705,7 @@ export class ConnectionJSON {
                     connection.drainNodeInputName != undefined ||
                     connection.outputName == undefined
                 ) {
-                    return false
+                    return false;
                 }
                 break;
             case ConnectionDrainType.NODE:
@@ -491,7 +714,7 @@ export class ConnectionJSON {
                     connection.drainNodeInputName == undefined ||
                     connection.outputName != undefined
                 ) {
-                    return false
+                    return false;
                 }
                 break;
         }

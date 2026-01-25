@@ -1,6 +1,6 @@
 import {Device, DeviceJSON} from "../device";
 import {Datum} from "../../mixing/mix/datum";
-import {IsEnum, IsInt, IsPositive, ValidateIf} from "rest-decorators";
+import {IsEnum, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
 
 export class Actuator extends Device {
     
@@ -50,7 +50,7 @@ export class ActuatorJSON extends DeviceJSON {
     
     @ValidateIf((o: ActuatorJSON) => o.mix !== null)
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public mix: number | null = null;
     
     @IsEnum(ActuatorType)

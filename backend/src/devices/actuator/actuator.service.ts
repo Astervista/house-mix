@@ -1,6 +1,6 @@
-import {ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
+import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
 import {FileService} from "../../helpers/file/file.service";
-import {MixService} from "../../mixing/mix/mix.service";
+import MixService from "../../mixing/mix/mix.service";
 import {Actuator, ActuatorJSON} from "@common/devices/actuator/actuator";
 import {GroupService} from "../group/group.service";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
@@ -19,6 +19,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         fileService: FileService,
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
+        @Inject(forwardRef(() => MixService))
         private mixService: MixService
     ) {
         super(fileService, SAVE_FILE, ActuatorData);
@@ -118,6 +119,21 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         }
     }
     
+    public async setMixForActuator(sensorName: string, mixId: number | "NEW"): Promise<void> {
+        if (mixId == "NEW") {
+            throw new BadRequestException("Cannot assign a new mix directly");
+        }
+        const actuator = await this.getActuatorByName(sensorName);
+        if (actuator == null) {
+            throw new NotFoundException(`Cannot find actuator "${sensorName}"`)
+        } else {
+            if (await this.mixService.getMixById(mixId) == null) {
+                throw new NotFoundException(`Cannot find mix with id ${mixId}`)
+            }
+        }
+        actuator.mix = mixId;
+        this.saveData();
+    }
 }
 
 

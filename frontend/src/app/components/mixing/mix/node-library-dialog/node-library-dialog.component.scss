@@ -1,5 +1,7 @@
 @use "dimensions";
 @use "colors";
+@use "../../../entities/entity";
+@use "../connectors";
 
 .list {
     display: flex;
@@ -10,126 +12,69 @@
 }
 
 .node-preview {
-    display: flex;
-    flex-direction: column;
-    gap: dimensions.$margin-medium;
-    margin-top: 15px;
-    border-radius: 10px;
-    border: solid 3px var(--mat-sys-primary-container);
-    background: var(--mat-sys-background);
-    padding: 10px 10px 20px;
-    cursor: pointer;
-    color: var(--mat-sys-on-background);
-
-    &.selected {
-        border-color: var(--mat-sys-primary);
-
-        .node-preview-title {
-            border-color: var(--mat-sys-primary);
-        }
-    }
+    @include entity.container;
 
     .node-preview-title {
-        font-size: 20px;
-        width: 75%;
-        height: 30px;
-        background: var(--mat-sys-background);
-        border-radius: 10px;
-        border: solid 3px var(--mat-sys-primary-container);
-        margin-top: -25px;
-        align-self: center;
-        display: flex;
+        @include entity.name(true, false);
         text-align: center;
-        align-items: center;
-        justify-content: center;
-        font-weight: 300;
     }
 
     .node-preview-description {
         opacity: 0.9;
-        font-size: 17px;
+        font-size: 15px;
+        font-weight: 200;
         color: var(--mat-sys-on-background);
         text-align: center;
         align-self: center;
-        margin-top: 10px;
+        margin-top: dimensions.$margin-medium;
     }
 
     .node-preview-exposed-container {
         align-self: stretch;
         display: flex;
         align-items: center;
-        margin-top: 10px;
+        margin-bottom: dimensions.$margin-mlarge;
 
         .node-preview-exposed-side {
             display: flex;
             flex-direction: column;
             flex-grow: 1;
             flex-basis: 0;
-            gap: 12px;
 
-            .node-preview-input,
-            .node-preview-output {
+            .input-group,
+            .output-group {
 
+                display: flex;
+                flex-direction: column;
+                padding: dimensions.$margin-medium 0 dimensions.$margin-medium dimensions.$indent-medium;
+                &.output-group {
+                    margin-right: 10px;
+                }
+                &.input-group {
+                    margin-left: 10px;
+                }
                 position: relative;
 
-                .node-preview-output-circle,
-                .node-preview-input-circle {
-                    width: 12px;
-                    height: 12px;
-                    border: solid 2px var(--type-color);
-                    border-radius: 30px;
-                    display: block;
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: var(--mat-sys-background);
-                }
-                .node-preview-output-circle {
-                    right: -19px;
-                }
-                .node-preview-input-circle {
-                    left: -19px;
-                }
+                @include connectors.connector;
 
-
-                .node-preview-output-circle-non-null,
-                .node-preview-input-circle-non-null {
-                    width: 4px;
-                    height: 4px;
-                    background: var(--type-color);
-                    border-radius: 30px;
-                    display: block;
-                    position: absolute;
-                    top: 50%;
-                    transform: translateY(-50%);
-                }
-                .node-preview-output-circle-non-null {
-                    right: -13px;
-                }
-                .node-preview-input-circle-non-null {
-                    left: -13px;
-                }
-
-                .node-preview-input-info,
-                .node-preview-output-info {
-                    margin: 0 5px;
-                    display: flex;
-                    flex-direction: column;
-                    font-size: 18px;
+                .input-name,
+                .output-name {
                     font-weight: 300;
-
-                    .node-preview-output-type,
-                    .node-preview-input-type {
-                        font-size: 16px;
-                        font-weight: 200;
-                        opacity: 0.8;
-                    }
+                    font-size: 18px;
                 }
-                .node-preview-output-info {
-                    text-align: right;
+                .output-name {
+                    text-align: end;
+                }
+
+                .input-type,
+                .output-type {
+                    font-weight: 200;
+                    font-size: 15px;
+                }
+                .output-type {
+                    text-align: end;
                 }
             }
-
         }
     }
 }
@@ -154,5 +99,5 @@
 }
 
 .null-guard-input {
-    margin: 10px 0 -10px;
+    margin: dimensions.$margin-medium dimensions.$indent-msmall -10px;
 }

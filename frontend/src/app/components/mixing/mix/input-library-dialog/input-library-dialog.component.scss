@@ -1,18 +1,55 @@
 @use "dimensions";
+@use "colors";
+@use "../../../entities/entity";
+@use "../connectors";
 
 .option-list {
     display: flex;
-    flex-direction: column;
-    gap: dimensions.$margin-medium;
+    flex-wrap: wrap;
+    gap: dimensions.$indent-mlarge;
     padding: dimensions.$margin-msmall;
+    justify-content: space-around;
+
+    @include colors.datum-type-colors();
 }
 
-.export-option {
-    padding: dimensions.$margin-medium;
-    cursor: pointer;
-    border-radius: 4px;
 
-    &.selected {
-        outline: solid var(--mat-sys-primary) 1px;
+.input-preview {
+    @include entity.container;
+    cursor: pointer;
+
+    .origin-name {
+        @include entity.name(false, true);
+
+        align-self: end;
+        margin-left: dimensions.$indent-medium;
+        text-align: end;
+        font-weight: 100;
+        font-size: 14px;
+        padding: dimensions.$margin-medium dimensions.$margin-mlarge;
+
+    }
+
+    .input-group {
+
+        display: flex;
+        flex-direction: column;
+        padding: dimensions.$margin-medium 0 dimensions.$margin-medium dimensions.$indent-medium;
+        margin-right: 10px;
+        position: relative;
+
+        @include connectors.connector;
+
+        .input-name {
+            font-weight: 300;
+            font-size: 18px;
+            text-align: end;
+        }
+
+        .input-type {
+            font-weight: 200;
+            font-size: 15px;
+            text-align: end;
+        }
     }
 }

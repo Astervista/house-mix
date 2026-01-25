@@ -1,6 +1,6 @@
 import {Device, DeviceJSON} from "../device";
 import {Datum} from "../../mixing/mix/datum";
-import {IsEnum, IsInt, IsPositive, ValidateIf } from "rest-decorators";
+import {IsEnum, IsInt, IsPositive, Min, ValidateIf} from "rest-decorators";
 
 export class Sensor extends Device {
 
@@ -51,7 +51,7 @@ export class SensorJSON extends DeviceJSON {
     
     @ValidateIf((o: SensorJSON) => o.mix !== null)
     @IsInt()
-    @IsPositive()
+    @Min(0)
     public mix: number | null = null;
     
     @IsEnum(SensorType)
