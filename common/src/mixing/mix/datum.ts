@@ -1,6 +1,5 @@
-import {IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, Type, ValidateNested} from "rest-decorators";
+import {IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, Type, ValidateNested} from "rest-decorators";
 import {ElaborationNode} from "./elaboration-node";
-import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class Datum {
     
@@ -13,19 +12,7 @@ export class Datum {
     }
     
     public checkValue(value: unknown): boolean {
-        if (value == null) {
-            return this.nullable;
-        }
-        switch (this.type) {
-            case DatumType.BOOLEAN:
-                return typeof value === "boolean";
-            case DatumType.NUMBER:
-                return typeof value === "number" && isFinite(value);
-            case DatumType.TIME:
-            case DatumType.DATE:
-            case DatumType.DATE_TIME:
-                return value instanceof Date;
-        }
+        return Datum.checkValue(value, this.type, this.nullable);
     }
     
     public toJSON(): DatumJSON {
@@ -82,6 +69,83 @@ export class Datum {
             }
         }
     }
+    
+    public static checkValue(value: unknown, type: DatumType, nullable: boolean): boolean {
+        if (value == null) {
+            return nullable;
+        }
+        switch (type) {
+            case DatumType.BOOLEAN:
+                return typeof value === "boolean";
+            case DatumType.NUMBER:
+                return typeof value === "number" && isFinite(value);
+            case DatumType.TIME:
+            case DatumType.DATE:
+            case DatumType.DATE_TIME:
+                return value instanceof Date;
+        }
+    }
+    
+    public static checkValueJSON(value: unknown, type: DatumType, nullable: boolean): boolean {
+        if (value == null) {
+            return nullable;
+        }
+        switch (type) {
+            case DatumType.BOOLEAN:
+                return typeof value === "boolean";
+            case DatumType.NUMBER:
+                return typeof value === "number" && isFinite(value);
+            case DatumType.TIME:
+            case DatumType.DATE:
+            case DatumType.DATE_TIME:
+                return typeof value === "number";
+        }
+    }
+    
+    public static valueFromJSON(value: unknown, type: DatumType): unknown {
+        if (!Datum.checkValueJSON(value, type, true)) {
+            throw new Error("Incompatible value and types");
+        }
+        if (value == null) {
+            return null;
+        }
+        switch (type) {
+            case DatumType.BOOLEAN: {
+                return value as boolean;
+            }
+            case DatumType.NUMBER: {
+                return value as number;
+            }
+            case DatumType.TIME:
+            case DatumType.DATE:
+            case DatumType.DATE_TIME: {
+                return new Date(value as number);
+            }
+        }
+    }
+    
+    public static valueToJSON(value: unknown, type: DatumType): unknown {
+        if (!Datum.checkValue(value, type, true)) {
+            throw new Error("Incompatible value and times");
+        }
+        if (value == null) {
+            return null;
+        }
+        switch (type) {
+            case DatumType.BOOLEAN: {
+                return value as boolean;
+            }
+            case DatumType.NUMBER: {
+                return value as number;
+            }
+            case DatumType.TIME:
+            case DatumType.DATE:
+            case DatumType.DATE_TIME: {
+                return (value as Date).getTime();
+            }
+        }
+    }
+    
 }
 
 export interface ElaborationNodeDatum {
@@ -114,12 +178,12 @@ export class ExportedDatum extends Datum {
     
     public override toJSON(): ExportedDatumJSON {
         return {
-            name:       this.name,
-            type:       this.type,
-            nullable:   this.nullable,
-            origin:     this.origin,
-            originName: this.originName,
-            displayName: this.displayName,
+            name:              this.name,
+            type:              this.type,
+            nullable:          this.nullable,
+            origin:            this.origin,
+            originName:        this.originName,
+            displayName:       this.displayName,
             originDisplayName: this.originDisplayName
         };
     }
@@ -173,8 +237,9 @@ export class DatumJSON {
 }
 
 export enum DatumOrigin {
-    GROUP            = "GROUP",
-    SENSOR           = "SENSOR",
+    GROUP  = "GROUP",
+    SENSOR = "SENSOR",
+    SENSOR_DATA = "SENSOR_DATA",
     SYSTEM = "SYSTEM",
 }
 
@@ -201,9 +266,9 @@ export class ExportedDatumJSON extends DatumJSON {
                 displayName?: string,
                 originDisplayName?: string) {
         super(name, type, nullable);
-        this.origin      = origin;
-        this.originName  = originName;
-        this.displayName = displayName;
+        this.origin            = origin;
+        this.originName        = originName;
+        this.displayName       = displayName;
         this.originDisplayName = originDisplayName;
     }
 }

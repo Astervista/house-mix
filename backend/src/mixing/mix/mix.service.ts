@@ -97,8 +97,8 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         // Checking the validity of the new mix
         
         // Checking if all the imports are actually correct
-        const availableImports = await this.getAvailableImports(position);
-        const unavailableImports  = mix.imports.filter(
+        const availableImports   = await this.getAvailableImports(position);
+        const unavailableImports = mix.imports.filter(
             imp => (
                 !availableImports.some(otherImport => (
                     imp.equals(otherImport)
@@ -106,28 +106,28 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     && imp.nullable == otherImport.nullable
                 ))
             )
-        )
+        );
         if (unavailableImports.length > 0) {
             throw new BadRequestException(
                 {
-                    showable:          true,
-                    errorType:         PutMixShowableError.IMPORTS_UNAVAILABLE,
+                    showable:  true,
+                    errorType: PutMixShowableError.IMPORTS_UNAVAILABLE,
                     unavailableImports,
-                    message:           "The new mix requires imports that are either not existing anymore or outside the scope it is put into"
+                    message:   "The new mix requires imports that are either not existing anymore or outside the scope it is put into"
                 });
         }
         const orphanInputs =
                   mix.inputs.filter(
                       input =>
                           !mix.imports.some(imp => imp.uniqueName == input.name)
-                  )
+                  );
         if (orphanInputs.length > 0) {
             throw new BadRequestException(
                 {
-                    showable:          true,
-                    errorType:         PutMixShowableError.INPUTS_WITHOUT_IMPORT,
+                    showable:  true,
+                    errorType: PutMixShowableError.INPUTS_WITHOUT_IMPORT,
                     orphanInputs,
-                    message:           "The new mix has some inputs that are not corresponding to its imports"
+                    message:   "The new mix has some inputs that are not corresponding to its imports"
                 });
         }
         
@@ -139,23 +139,21 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         if (mix.containsCycles()) {
             throw new BadRequestException(
                 {
-                    showable:          true,
-                    errorType:         PutMixShowableError.CYCLE,
-                    message:           "The new mix has cycles that are reachable from the inputs"
+                    showable:  true,
+                    errorType: PutMixShowableError.CYCLE,
+                    message:   "The new mix has cycles that are reachable from the inputs"
                 });
         }
         const wrongConnections: Connection[] = mix.wrongConnections;
         if (wrongConnections.length > 0) {
             throw new BadRequestException(
                 {
-                    showable:          true,
-                    errorType:         PutMixShowableError.WRONG_CONNECTIONS,
+                    showable:  true,
+                    errorType: PutMixShowableError.WRONG_CONNECTIONS,
                     wrongConnections,
-                    message:           "Some connections are not correct"
+                    message:   "Some connections are not correct"
                 });
         }
-        
-        
         
         if (isNew) {
             data.mixes.push(mix);
@@ -233,11 +231,81 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                                      exposed.name,
                                      exposed.type,
                                      exposed.nullable,
-                                     DatumOrigin.SENSOR,
+                                     DatumOrigin.SENSOR_DATA,
                                      sensor.name,
                                      exposed.name,
                                      sensor.displayName
                                  ))
+                ];
+            } else { // MixTarget.GROUP
+                const group = await this.groupService.getGroupByName(position.groupName);
+                if (group == null) {
+                    throw new NotFoundException(`Could not find group with name ${position.groupName}`);
+                }
+                const data        = await this.data;
+                // It's a group in the sensor stage. We have to find all the outputs of the children's mixes and all the descending devices.
+                const descendants = await this.groupService.getDescendingGroups(position.groupName);
+                const sensorNames = descendants.flatMap(descendant => descendant.sensors);
+                sensorNames.push(...group.sensors);
+                const sensors                  = await this.sensorService.getSensorsByNames(sensorNames);
+                const results: ExportedDatum[] = [];
+                for (const descendant of descendants) {
+                    if (descendant.sensorMix != null) {
+                        const mix = data.mixes.find(otherMix => otherMix.id == descendant.sensorMix);
+                        if (mix != null) {
+                            results.push(...mix.outputs.map(
+                                output =>
+                                    new ExportedDatum(
+                                        output.name,
+                                        output.type,
+                                        output.nullable,
+                                        DatumOrigin.GROUP,
+                                        descendant.name,
+                                        output.name,
+                                        descendant.displayName
+                                    )
+                            ));
+                        }
+                    }
+                }
+                for (const sensor of sensors) {
+                    if (sensor.mix != null) {
+                        results.push(
+                            ...sensor
+                                .exposes
+                                .map(exposed =>
+                                         new ExportedDatum(
+                                             exposed.name,
+                                             exposed.type,
+                                             exposed.nullable,
+                                             DatumOrigin.SENSOR_DATA,
+                                             sensor.name,
+                                             exposed.name,
+                                             sensor.displayName
+                                         )
+                                )
+                        )
+                        const mix = data.mixes.find(otherMix => otherMix.id == sensor.mix);
+                        if (mix != null) {
+                            results.push(...mix.outputs.map(
+                                output =>
+                                    new ExportedDatum(
+                                        output.name,
+                                        output.type,
+                                        output.nullable,
+                                        DatumOrigin.SENSOR,
+                                        sensor.name,
+                                        output.name,
+                                        sensor.displayName
+                                    )
+                            ));
+                        }
+                    }
+                }
+                return [
+                    ...parameterData,
+                    ...timerData,
+                    ...results
                 ];
             }
         }
@@ -247,42 +315,42 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     public async getMixPosition(id: number): Promise<MixPositionInfo> {
         const data = await this.data;
         if (data.mixes.every(mix => mix.id != id)) {
-            throw new NotFoundException("Mix not found")
+            throw new NotFoundException("Mix not found");
         }
-        const sensor = (await this.sensorService.getAllSensors({mix: id}))[0];
-        const actuator = (await this.actuatorService.getAllActuators({mix: id}))[0];
-        const sensorGroup = (await this.groupService.getAllGroups({sensorMix: id}))[0];
+        const sensor        = (await this.sensorService.getAllSensors({mix: id}))[0];
+        const actuator      = (await this.actuatorService.getAllActuators({mix: id}))[0];
+        const sensorGroup   = (await this.groupService.getAllGroups({sensorMix: id}))[0];
         const actuatorGroup = (await this.groupService.getAllGroups({actuatorMix: id}))[0];
         if (sensor != null) {
-            return  {
-                phase: MixPhase.SENSORS,
-                target: MixTarget.DEVICE,
+            return {
+                phase:      MixPhase.SENSORS,
+                target:     MixTarget.DEVICE,
                 sensorName: sensor.name
-            }
+            };
         }
         if (actuator != null) {
-            return  {
-                phase: MixPhase.ACTUATORS,
-                target: MixTarget.DEVICE,
+            return {
+                phase:        MixPhase.ACTUATORS,
+                target:       MixTarget.DEVICE,
                 actuatorName: actuator.name
-            }
+            };
         }
         if (sensorGroup != null) {
             return {
-                phase: MixPhase.SENSORS,
-                target: MixTarget.GROUP,
+                phase:     MixPhase.SENSORS,
+                target:    MixTarget.GROUP,
                 groupName: sensorGroup.name
-            }
+            };
         }
         if (actuatorGroup != null) {
             return {
-                phase: MixPhase.ACTUATORS,
-                target: MixTarget.GROUP,
+                phase:     MixPhase.ACTUATORS,
+                target:    MixTarget.GROUP,
                 groupName: actuatorGroup.name
-            }
+            };
         }
         // TODO: Check if it's not at the center, otherwise throw
-        throw new NotFoundException("Mix not found")
+        throw new NotFoundException("Mix not found");
     }
 }
 

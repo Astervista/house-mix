@@ -1,6 +1,6 @@
 import {Point} from '@angular/cdk/drag-drop';
 import {ElaborationNode} from '@common/mixing/mix/elaboration-node';
-import {Connection, ConnectionDrainType, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
+import {Connection, ConnectionDrainToNode, ConnectionDrainType, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
 import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mixing/mix/datum';
 
 interface Line {
@@ -21,15 +21,21 @@ export class MixUiManager {
     private lockedInputs: ElaborationNodeDatum[] = [];
     private lockedExternalOutputs: Datum[]       = [];
 
-    public mix: Mix | null = null;
+    private _mix: Mix | null = null;
 
     public availableExportsLength: number | null = null;
 
     public svgElement: HTMLElement | null = null;
 
+    public set mix(mix: Mix) {
+        this._mix = mix;
+        this.refreshMix();
+        this.rearrangeNodes();
+    }
+
     public refreshMix(): void {
         // Sometimes changes made to the mix are not catchable. This function refreshes these changes
-        const mix = this.mix;
+        const mix = this._mix;
         if (mix == null) {
             return;
         }
@@ -73,6 +79,329 @@ export class MixUiManager {
 
     }
 
+    public rearrangeNodes(): void {
+        const mix = this._mix;
+        if (mix == null) {
+            return;
+        }
+
+        interface TreeNode {
+            node: ElaborationNode;
+            children: TreeNode[];
+            parents: TreeNode[];
+            level?: number;
+        }
+
+        const tree: TreeNode[]              = [];
+        const discoveredTreeNodes: TreeNode[] = [];
+        const connections                   = mix.connections.slice();
+        let missingNodes: ElaborationNode[] = mix.nodes.slice();
+        let maxHeight: number | null = null;
+
+        for (const input of mix.inputs) {
+            const drainConnection =
+                      connections
+                          .find(
+                              a =>
+                                  a.sourceType == ConnectionSourceType.INPUT
+                                  && a.inputName == input.name
+                          );
+            if (drainConnection?.drainType == ConnectionDrainType.NODE) {
+                const nodeIndex = missingNodes.findIndex(
+                    a => a.id == drainConnection.drainNodeId
+                );
+                if (nodeIndex != -1) {
+                    const node = missingNodes[nodeIndex];
+                    missingNodes.splice(nodeIndex, 1);
+                    if (node != null) {
+                        const newNode = {
+                            node,
+                            children: [],
+                            parents:  []
+                        };
+                        tree.push(newNode);
+                        discoveredTreeNodes.push(newNode);
+                    }
+                }
+            }
+        }
+        // We know we have to at least check all the tree children (if we have found some)
+        let level      = tree;
+        let cycleFound = false;
+        while (level.length != 0) {
+            // At every depth level, we see if we can find undiscovered nodes. If there are drain nodes that are not undiscovered, it means we have a cycle.
+            // Otherwise, we go until we are left with nodes outside the reach of the inputs.
+            const newLevel: TreeNode[] = [];
+            for (const node of level) {
+                const drainConnections: (ConnectionSourceFromNode & ConnectionDrainToNode)[] = connections.filter(
+                    (connection): connection is ConnectionSourceFromNode & ConnectionDrainToNode => (
+                        connection.sourceType == ConnectionSourceType.NODE
+                        && connection.sourceNodeId == node.node.id
+                        && connection.drainType == ConnectionDrainType.NODE
+                    )
+                );
+                for (const connection of drainConnections) {
+                    if (connection.drainNodeId == node.node.id) {
+                        // A self-loop is found. Abort
+                        cycleFound = true;
+                        break;
+                    }
+                    const nodeIndex = missingNodes.findIndex(
+                        a => a.id == connection.drainNodeId
+                    );
+                    if (nodeIndex != -1) {
+                        const drainNode = missingNodes[nodeIndex];
+                        missingNodes.splice(nodeIndex, 1);
+                        if (drainNode != null) {
+                            const newNode = {
+                                node:     drainNode,
+                                children: [],
+                                parents:  [node]
+                            };
+                            node.children.push(newNode);
+                            discoveredTreeNodes.push(newNode);
+                            newLevel.push(newNode);
+                        }
+                    } else {
+                        // The node has already been discovered. It may be a cycle, but it may also be caught by another branch.
+                        // To check if it's a cycle, we search back to the parents until we get to the root or we find the cycle
+                        const treeNode = discoveredTreeNodes.find(otherTreeNode => otherTreeNode.node.id == connection.drainNodeId);
+                        if (treeNode != null) {
+                            let toCheck = node.parents;
+                            let found   = false;
+                            while ((toCheck.length != 0) && !found) {
+                                found   = toCheck.includes(treeNode);
+                                toCheck = toCheck.flatMap(a => a.parents);
+                            }
+                            if (found) {
+                                // A we have found the node in the ancestors. It's a cycle
+                                cycleFound = true;
+                                break;
+                            } else {
+                                // The node was only reached by someone else, we add this node to its parents
+                                // We do not add the child to next level because it's already been elaborated
+                                treeNode.parents.push(node);
+                                node.children.push(treeNode);
+                            }
+                        } else {
+                            throw new Error('Cannot redo the layout');
+                        }
+                    }
+                }
+                if (cycleFound) {
+                    break;
+                }
+            }
+            if (cycleFound) {
+                break;
+            }
+            // All the new levels have been elaborated, next level are the discovered children
+            level = newLevel;
+        }
+
+        if (!cycleFound) {
+            const placedParents: Set<TreeNode> = new Set<TreeNode>();
+            let toPlace: Set<TreeNode>         = new Set<TreeNode>(tree);
+            let levelNumber                    = 0;
+            while (toPlace.size != 0) {
+                const nextToPlace = new Set<TreeNode>();
+                for (const node of toPlace) {
+                    if (node.parents.every(a => placedParents.has(a))) {
+                        // The parents are all placed. This is as good of a level as any to stop
+                        node.level = levelNumber;
+                        placedParents.add(node);
+                        node.children.forEach((child) => nextToPlace.add(child));
+                    } else {
+                        // Some parents have yet to be placed, we postpone the placement to later
+                        nextToPlace.add(node);
+                    }
+                }
+                toPlace = nextToPlace;
+                levelNumber++;
+            }
+            // All nodes have been placed. We now sort the parents by level to have an ordered tree
+            const ordered    = [...placedParents.values()].sort(
+                (a, b) => {
+                    if (a.level == null || b.level == null) {
+                        return 0;
+                    }
+                    return a.level - b.level;
+                }
+            );
+            let y            = 0;
+            let lastLevel    = 0;
+            const levelHeights = new Map<number, number>();
+            for (const treeNode of ordered) {
+                if (treeNode.level != lastLevel) {
+                    levelHeights.set(lastLevel, y - MEASURES.NODE_HEADING_HEIGHT);
+                    if (maxHeight == null) {
+                        maxHeight = y - MEASURES.NODE_HEADING_HEIGHT;
+                    } else {
+                        maxHeight = Math.max(maxHeight, y - MEASURES.NODE_HEADING_HEIGHT);
+                    }
+                    lastLevel = treeNode.level ?? 0;
+                    y         = 0;
+                }
+                this.nodePositions.set(
+                    treeNode.node,
+                    {
+                        x: (treeNode.level ?? 0) * (MEASURES.NODE_WIDTH + MEASURES.NODE_SPACING),
+                        y
+                    }
+                );
+                const stacks = Math.max(treeNode.node.inputs.length, treeNode.node.outputs.length);
+                y += MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1) + MEASURES.NODE_HEADING_HEIGHT;
+            }
+            levelHeights.set(lastLevel, y - MEASURES.NODE_HEADING_HEIGHT);
+            if (maxHeight == null) {
+                maxHeight = y - MEASURES.NODE_HEADING_HEIGHT;
+            } else {
+                maxHeight = Math.max(maxHeight, y - MEASURES.NODE_HEADING_HEIGHT);
+            }
+            for (const treeNode of ordered) {
+                if (treeNode.level != null) {
+                    this.shiftNode({x: 0, y: - (levelHeights.get(treeNode.level) ?? 0) / 2}, treeNode.node)
+                }
+            }
+        } else {
+            // There is a cycle. All the nodes must be rearranged loosely, as if they weren't oriented.
+            missingNodes        = mix.nodes.slice();
+        }
+
+        // Ordering the missing nodes
+
+        const linkedTreeNodes: TreeNode[] = missingNodes.map(node => {
+            return {
+                node,
+                children: [],
+                parents:  []
+            };
+        });
+        for (const treeNode of linkedTreeNodes) {
+            const drainConnections: (ConnectionSourceFromNode & ConnectionDrainToNode)[] = connections.filter(
+                (connection): connection is ConnectionSourceFromNode & ConnectionDrainToNode => (
+                    connection.sourceType == ConnectionSourceType.NODE
+                    && connection.sourceNodeId == treeNode.node.id
+                    && connection.drainType == ConnectionDrainType.NODE
+                )
+            );
+            for (const connection of drainConnections) {
+                const otherNode = linkedTreeNodes.find(candidate => candidate.node.id == connection.drainNodeId);
+                if (otherNode != null) {
+                    if (!treeNode.children.includes(otherNode)) {
+                        treeNode.children.push(otherNode);
+                    }
+                    if (!otherNode.parents.includes(treeNode)) {
+                        otherNode.parents.push(treeNode);
+                    }
+                }
+            }
+        }
+        const fromInputNodesId =
+                  mix.connections
+                     .filter(
+                         (connection) =>
+                             connection.sourceType == ConnectionSourceType.INPUT && connection.drainType == ConnectionDrainType.NODE
+                     )
+                     .map(connection => connection.drainNodeId);
+        linkedTreeNodes.sort((a, b) => {
+            if (fromInputNodesId.includes(a.node.id)) {
+                return fromInputNodesId.includes(b.node.id) ? 0 : 1;
+            } else {
+                return b.parents.length - a.parents.length;
+            }
+        })
+
+        const clusters: { seed: TreeNode, cluster: TreeNode[]}[] = [];
+        while (linkedTreeNodes.length != 0) {
+            const nextSeed = linkedTreeNodes.pop();
+            if (nextSeed == null) {
+                break;
+            }
+            const cluster: TreeNode[] = [];
+            clusters.push({seed: nextSeed, cluster});
+            cluster.push(nextSeed);
+            let candidates = nextSeed.children.slice();
+            while (candidates.length != 0) {
+                const newCandidates = [];
+                for (const candidate of candidates) {
+                    if (!cluster.includes(candidate) && linkedTreeNodes.includes(candidate)) {
+                        cluster.push(candidate);
+                        newCandidates.push(...candidate.children);
+                        linkedTreeNodes.splice(linkedTreeNodes.indexOf(candidate), 1);
+                    }
+                }
+                candidates = newCandidates;
+            }
+        }
+
+        let centerY;
+        let topShift: number | null = null;
+        let bottomShift: number | null = null;
+        let shift: "CENTER" | "TOP" | "BOTTOM";
+        if (maxHeight == null) {
+            centerY = 0;
+            shift   = "CENTER";
+        } else {
+            centerY = - maxHeight / 2 - MEASURES.NODE_SPACING;
+            shift   = "TOP";
+        }
+        for (const cluster of clusters) {
+            let nextMaxHeight = 0;
+            let x = 0;
+            for (const node of cluster.cluster) {
+                const stacks = Math.max(node.node.inputs.length, node.node.outputs.length);
+                const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
+                nextMaxHeight = Math.max(nextMaxHeight, height);
+                this.nodePositions.set(node.node, {
+                    x,
+                    y: centerY - height / 2
+                })
+                x += MEASURES.NODE_WIDTH + MEASURES.NODE_SPACING;
+            }
+            switch (shift) {
+                case "TOP":
+                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: -nextMaxHeight / 2}, node.node)});
+                    topShift = centerY - nextMaxHeight - MEASURES.NODE_SPACING;
+                    shift = "BOTTOM";
+                    if (bottomShift == null) {
+                        centerY = (maxHeight ?? 0)/2;
+                    } else {
+                        centerY = bottomShift;
+                    }
+                    maxHeight = nextMaxHeight;
+                    break;
+                case "CENTER":
+                    centerY = - nextMaxHeight / 2 - MEASURES.NODE_SPACING;
+                    shift   = "TOP";
+                    maxHeight = nextMaxHeight;
+                    break;
+                case "BOTTOM":
+                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: nextMaxHeight / 2}, node.node)});
+                    bottomShift = centerY + nextMaxHeight + MEASURES.NODE_SPACING;
+                    shift = "TOP";
+                    if (topShift == null) {
+                        centerY = -(maxHeight ?? 0)/2;
+                    } else {
+                        centerY = topShift;
+                    }
+                    maxHeight = nextMaxHeight;
+                    break;
+            }
+        }
+        this.refreshMix();
+    }
+
+    private shiftNode(delta: Point, node: ElaborationNode): void {
+        const oldPosition = this.nodePositions.get(node);
+        if (oldPosition != null) {
+            this.nodePositions.set(node, {
+                x: oldPosition.x + delta.x,
+                y: oldPosition.y + delta.y
+            });
+        }
+    }
+
     public addNode(node: ElaborationNode): void {
         let maxX =
                 [...this.nodePositions.values()]
@@ -89,7 +418,7 @@ export class MixUiManager {
         const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
         this.nodePositions.set(node, {x: maxX, y: -height / 2 + MEASURES.NODE_HEADING_HEIGHT / 2});
         this.maxNodeXPosition = Math.max(this.maxNodeXPosition, maxX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
-        this.mix
+        this._mix
             ?.connections
             .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT).forEach(connection => {this.updateConnection(connection, false);});
     }
@@ -99,13 +428,13 @@ export class MixUiManager {
     }
 
     private updateConnection(connection: Connection, isNew: boolean): void {
-        if (this.mix == null) {
+        if (this._mix == null) {
             return;
         }
         let from: Point = {x: 0, y: 0};
         let to: Point   = {x: 0, y: 0};
         if (connection.sourceType === ConnectionSourceType.NODE) {
-            const node = this.mix.nodes.find(a => a.id === connection.sourceNodeId);
+            const node = this._mix.nodes.find(a => a.id === connection.sourceNodeId);
             if (node == null) {
                 return;
             }
@@ -115,14 +444,14 @@ export class MixUiManager {
             }
             from = this.getNodeConnectorPosition(node, datum, true);
         } else if (connection.sourceType === ConnectionSourceType.INPUT) {
-            const datum = this.mix.imports.find(a => a.uniqueName == connection.inputName);
+            const datum = this._mix.imports.find(a => a.uniqueName == connection.inputName);
             if (datum == null) {
                 return;
             }
             from = this.getExternalConnectorPosition(datum, true);
         }
         if (connection.drainType === ConnectionDrainType.NODE) {
-            const node = this.mix.nodes.find(a => a.id === connection.drainNodeId);
+            const node = this._mix.nodes.find(a => a.id === connection.drainNodeId);
             if (node == null) {
                 return;
             }
@@ -140,7 +469,7 @@ export class MixUiManager {
             }
         }
         if (connection.drainType === ConnectionDrainType.OUTPUT) {
-            const datum = this.mix.outputs.find(otherDatum => otherDatum.name == connection.outputName);
+            const datum = this._mix.outputs.find(otherDatum => otherDatum.name == connection.outputName);
             if (datum == null) {
                 return;
             }
@@ -180,14 +509,14 @@ export class MixUiManager {
 
     public updateEdgeConnections(input: boolean): void {
         this
-            .mix
+            ._mix
             ?.connections
             .forEach(connection => {
                 if ((input && connection.sourceType == ConnectionSourceType.INPUT)
                     || (!input && connection.drainType == ConnectionDrainType.OUTPUT && connection.sourceType != ConnectionSourceType.CONSTANT)) {
                     this.updateConnection(connection, false);
                 }
-            })
+            });
     }
 
     public isInputLocked(node: ElaborationNode, datum: Datum): boolean {
@@ -230,7 +559,7 @@ export class MixUiManager {
             if (!(connector instanceof ExportedDatum)) {
                 return {x: 0, y: 0};
             }
-            const inputIndex = this.mix?.imports.indexOf(connector);
+            const inputIndex = this._mix?.imports.indexOf(connector);
             if (inputIndex == null) {
                 return {x: 0, y: 0};
             }
@@ -239,7 +568,7 @@ export class MixUiManager {
                 y: -this.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * inputIndex + MEASURES.INPUT_HEIGHT / 2
             };
         } else {
-            const inputIndex = this.mix?.outputs.indexOf(connector);
+            const inputIndex = this._mix?.outputs.indexOf(connector);
             if (inputIndex == null) {
                 return {x: 0, y: 0};
             }
@@ -312,20 +641,20 @@ export class MixUiManager {
     }
 
     public get inputsHeight(): number {
-        if (this.mix == null) {
+        if (this._mix == null) {
             return 0;
         }
         let inputsOnly: number;
-        if (this.mix.imports.length != 0) {
-            inputsOnly = this.mix.imports.length * MEASURES.INPUT_HEIGHT + (this.mix.imports.length - 1) * MEASURES.INPUT_SPACING;
+        if (this._mix.imports.length != 0) {
+            inputsOnly = this._mix.imports.length * MEASURES.INPUT_HEIGHT + (this._mix.imports.length - 1) * MEASURES.INPUT_SPACING;
         } else {
-            if (this.mix.imports.length == this.availableExportsLength) {
+            if (this._mix.imports.length == this.availableExportsLength) {
                 return 0;
             } else {
                 return MEASURES.ADD_INPUT_HEIGHT;
             }
         }
-        if (this.mix.imports.length == this.availableExportsLength) {
+        if (this._mix.imports.length == this.availableExportsLength) {
             return inputsOnly;
         } else {
             return MEASURES.ADD_INPUT_HEIGHT + MEASURES.INPUT_SPACING + inputsOnly;
@@ -334,13 +663,13 @@ export class MixUiManager {
 
 
     public get outputsHeight(): number {
-        if (this.mix == null) {
+        if (this._mix == null) {
             return 0;
         }
         let outputsOnly: number;
 
-        if (this.mix.outputs.length != 0) {
-            outputsOnly = this.mix.outputs.length * MEASURES.INPUT_HEIGHT + (this.mix.outputs.length - 1) * MEASURES.INPUT_SPACING;
+        if (this._mix.outputs.length != 0) {
+            outputsOnly = this._mix.outputs.length * MEASURES.INPUT_HEIGHT + (this._mix.outputs.length - 1) * MEASURES.INPUT_SPACING;
         } else {
             return MEASURES.ADD_INPUT_HEIGHT;
         }
@@ -367,7 +696,7 @@ export class MixUiManager {
         if ((currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (currentDragging?.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
             const replacingConnection = currentDragging.replacingConnection;
             if (replacingConnection?.drainType == ConnectionDrainType.NODE) {
-                const drainNode = this.mix?.nodes.find(otherNode => otherNode.id == replacingConnection.drainNodeId);
+                const drainNode = this._mix?.nodes.find(otherNode => otherNode.id == replacingConnection.drainNodeId);
                 if (drainNode != null) {
                     return drainNode.inputs.find(input => input.name == replacingConnection.drainNodeInputName) ?? null;
                 }
@@ -381,7 +710,7 @@ export class MixUiManager {
         if ((currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT) || (currentDragging?.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT)) {
             const replacingConnection = currentDragging.replacingConnection;
             if (replacingConnection?.sourceType == ConnectionSourceType.NODE) {
-                const sourceNode = this.mix?.nodes.find(otherNode => otherNode.id == replacingConnection.sourceNodeId);
+                const sourceNode = this._mix?.nodes.find(otherNode => otherNode.id == replacingConnection.sourceNodeId);
                 if (sourceNode != null) {
                     return sourceNode.outputs.find(output => output.name == replacingConnection.sourceNodeOutputName) ?? null;
                 }
@@ -395,7 +724,7 @@ export class MixUiManager {
         if ((currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (currentDragging?.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
             const replacingConnection = currentDragging.replacingConnection;
             if (replacingConnection?.drainType == ConnectionDrainType.OUTPUT) {
-                const drainExternalOutput = this.mix?.outputs.find(output => output.name == replacingConnection.outputName);
+                const drainExternalOutput = this._mix?.outputs.find(output => output.name == replacingConnection.outputName);
                 return drainExternalOutput ?? null;
             }
         }
@@ -407,7 +736,7 @@ export class MixUiManager {
         if ((currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT) || (currentDragging?.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT)) {
             const replacingConnection = currentDragging.replacingConnection;
             if (replacingConnection?.sourceType == ConnectionSourceType.INPUT) {
-                const sourceExternalInput = this.mix?.imports.find(imp => imp.uniqueName == replacingConnection.inputName);
+                const sourceExternalInput = this._mix?.imports.find(imp => imp.uniqueName == replacingConnection.inputName);
                 return sourceExternalInput ?? null;
             }
         }
@@ -425,14 +754,14 @@ export class MixUiManager {
         }
         const fallbackNodeX =
                   this
-                      .mix
+                      ._mix
                       ?.nodes
                       .filter(a => a.id != node.id)
                       .reduce((acc, otherNode) =>
                                   Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0) ?? 0;
         this.currentDragging ??= {
             type:                 DraggingElementType.NODE,
-            node:               node,
+            node:                 node,
             startPosition:        {...this.getNodePosition(node)},
             startDrag:            pointerPosition,
             fallBackFurtherNodeX: fallbackNodeX
@@ -458,7 +787,7 @@ export class MixUiManager {
                                event: MouseEvent,
                                replacingConnection: Connection | null): void {
         const pointerPosition = this.extractTransformedPosition(event);
-        if ((event.button != 0) || (this.mix == null) || (this.currentDragging != null)) {
+        if ((event.button != 0) || (this._mix == null) || (this.currentDragging != null)) {
             return;
         }
         if (connector.rightFacing) {
@@ -499,7 +828,7 @@ export class MixUiManager {
             if (replacingConnection != null) {
                 let to: Point | null = null;
                 if (replacingConnection.drainType == ConnectionDrainType.NODE) {
-                    const drainNode  = this.mix.nodes.find(otherNode => otherNode.id == replacingConnection.drainNodeId);
+                    const drainNode  = this._mix.nodes.find(otherNode => otherNode.id == replacingConnection.drainNodeId);
                     const drainDatum = drainNode?.inputs.find(output => output.name == replacingConnection.drainNodeInputName);
                     if (drainNode != null && drainDatum != null) {
                         // No connection, we are creating a new one
@@ -508,7 +837,7 @@ export class MixUiManager {
                         newDragging.candidatePartner = {external: false, node: drainNode, datum: drainDatum, input: true};
                     }
                 } else {
-                    const output = this.mix.outputs.find(otherOutput => otherOutput.name == replacingConnection.outputName);
+                    const output = this._mix.outputs.find(otherOutput => otherOutput.name == replacingConnection.outputName);
                     if (output != null) {
                         to                           = this.getExternalConnectorPosition(output, false);
                         newDragging.candidatePartner = {external: true, datum: output, input: false};
@@ -534,14 +863,14 @@ export class MixUiManager {
             let existingInConnection: Connection | undefined;
             if (!connector.external) {
                 existingInConnection =
-                    this.mix.connections.find(a => a.drainType == ConnectionDrainType.NODE && a.drainNodeId == connector.node.id && a.drainNodeInputName == connector.datum.name);
+                    this._mix.connections.find(a => a.drainType == ConnectionDrainType.NODE && a.drainNodeId == connector.node.id && a.drainNodeInputName == connector.datum.name);
             } else {
                 existingInConnection =
-                    this.mix.connections.find(a => a.drainType == ConnectionDrainType.OUTPUT && a.outputName == connector.datum.name);
+                    this._mix.connections.find(a => a.drainType == ConnectionDrainType.OUTPUT && a.outputName == connector.datum.name);
             }
             if (existingInConnection != null && existingInConnection != replacingConnection) {
                 if (existingInConnection.sourceType == ConnectionSourceType.NODE) {
-                    const sourceNode  = this.mix.nodes.find(otherNode => otherNode.id == existingInConnection.sourceNodeId);
+                    const sourceNode  = this._mix.nodes.find(otherNode => otherNode.id == existingInConnection.sourceNodeId);
                     const sourceDatum = sourceNode?.outputs.find(output => output.name == existingInConnection.sourceNodeOutputName);
                     if (sourceNode != null && sourceDatum != null) {
                         this.connectorMouseDown({node: sourceNode, datum: sourceDatum, external: false, rightFacing: true}, event, existingInConnection);
@@ -553,7 +882,7 @@ export class MixUiManager {
                         this.connectorMouseDown({external: true, rightFacing: false, datum: connector.datum}, event, existingInConnection);
                     }
                 } else { // ConnectionSourceType.INPUT
-                    const exportedDatum = this.mix.imports.find(otherExport => otherExport.uniqueName == existingInConnection.inputName);
+                    const exportedDatum = this._mix.imports.find(otherExport => otherExport.uniqueName == existingInConnection.inputName);
                     if (exportedDatum != null) {
                         this.connectorMouseDown({datum: exportedDatum, external: true, rightFacing: true}, event, existingInConnection);
                     }
@@ -597,7 +926,7 @@ export class MixUiManager {
                 }
 
                 if (replacingConnection?.sourceType == ConnectionSourceType.NODE) {
-                    const sourceNode  = this.mix.nodes.find(otherNode => otherNode.id == replacingConnection.sourceNodeId);
+                    const sourceNode  = this._mix.nodes.find(otherNode => otherNode.id == replacingConnection.sourceNodeId);
                     const sourceDatum = sourceNode?.outputs.find(output => output.name == replacingConnection.sourceNodeOutputName);
                     if (sourceNode != null && sourceDatum != null) {
                         // No connection, we are creating a new one
@@ -624,7 +953,7 @@ export class MixUiManager {
     }
 
     public nodeConnectorMouseMove(node: ElaborationNode, connector: Datum, rightFacing: boolean): void {
-        if (this.mix != null) {
+        if (this._mix != null) {
             if (
                 (
                     (this.currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT)
@@ -656,7 +985,7 @@ export class MixUiManager {
     }
 
     public externalConnectorRightFacingMouseMove(connector: ExportedDatum): void {
-        if (this.mix != null) {
+        if (this._mix != null) {
             if (
                 (
                     (this.currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT)
@@ -672,7 +1001,7 @@ export class MixUiManager {
     }
 
     public externalConnectorLeftFacingMouseMove(connector: Datum): void {
-        if (this.mix != null) {
+        if (this._mix != null) {
             if (
                 (
                     (this.currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT)
@@ -716,14 +1045,14 @@ export class MixUiManager {
         }
         if (this.currentDragging.type == DraggingElementType.NODE) {
             const node = this.currentDragging.node;
-            const newX   = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
+            const newX = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
             this.nodePositions.set(node, {
                 x: newX,
                 y: this.currentDragging.startPosition.y + pointerPosition.y - this.currentDragging.startDrag.y
             });
             this.maxNodeXPosition = Math.max(this.currentDragging.fallBackFurtherNodeX, newX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
             this
-                .mix
+                ._mix
                 ?.connections
                 .filter(a =>
                             (a.sourceType == ConnectionSourceType.NODE && a.sourceNodeId == node.id)
@@ -764,7 +1093,7 @@ export class MixUiManager {
     }
 
     public mouseUp(): void {
-        if ((this.currentDragging == null) || (this.mix == null)) {
+        if ((this.currentDragging == null) || (this._mix == null)) {
             return;
         }
         if ((this.currentDragging.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (this.currentDragging.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
@@ -798,7 +1127,7 @@ export class MixUiManager {
                                     drainNodeId:          this.currentDragging.candidatePartner.node.id,
                                     drainNodeInputName:   this.currentDragging.candidatePartner.datum.name
                                 };
-                                if (this.mix.wouldAddCycle(newConnection)) {
+                                if (this._mix.wouldAddCycle(newConnection)) {
                                     deleteOld = false;
                                     createNew = false;
                                 }
@@ -821,6 +1150,10 @@ export class MixUiManager {
                                 drainNodeId:        this.currentDragging.candidatePartner.node.id,
                                 drainNodeInputName: this.currentDragging.candidatePartner.datum.name
                             };
+                            if (this._mix.wouldAddCycle(newConnection)) {
+                                deleteOld = false;
+                                createNew = false;
+                            }
                         } else {
                             newConnection = {
                                 sourceType: ConnectionSourceType.INPUT,
@@ -834,13 +1167,13 @@ export class MixUiManager {
             }
             if (deleteOld) {
                 if (this.currentDragging.replacingConnection != null) {
-                    this.mix.removeConnection(this.currentDragging.replacingConnection);
+                    this._mix.removeConnection(this.currentDragging.replacingConnection);
                     this.removeConnection(this.currentDragging.replacingConnection);
                 }
             }
             if (createNew) {
                 if (this.currentDragging.candidatePartner != null && newConnection != null) {
-                    this.mix.addConnection(newConnection);
+                    this._mix.addConnection(newConnection);
                     this.addConnection(newConnection);
                 }
             }
@@ -896,7 +1229,7 @@ export class MixUiManager {
                 }
 
                 if (newConnection) {
-                    this.mix.addConnection(newConnection);
+                    this._mix.addConnection(newConnection);
                     this.addConnection(newConnection);
                     if (this.currentDragging.replacingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
                         this.removeConnection(this.currentDragging.replacingConnection);
@@ -924,7 +1257,6 @@ export class MixUiManager {
         this.translation.y += (clientY - this.translation.y) * (1 - change);
         this.scale    = newScale;
     }
-
 }
 
 enum DraggingElementType {

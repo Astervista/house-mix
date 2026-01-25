@@ -123,10 +123,10 @@ if (isDevMode()) {
         });
 }
 
-
 export const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
-    GROUP:  'Group output',
-    SENSOR: 'Sensor value',
+    GROUP:  'Group mixes output',
+    SENSOR_DATA: 'Raw data from sensors',
+    SENSOR: 'Sensor mixes outputs',
     SYSTEM: 'System'
 };
 

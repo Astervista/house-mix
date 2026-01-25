@@ -1,12 +1,12 @@
-import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsPositive, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
-import {Datum, DatumJSON, ExportedDatum, ExportedDatumJSON} from "./datum";
+import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
+import {Datum, DatumJSON, DatumType, ExportedDatum, ExportedDatumJSON} from "./datum";
 import {ElaborationNode, ElaborationNodeJSON} from "./elaboration-node";
 
 
 export enum CompositionCalculationErrorType {
-    CYCLIC_GRAPH = "CYCLIC_GRAPH",
+    CYCLIC_GRAPH      = "CYCLIC_GRAPH",
     WRONG_CONNECTIONS = "WRONG_CONNECTIONS",
-    UNKNOWN_NODE = "UNKNOWN_NODE",
+    UNKNOWN_NODE      = "UNKNOWN_NODE",
 }
 
 export class CompositionCalculationError extends Error {
@@ -82,6 +82,7 @@ export class Mix {
                 this._connections.push({
                                            sourceType:         ConnectionSourceType.CONSTANT,
                                            sourceValue:        Datum.getDefaultForType(input.type),
+                                           sourceValueType:    input.type,
                                            drainType:          ConnectionDrainType.NODE,
                                            drainNodeId:        elaborationNode.id,
                                            drainNodeInputName: input.name
@@ -121,12 +122,14 @@ export class Mix {
     public addOutput(output: Datum): void {
         this._outputs.push(output);
         if (!output.nullable) {
-            this._connections.push({
-                                       sourceType:  ConnectionSourceType.CONSTANT,
-                                       sourceValue: Datum.getDefaultForType(output.type),
-                                       drainType:   ConnectionDrainType.OUTPUT,
-                                       outputName:  output.name
-                                   });
+            this._connections.push(
+                {
+                    sourceType:      ConnectionSourceType.CONSTANT,
+                    sourceValue:     Datum.getDefaultForType(output.type),
+                    sourceValueType: output.type,
+                    drainType:       ConnectionDrainType.OUTPUT,
+                    outputName:      output.name
+                });
         }
     }
     
@@ -205,13 +208,15 @@ export class Mix {
                 if (drainInput) {
                     if (!drainInput.nullable) {
                         this._connections
-                            .push({
-                                      sourceType:         ConnectionSourceType.CONSTANT,
-                                      sourceValue:        Datum.getDefaultForType(drainInput.type),
-                                      drainType:          ConnectionDrainType.NODE,
-                                      drainNodeId:        drainNode.id,
-                                      drainNodeInputName: drainInput.name
-                                  });
+                            .push(
+                                {
+                                    sourceType:         ConnectionSourceType.CONSTANT,
+                                    sourceValue:        Datum.getDefaultForType(drainInput.type),
+                                    sourceValueType:    drainInput.type,
+                                    drainType:          ConnectionDrainType.NODE,
+                                    drainNodeId:        drainNode.id,
+                                    drainNodeInputName: drainInput.name
+                                });
                     }
                 }
             }
@@ -222,10 +227,11 @@ export class Mix {
                     this
                         ._connections
                         .push({
-                                  sourceType:  ConnectionSourceType.CONSTANT,
-                                  sourceValue: Datum.getDefaultForType(drainOutput.type),
-                                  drainType:   ConnectionDrainType.OUTPUT,
-                                  outputName:  drainOutput.name
+                                  sourceType:      ConnectionSourceType.CONSTANT,
+                                  sourceValue:     Datum.getDefaultForType(drainOutput.type),
+                                  sourceValueType: drainOutput.type,
+                                  drainType:       ConnectionDrainType.OUTPUT,
+                                  outputName:      drainOutput.name
                               });
                 }
             }
@@ -438,6 +444,11 @@ export class Mix {
             const result = this.containsCycles();
             this._connections.pop();
             return result;
+        } else if ((connection.sourceType == ConnectionSourceType.INPUT) && (connection.drainType == ConnectionDrainType.NODE)) {
+            this._connections.push(connection);
+            const result = this.containsCycles();
+            this._connections.pop();
+            return result;
         } else {
             return false;
         }
@@ -457,7 +468,7 @@ export class Mix {
             inputs:      this._inputs.slice().map(input => input.toJSON()),
             outputs:     this._outputs.slice().map(output => output.toJSON()),
             nodes:       this._nodes.map(node => node.toJSON()),
-            connections: this._connections.slice(),
+            connections: this._connections.map(connection => ConnectionJSON.fromConnection(connection)),
             imports:     this._imports.slice().map(input => input.toJSON())
         };
     }
@@ -541,6 +552,7 @@ export interface ConnectionSourceFromNode {
 export interface ConnectionSourceFromConstant {
     sourceType: ConnectionSourceType.CONSTANT;
     sourceValue: unknown,
+    sourceValueType: DatumType
 }
 
 type ConnectionSource = ConnectionSourceFromInput | ConnectionSourceFromNode | ConnectionSourceFromConstant
@@ -591,6 +603,10 @@ export class ConnectionJSON {
     @Allow()
     public sourceValue?: unknown;
     
+    @IsEnum(DatumType)
+    @IsOptional()
+    public sourceValueType?: unknown;
+    
     @IsOptional()
     @IsString()
     @IsNotEmpty()
@@ -609,60 +625,6 @@ export class ConnectionJSON {
     constructor(sourceType: ConnectionSourceType, drainType: ConnectionDrainType) {
         this.sourceType = sourceType;
         this.drainType  = drainType;
-    }
-    
-    public static toConnection(connectionJSON: ConnectionJSON): Connection {
-        if (ConnectionJSON.isValid(connectionJSON)) {
-            let sourceResult: ConnectionSource;
-            let drainResult: ConnectionDrain;
-            switch (connectionJSON.sourceType) {
-                case ConnectionSourceType.INPUT: {
-                    sourceResult = {
-                        sourceType: ConnectionSourceType.INPUT,
-                        inputName:  connectionJSON.inputName
-                    };
-                    break;
-                }
-                case ConnectionSourceType.NODE: {
-                    sourceResult = {
-                        sourceType:           ConnectionSourceType.NODE,
-                        sourceNodeId:         connectionJSON.sourceNodeId,
-                        sourceNodeOutputName: connectionJSON.sourceNodeOutputName
-                    };
-                    break;
-                }
-                case ConnectionSourceType.CONSTANT: {
-                    sourceResult = {
-                        sourceType:  ConnectionSourceType.CONSTANT,
-                        sourceValue: connectionJSON.sourceValue
-                    };
-                    break;
-                }
-            }
-            switch (connectionJSON.drainType) {
-                case ConnectionDrainType.OUTPUT: {
-                    drainResult = {
-                        drainType:  ConnectionDrainType.OUTPUT,
-                        outputName: connectionJSON.outputName
-                    };
-                    break;
-                }
-                case ConnectionDrainType.NODE: {
-                    drainResult = {
-                        drainType:          ConnectionDrainType.NODE,
-                        drainNodeId:        connectionJSON.drainNodeId,
-                        drainNodeInputName: connectionJSON.drainNodeInputName
-                    };
-                    break;
-                }
-            }
-            return {
-                ...sourceResult,
-                ...drainResult
-            };
-        } else {
-            throw new Error("The collection provided is not valid");
-        }
     }
     
     public static isValid(connection: ConnectionJSON): connection is Connection {
@@ -719,6 +681,93 @@ export class ConnectionJSON {
                 break;
         }
         return true;
+    }
+    
+    public static toConnection(connectionJSON: ConnectionJSON): Connection {
+        if (ConnectionJSON.isValid(connectionJSON)) {
+            let sourceResult: ConnectionSource;
+            let drainResult: ConnectionDrain;
+            switch (connectionJSON.sourceType) {
+                case ConnectionSourceType.INPUT: {
+                    sourceResult = {
+                        sourceType: ConnectionSourceType.INPUT,
+                        inputName:  connectionJSON.inputName
+                    };
+                    break;
+                }
+                case ConnectionSourceType.NODE: {
+                    sourceResult = {
+                        sourceType:           ConnectionSourceType.NODE,
+                        sourceNodeId:         connectionJSON.sourceNodeId,
+                        sourceNodeOutputName: connectionJSON.sourceNodeOutputName
+                    };
+                    break;
+                }
+                case ConnectionSourceType.CONSTANT: {
+                    sourceResult = {
+                        sourceType:      ConnectionSourceType.CONSTANT,
+                        sourceValue:     Datum.valueFromJSON(connectionJSON.sourceValue, connectionJSON.sourceValueType),
+                        sourceValueType: connectionJSON.sourceValueType
+                    };
+                    break;
+                }
+            }
+            switch (connectionJSON.drainType) {
+                case ConnectionDrainType.OUTPUT: {
+                    drainResult = {
+                        drainType:  ConnectionDrainType.OUTPUT,
+                        outputName: connectionJSON.outputName
+                    };
+                    break;
+                }
+                case ConnectionDrainType.NODE: {
+                    drainResult = {
+                        drainType:          ConnectionDrainType.NODE,
+                        drainNodeId:        connectionJSON.drainNodeId,
+                        drainNodeInputName: connectionJSON.drainNodeInputName
+                    };
+                    break;
+                }
+            }
+            return {
+                ...sourceResult,
+                ...drainResult
+            };
+        } else {
+            throw new Error("The collection provided is not valid");
+        }
+    }
+    
+    public static fromConnection(connection: Connection): ConnectionJSON {
+        let result = new ConnectionJSON(connection.sourceType, connection.drainType);
+        switch (connection.sourceType) {
+            case ConnectionSourceType.INPUT: {
+                    result.inputName =  connection.inputName;
+                break;
+            }
+            case ConnectionSourceType.NODE: {
+                    result.sourceNodeId =         connection.sourceNodeId;
+                    result.sourceNodeOutputName = connection.sourceNodeOutputName;
+                break;
+            }
+            case ConnectionSourceType.CONSTANT: {
+                    result.sourceValue =     Datum.valueToJSON(connection.sourceValue, connection.sourceValueType);
+                    result.sourceValueType = connection.sourceValueType;
+                break;
+            }
+        }
+        switch (connection.drainType) {
+            case ConnectionDrainType.OUTPUT: {
+                    result.outputName = connection.outputName;
+                break;
+            }
+            case ConnectionDrainType.NODE: {
+                    result.drainNodeId =        connection.drainNodeId;
+                    result.drainNodeInputName = connection.drainNodeInputName;
+                break;
+            }
+        }
+        return result;
     }
     
 }

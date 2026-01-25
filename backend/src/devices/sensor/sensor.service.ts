@@ -42,6 +42,10 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         return (await this.data).sensors.find(a => a.name === name) ?? null;
     }
     
+    public async getSensorsByNames(names: string[]): Promise<Sensor[]> {
+        return (await this.data).sensors.filter(a => names.includes(a.name));
+    }
+    
     public async createSensor(sensor: Sensor, parentName: string | null): Promise<void> {
         const data = await this.data;
         const alreadyExisting = data.sensors.some(otherSensor => otherSensor.name === sensor.name);

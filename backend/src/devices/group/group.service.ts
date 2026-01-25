@@ -324,6 +324,29 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
         this.saveData();
     }
+    
+    public async getDescendingGroups(groupName: string): Promise<Group[]> {
+        const data = await this.data;
+        const group = data.groups.find(otherGroup => otherGroup.name === groupName);
+        if (group == null) {
+            throw new NotFoundException();
+        }
+        let toCheck = group.groups;
+        const descendants: Group[] = [];
+        while (toCheck.length > 0) {
+            const children: string[] = [];
+            for (const child of toCheck) {
+                const childGroup = data.groups.find(otherGroup => otherGroup.name === child);
+                if (childGroup != null) {
+                    descendants.push(childGroup);
+                    children.push(...childGroup.groups);
+                }
+            }
+            toCheck = children;
+        }
+        return descendants;
+    }
+    
 }
 
 class GroupData {

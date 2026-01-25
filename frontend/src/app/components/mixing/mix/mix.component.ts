@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit, output} from '@angular/core';
+import {Component, ElementRef, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
@@ -321,6 +321,7 @@ export class MixComponent implements OnInit {
                             {
                                 sourceType:         ConnectionSourceType.CONSTANT,
                                 sourceValue:        true,
+                                sourceValueType:    connector.datum.type,
                                 drainType:          ConnectionDrainType.NODE,
                                 drainNodeId:        connector.node.id,
                                 drainNodeInputName: connector.datum.name
@@ -344,6 +345,7 @@ export class MixComponent implements OnInit {
                             {
                                 sourceType:  ConnectionSourceType.CONSTANT,
                                 sourceValue: true,
+                                sourceValueType:    connector.datum.type,
                                 drainType:   ConnectionDrainType.OUTPUT,
                                 outputName:  connector.datum.name
                             }
@@ -400,6 +402,7 @@ export class MixComponent implements OnInit {
                                             {
                                                 sourceType:         ConnectionSourceType.CONSTANT,
                                                 sourceValue:        value.value,
+                                                sourceValueType:    connector.datum.type,
                                                 drainType:          ConnectionDrainType.NODE,
                                                 drainNodeId:        connector.node.id,
                                                 drainNodeInputName: connector.datum.name
@@ -410,6 +413,7 @@ export class MixComponent implements OnInit {
                                             {
                                                 sourceType:  ConnectionSourceType.CONSTANT,
                                                 sourceValue: value.value,
+                                                sourceValueType:    connector.datum.type,
                                                 drainType:   ConnectionDrainType.OUTPUT,
                                                 outputName:  connector.datum.name
                                             }
@@ -511,6 +515,7 @@ export class MixComponent implements OnInit {
                 return true;
             case ToolbarAction.SAVE as string:
             case ToolbarAction.ADD as string:
+            case ToolbarAction.REARRANGE as string:
             default:
                 // TODO: if a new status is created, use it here too
                 return this.loadingStatus == LoadingStatus.LOADED;
@@ -523,7 +528,7 @@ export class MixComponent implements OnInit {
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.BACK:
-                this.location.back();
+                void this.router.navigate(["mixing"])
                 break;
             case ToolbarAction.DELETE:
                 for (const selectedElement of this.selectedElements) {
@@ -548,6 +553,9 @@ export class MixComponent implements OnInit {
                 }
                 this.selectedElements = [];
                 break;
+            case ToolbarAction.REARRANGE:
+                this.uiManager.rearrangeNodes();
+                break;
             case ToolbarAction.SAVE: {
                 // TODO: Block view and leave loading without removing the svg
                 const mix      = this.mix;
@@ -557,7 +565,7 @@ export class MixComponent implements OnInit {
                         .mixService
                         .updateMix(mix, position)
                         .then((newId: number) => {
-                            // TODO: Correct the url and check if re-saving works
+                            void this.router.navigate(['mixing', 'edit', newId]);
                             mix.id = newId;
                         })
                         .catch((error: unknown) => {
@@ -586,7 +594,6 @@ export class MixComponent implements OnInit {
     protected readonly DATUM_ORIGIN_DISPLAY                                = DATUM_ORIGIN_DISPLAY;
     protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
     protected readonly SelectedElementType                                 = SelectedElementType;
-    protected readonly output                                              = output;
     protected readonly connectable                                         = connectable;
 }
 
@@ -616,7 +623,8 @@ enum ToolbarAction {
     BACK   = 'back',
     SAVE   = 'save',
     ADD    = 'add',
-    DELETE = 'delete'
+    DELETE = 'delete',
+    REARRANGE = 'rearrange'
 }
 
 
@@ -651,6 +659,13 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.DIVIDER,
         id:    'divider-1',
         order: 3
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'graph_1',
+        id:    ToolbarAction.REARRANGE,
+        hint:  'Rearrange nodes in order',
+        order: 4
     },
     {
         type:  ToolBarElementType.BUTTON,
