@@ -4,6 +4,7 @@ import {Mix} from '@common/mixing/mix/mix';
 import {HttpClient} from '@angular/common/http';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON, PutMixBodyJSON} from '@common/mixing/mix/rest-classes';
 import {ExportedDatum} from '@common/mixing/mix/datum';
+import {MixingGraph}  from '@common/mixing/mixing-graph'
 
 @Injectable({
                 providedIn: 'root'
@@ -12,6 +13,9 @@ import {ExportedDatum} from '@common/mixing/mix/datum';
 export class MixingService {
 
     constructor(private httpClient: HttpClient) { }
+
+    @Get("/graph/", {result: MixingGraph})
+    public getGraph!: () => Promise<MixingGraph>
 
     @Get('/mixes/:id/', {result: Mix, resultIsArray: false})
     public getMix!: (pathParams: { id: number }) => Promise<Mix>;

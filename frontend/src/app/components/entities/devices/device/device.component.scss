@@ -18,9 +18,6 @@
     --highlight-color: var(--house-mix-text-color-30);
     --stroke-color-animation-duration: 0.2s;
 
-    &.selected {
-        --highlight-color: var(--mat-sys-primary);
-    }
 }
 
 .display-name {

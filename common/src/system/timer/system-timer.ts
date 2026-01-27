@@ -1,4 +1,5 @@
 import {IsEnum, IsInt, IsNotEmpty, IsPositive, Matches, Min} from "rest-decorators";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class SystemTimer {
     
@@ -116,7 +117,7 @@ export enum TimerType {
 export class SystemTimerJSON {
     
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public name: string;
     
     @IsNotEmpty()

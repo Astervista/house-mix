@@ -29,20 +29,29 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     }
     
     public async getAllGroups(options: GetGroupsOptions = {}): Promise<Group[]> {
+        if (options.anyMixed != undefined && options.anyMixed) {
+            if ((options.sensorMix !== undefined) || (options.actuatorMix !== undefined)) {
+                throw new BadRequestException("Either set anyMixed to false/undefined, of do not specify sensorMix or actuatorMix");
+            }
+        }
         return (await this.data)
             .groups
             .filter(group => {
-                if (options.actuatorMix !== undefined) {
-                    if (group.actuatorMix !== options.actuatorMix) {
-                        return false;
+                if (options.anyMixed === true) {
+                    return group.sensorMix != null || group.actuatorMix != null;
+                } else {
+                    if (options.actuatorMix !== undefined) {
+                        if (group.actuatorMix !== options.actuatorMix) {
+                            return false;
+                        }
                     }
-                }
-                if (options.sensorMix !== undefined) {
-                    if (group.sensorMix !== options.sensorMix) {
-                        return false;
+                    if (options.sensorMix !== undefined) {
+                        if (group.sensorMix !== options.sensorMix) {
+                            return false;
+                        }
                     }
+                    return true;
                 }
-                return true;
             });
     }
     
@@ -320,18 +329,18 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         if (phase == MixPhase.SENSORS) {
             group.sensorMix = mixId;
         } else {
-            group.actuatorMix = mixId
+            group.actuatorMix = mixId;
         }
         this.saveData();
     }
     
     public async getDescendingGroups(groupName: string): Promise<Group[]> {
-        const data = await this.data;
+        const data  = await this.data;
         const group = data.groups.find(otherGroup => otherGroup.name === groupName);
         if (group == null) {
             throw new NotFoundException();
         }
-        let toCheck = group.groups;
+        let toCheck                = group.groups;
         const descendants: Group[] = [];
         while (toCheck.length > 0) {
             const children: string[] = [];

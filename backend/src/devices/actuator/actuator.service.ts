@@ -26,16 +26,25 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
     }
     
     public async getAllActuators(options: GetDevicesOptions = {}): Promise<Actuator[]> {
+        if (options.anyMixed != undefined && options.anyMixed) {
+            if (options.mix !== undefined) {
+                throw new BadRequestException("Either set anyMixed to false/undefined, of do not specify the mix");
+            }
+        }
         return (await this.data)
             .actuators
             .filter(
                 actuator => {
-                    if (options.mix !== undefined) {
-                        if (actuator.mix !== options.mix) {
-                            return false;
+                    if (options.anyMixed === true) {
+                        return actuator.mix != null;
+                    } else {
+                        if (options.mix !== undefined) {
+                            if (actuator.mix !== options.mix) {
+                                return false;
+                            }
                         }
+                        return true;
                     }
-                    return true;
                 }
             );
     }
@@ -125,10 +134,10 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         }
         const actuator = await this.getActuatorByName(sensorName);
         if (actuator == null) {
-            throw new NotFoundException(`Cannot find actuator "${sensorName}"`)
+            throw new NotFoundException(`Cannot find actuator "${sensorName}"`);
         } else {
             if (await this.mixService.getMixById(mixId) == null) {
-                throw new NotFoundException(`Cannot find mix with id ${mixId}`)
+                throw new NotFoundException(`Cannot find mix with id ${mixId}`);
             }
         }
         actuator.mix = mixId;

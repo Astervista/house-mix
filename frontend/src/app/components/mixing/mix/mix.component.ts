@@ -7,11 +7,11 @@ import {MixingService} from '../mixing.service';
 import {Datum, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
-import {MEASURES, MixUiManager} from './mix-ui-manager';
+import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
+import {MixUiManager} from './mix-ui-manager';
 import {MatButton} from '@angular/material/button';
 import {DatePipe, Location} from '@angular/common';
 import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-dialog.component';
-import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay} from '../constants';
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog} from '../../../utils/better-mat-dialog';
@@ -343,11 +343,11 @@ export class MixComponent implements OnInit {
                     } else {
                         this.mix.addConnection(
                             {
-                                sourceType:  ConnectionSourceType.CONSTANT,
-                                sourceValue: true,
-                                sourceValueType:    connector.datum.type,
-                                drainType:   ConnectionDrainType.OUTPUT,
-                                outputName:  connector.datum.name
+                                sourceType:      ConnectionSourceType.CONSTANT,
+                                sourceValue:     true,
+                                sourceValueType: connector.datum.type,
+                                drainType:       ConnectionDrainType.OUTPUT,
+                                outputName:      connector.datum.name
                             }
                         );
                     }
@@ -411,11 +411,11 @@ export class MixComponent implements OnInit {
                                     } else {
                                         this.mix?.addConnection(
                                             {
-                                                sourceType:  ConnectionSourceType.CONSTANT,
-                                                sourceValue: value.value,
-                                                sourceValueType:    connector.datum.type,
-                                                drainType:   ConnectionDrainType.OUTPUT,
-                                                outputName:  connector.datum.name
+                                                sourceType:      ConnectionSourceType.CONSTANT,
+                                                sourceValue:     value.value,
+                                                sourceValueType: connector.datum.type,
+                                                drainType:       ConnectionDrainType.OUTPUT,
+                                                outputName:      connector.datum.name
                                             }
                                         );
                                     }
@@ -528,7 +528,7 @@ export class MixComponent implements OnInit {
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.BACK:
-                void this.router.navigate(["mixing"])
+                void this.router.navigate(['mixing']);
                 break;
             case ToolbarAction.DELETE:
                 for (const selectedElement of this.selectedElements) {
@@ -595,6 +595,7 @@ export class MixComponent implements OnInit {
     protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly connectable                                         = connectable;
+    protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
 }
 
 type SelectedElement = {
@@ -620,10 +621,10 @@ enum SelectedElementType {
 
 
 enum ToolbarAction {
-    BACK   = 'back',
-    SAVE   = 'save',
-    ADD    = 'add',
-    DELETE = 'delete',
+    BACK      = 'back',
+    SAVE      = 'save',
+    ADD       = 'add',
+    DELETE    = 'delete',
     REARRANGE = 'rearrange'
 }
 

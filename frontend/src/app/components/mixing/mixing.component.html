@@ -4,5 +4,197 @@
 
 </house-mix-toolbar>
 <div
-    class="main-content">
+    class="main-content-scroll">
+    <div
+        class="main-content"
+        (click)="selectedElement = null">
+        @if (graph != null) {
+            <svg
+                class="connections-background">
+                @for (link of orderedLinks; track link.linkId) {
+                    @let path = graphConnectionSmoothPath(link.line.from, link.line.to, false);
+                    <path
+                        class="connection"
+                        [class.selected]="link.selected"
+                        [class.selected-phase]="link.selectedPhase"
+                        [attr.d]="path">
+                    </path>
+                }
+            </svg>
+            <div class="section">
+                <div
+                    class="row-icon"
+                    [class.selected]="selectedPhase == MixGraphPhase.INPUTS"
+                    (click)="selectedPhase = MixGraphPhase.INPUTS; $event.stopPropagation()">
+                    <house-mix-dynamic-svg
+                        src="/devices/sensors/sensor.svg">
+                    </house-mix-dynamic-svg>
+                </div>
+                <div class="row-group">
+                    <div
+                        #originRow
+                        class="origin-row spread-row"
+                        resizeEvent
+                        [class.scrolling]="originScrollStatus"
+                        (scroll)="graph && recalculateConnections(graph)"
+                        (onResize)="graph && recalculateConnections(graph)"
+                        (onHorizontalScrollbarChange)="originScrollStatus = $event; graph && recalculateConnections(graph)">
+                        <div
+                            class="scroll-arrow"
+                            [class.scrolling]="originScrollStatus"
+                            (click)="rowScroll(originRow, true); $event.stopPropagation()">
+                            <button
+                                mat-icon-button>
+                                <mat-icon>chevron_left</mat-icon>
+                            </button>
+                        </div>
+                        <div
+                            class="scroll-arrow right"
+                            [class.scrolling]="originScrollStatus"
+                            (click)="rowScroll(originRow, false); $event.stopPropagation()">
+                            <button
+                                mat-icon-button>
+                                <mat-icon>chevron_right</mat-icon>
+                            </button>
+                        </div>
+                        @for (origin of ORIGIN_DISPLAYED_TOP; track origin) {
+                            @if (graph.origins.includes(origin)) {
+                                <div class="node"
+                                     [class.selected]="selectedElement == origin || isElementInPhase(origin, this.selectedPhase)"
+                                     [class.selected-node]="selectedElement == origin"
+                                     [class.selected-phase]="isElementInPhase(origin, this.selectedPhase)"
+                                     [origin-element]="origin"
+                                     (click)="selectedElement = origin; $event.stopPropagation()">
+                                    <span class="name">{{ DATUM_ORIGIN_DISPLAY[origin] }}</span>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div
+                    class="row-icon"
+                    [class.selected]="selectedPhase == MixGraphPhase.SENSORS"
+                    (click)="selectedPhase = MixGraphPhase.SENSORS; $event.stopPropagation()">
+                    <house-mix-dynamic-svg
+                        src="/devices/sensors/sensor.svg">
+                    </house-mix-dynamic-svg>
+                </div>
+                <div class="row-group">
+                    <div #sensorRow
+                         class="sensor-row spread-row"
+                         resizeEvent
+                         [class.scrolling]="sensorScrollStatus"
+                         (scroll)="graph && recalculateConnections(graph)"
+                         (onResize)="graph && recalculateConnections(graph)"
+                         (onHorizontalScrollbarChange)="sensorScrollStatus = $event; graph && recalculateConnections(graph)">
+                        <div
+                            class="scroll-arrow"
+                            [class.scrolling]="sensorScrollStatus"
+                            (click)="rowScroll(sensorRow, true); $event.stopPropagation()">
+                            <button
+                                mat-icon-button>
+                                <mat-icon>chevron_left</mat-icon>
+                            </button>
+                        </div>
+                        <div
+                            class="scroll-arrow right"
+                            [class.scrolling]="sensorScrollStatus"
+                            (click)="rowScroll(sensorRow, false); $event.stopPropagation()">
+                            <button
+                                mat-icon-button>
+                                <mat-icon>chevron_right</mat-icon>
+                            </button>
+                        </div>
+                        @for (sensor of graph.sensors; track sensor.name) {
+                            <div class="node with-button"
+                                 [class.selected]="selectedElement == sensor || isElementInPhase(sensor, this.selectedPhase)"
+                                 [class.selected-node]="selectedElement == sensor"
+                                 [class.selected-phase]="isElementInPhase(sensor, this.selectedPhase)"
+                                 [attr.data-sensor-pos]="$index"
+                                 [sensor-element]="sensor"
+                                 (click)="selectedElement = sensor; $event.stopPropagation()">
+                                <house-mix-dynamic-svg
+                                    [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[sensor.type]}`">
+                                </house-mix-dynamic-svg>
+                                <span class="name">{{ sensor.displayName }}</span>
+                                @if (selectedElement == sensor) {
+                                    <button
+                                        mat-icon-button
+                                        (click)="openMix(sensor.mix)">
+                                        <mat-icon>instant_mix</mat-icon>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="section">
+                <div
+                    class="row-icon"
+                    [class.selected]="selectedPhase == MixGraphPhase.SENSOR_GROUPS"
+                    (click)="selectedPhase = MixGraphPhase.SENSOR_GROUPS; $event.stopPropagation()">
+                    <house-mix-dynamic-svg
+                        src="/mixing/group.svg">
+                    </house-mix-dynamic-svg>
+                </div>
+                <div class="row-group">
+                    @for (level of sensorGroupsLevels; track $index; ) {
+                        <div #sensorGroupRow
+                             class="sensor-group-row spread-row"
+                             resizeEvent
+                             [class.scrolling]="sensorGroupScrollStatuses.get(level)"
+                             (scroll)="graph && recalculateConnections(graph)"
+                             (onResize)="graph && recalculateConnections(graph)"
+                             (onHorizontalScrollbarChange)="sensorGroupScrollStatuses.set(level, $event); graph && recalculateConnections(graph)">
+                            <div
+                                class="scroll-arrow"
+                                [class.scrolling]="sensorGroupScrollStatuses.get(level)"
+                                (click)="rowScroll(sensorGroupRow, true); $event.stopPropagation()">
+                                <button
+                                    mat-icon-button>
+                                    <mat-icon>chevron_left</mat-icon>
+                                </button>
+                            </div>
+                            <div
+                                class="scroll-arrow right"
+                                [class.scrolling]="sensorGroupScrollStatuses.get(level)"
+                                (click)="rowScroll(sensorGroupRow, false); $event.stopPropagation()">
+                                <button
+                                    mat-icon-button>
+                                    <mat-icon>chevron_right</mat-icon>
+                                </button>
+                            </div>
+                            @for (group of level; track group.name) {
+                                <div class="node with-button"
+                                     [class.selected]="selectedElement == group || isElementInPhase(group, this.selectedPhase)"
+                                     [class.selected-node]="selectedElement == group"
+                                     [class.selected-phase]="isElementInPhase(group, this.selectedPhase)"
+                                     [group-element]="group"
+                                     [group-element-sensor]="true"
+                                     (click)="selectedElement = group; $event.stopPropagation()">
+                                    <house-mix-dynamic-svg
+                                        [src]="`/mixing/group.svg`">
+                                    </house-mix-dynamic-svg>
+                                    <span class="name">{{ group.displayName }}</span>
+                                    @if (selectedElement == group) {
+                                        <button
+                                            mat-icon-button
+                                            (click)="openMix(group.mix)">
+                                            <mat-icon>instant_mix</mat-icon>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 </div>

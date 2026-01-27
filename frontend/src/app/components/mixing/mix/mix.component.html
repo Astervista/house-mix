@@ -67,18 +67,7 @@
                             @if ((connection.sourceType != ConnectionSourceType.CONSTANT) && (connection != replacingConnection)) {
                                 @let connectionPosition = uiManager.getConnectionPosition(connection);
                                 @if (connectionPosition != null) {
-                                    @let width = connectionPosition.to.x - connectionPosition.from.x;
-                                    @let height = Math.abs(connectionPosition.to.y - connectionPosition.from.y);
-                                    @let multiplier = width > 0 ? 0.3 : -0.7;
-                                    @let path =
-                                        `M${connectionPosition.from.x},${connectionPosition.from.y}` +
-                                        (height > MEASURES.CONNECTION_WIDTH * 5
-                                            ?
-                                        `C${connectionPosition.from.x + width * multiplier},${connectionPosition.from.y},` +
-                                        `${connectionPosition.to.x - width * multiplier},${connectionPosition.to.y},`
-                                            :
-                                            `L`) +
-                                        `${connectionPosition.to.x},${connectionPosition.to.y}`;
+                                    @let path = graphConnectionSmoothPath(connectionPosition.from, connectionPosition.to, true);
                                     <path
                                         class="connection-back"
                                         [class.selected]="isSelected({type: SelectedElementType.CONNECTION, connection: connection})"

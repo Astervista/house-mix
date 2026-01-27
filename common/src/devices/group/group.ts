@@ -1,4 +1,5 @@
 import {IsArray, IsNotEmpty, Matches, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class Group {
     
@@ -146,22 +147,22 @@ export class Group {
 export class GroupJSON {
     
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public name: string;
     
     @IsNotEmpty()
     public displayName: string;
     
     @IsArray()
-    @Matches(/^[a-z\-0-9_]+$/, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, { each: true})
     public groups: string[] = [];
     
     @IsArray()
-    @Matches(/^[a-z\-0-9_]+$/, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, { each: true})
     public actuators: string[] = [];
     
     @IsArray()
-    @Matches(/^[a-z\-0-9_]+$/, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, { each: true})
     public sensors: string[] = [];
     
     @ValidateIf((o: GroupJSON) => o.sensorMix !== null)

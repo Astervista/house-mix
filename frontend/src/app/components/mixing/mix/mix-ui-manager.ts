@@ -2,11 +2,7 @@ import {Point} from '@angular/cdk/drag-drop';
 import {ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {Connection, ConnectionDrainToNode, ConnectionDrainType, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
 import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mixing/mix/datum';
-
-interface Line {
-    from: Point;
-    to: Point;
-}
+import { Line, MEASURES } from "../constants";
 
 export class MixUiManager {
 
@@ -1357,30 +1353,3 @@ interface DraggingToExternalOutput {
 
 type DraggingElement = DraggingNode | DraggingBackground | DraggingFromNodeOutput | DraggingToNodeInput | DraggingFromExternalInput | DraggingToExternalOutput;
 
-export const MEASURES = {
-    INPUT_WIDTH:                      200,
-    INPUT_HEIGHT:                     90,
-    ADD_INPUT_HEIGHT:                 50,
-    INPUT_SPACING:                    10,
-    INPUT_ORIGIN_TOP:                 20,
-    INPUT_ORIGIN_NAME_TOP:            39,
-    INPUT_NAME_TOP:                   66,
-    CONNECTOR_RADIUS:                 8,
-    SECTIONS_SEPARATOR:               180,
-    NODE_ADD_RADIUS:                  35,
-    NODE_WIDTH:                       350,
-    NODE_SPACING:                     160,
-    NODE_HEADING_HEIGHT:              40,
-    NODE_HEADING_WIDTH:               250,
-    NODE_INTERNAL_SPACING:            15,
-    NODE_CONNECTION_HEIGHT:           40,
-    NODE_CONNECTION_CONSTANT_SHIFT:   12,
-    NODE_CONNECTION_CONSTANT_SPACING: 25,
-    CONNECTION_WIDTH:                 3,
-    CONNECTOR_SNAP_RADIUS:            30,
-    CONNECTOR_SNAP_RADIUS_SQUARED:    30 * 30,
-    OUTPUT_WIDTH:                     250,
-    OUTPUT_HEIGHT:                    70,
-    ADD_OUTPUT_HEIGHT:                50,
-    OUTPUT_SPACING:                   10
-};

@@ -1,11 +1,12 @@
-import {IsArray, IsInt, IsNotEmpty, IsOptional, Matches, Transform, Type, ValidateIf, ValidateNested} from "rest-decorators";
+import {IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, Matches, Transform, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {DatumJSON} from "../mixing/mix/datum";
+import {UNIQUE_NAME_PATTERN} from "../utils/constants";
 
 export class DeviceEditChanges {
     
     @IsOptional()
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public name?: string;
     
     @IsOptional()
@@ -37,5 +38,9 @@ export class GetDevicesOptions {
     @IsInt()
     @IsOptional()
     public mix?: number | null;
+    
+    @IsBoolean()
+    @IsOptional()
+    public anyMixed?: boolean;
     
 }

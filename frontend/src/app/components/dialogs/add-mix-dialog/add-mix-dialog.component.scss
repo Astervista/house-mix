@@ -36,7 +36,6 @@
         }
 
         &.selected {
-            --highlight-color: var(--mat-sys-primary);
 
             >.arrow .arrow-path {
                 stroke:  var(--mat-sys-primary);
@@ -149,7 +148,6 @@
         }
 
         &.selected {
-            --highlight-color: var(--mat-sys-primary);
             outline: solid 3px var(--mat-sys-primary);
         }
 
@@ -193,10 +191,6 @@
 
     &.group {
         padding: dimensions.$margin-xlarge;
-    }
-
-    &.selected {
-        --highlight-color: var(--mat-sys-primary);
     }
 
     .device-icon {

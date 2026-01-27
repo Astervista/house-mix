@@ -14,6 +14,7 @@ import {
 import {isDevMode} from '@angular/core';
 import {SYSTEM_ORIGIN_DISPLAY} from '../system/constants';
 import {SystemOrigin} from '@common/system/constants';
+import {Point} from '@angular/cdk/drag-drop';
 
 export const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
     [DatumType.BOOLEAN]:   'Boolean',
@@ -95,7 +96,7 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
     },
     {
         sectionName: 'Control flow',
-        nodes: [
+        nodes:       [
             {
                 special:     true,
                 constructor: ElaborationNodeNullGuard,
@@ -119,15 +120,15 @@ if (isDevMode()) {
     ELABORATION_NODE_LIBRARY.push(
         {
             sectionName: 'test',
-            nodes: [testNode]
+            nodes:       [testNode]
         });
 }
 
 export const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
-    GROUP:  'Group mixes output',
+    GROUP:       'Group mixes output',
     SENSOR_DATA: 'Raw data from sensors',
-    SENSOR: 'Sensor mixes outputs',
-    SYSTEM: 'System'
+    SENSOR:      'Sensor mixes outputs',
+    SYSTEM:      'System'
 };
 
 export function getExternalDatumOriginNameDisplay(datum: ExportedDatum): string {
@@ -138,3 +139,64 @@ export function getExternalDatumOriginNameDisplay(datum: ExportedDatum): string 
     }
 }
 
+
+export interface Line {
+    from: Point;
+    to: Point;
+}
+
+export function graphConnectionSmoothPath(from: Point, to: Point, horizontal: boolean = true): string {
+    if (horizontal) {
+        const width  = to.x - from.x;
+        const height = Math.abs(to.y - from.y);
+        const multiplier = width > 0 ? 0.3 : -0.7;
+        return `M${from.x},${from.y}` +
+               (height > MEASURES.CONNECTION_WIDTH * 5
+                   ?
+               `C${from.x + width * multiplier},${from.y},` +
+               `${to.x - width * multiplier},${to.y},`
+                   :
+                   `L`) +
+               `${to.x},${to.y}`;
+    } else {
+        const width  = Math.abs(to.x - from.x);
+        const height = to.y - from.y;
+        const multiplier = height > 0 ? 0.5 : -0.7;
+        return `M${from.x},${from.y}` +
+               (width > MEASURES.CONNECTION_WIDTH * 5
+                   ?
+               `C${from.x},${from.y + height * multiplier},` +
+               `${to.x},${to.y - height * multiplier},`
+                   :
+                   `L`) +
+               `${to.x},${to.y}`;
+    }
+}
+
+export const MEASURES = {
+    INPUT_WIDTH:                      200,
+    INPUT_HEIGHT:                     90,
+    ADD_INPUT_HEIGHT:                 50,
+    INPUT_SPACING:                    10,
+    INPUT_ORIGIN_TOP:                 20,
+    INPUT_ORIGIN_NAME_TOP:            39,
+    INPUT_NAME_TOP:                   66,
+    CONNECTOR_RADIUS:                 8,
+    SECTIONS_SEPARATOR:               180,
+    NODE_ADD_RADIUS:                  35,
+    NODE_WIDTH:                       350,
+    NODE_SPACING:                     160,
+    NODE_HEADING_HEIGHT:              40,
+    NODE_HEADING_WIDTH:               250,
+    NODE_INTERNAL_SPACING:            15,
+    NODE_CONNECTION_HEIGHT:           40,
+    NODE_CONNECTION_CONSTANT_SHIFT:   12,
+    NODE_CONNECTION_CONSTANT_SPACING: 25,
+    CONNECTION_WIDTH:                 3,
+    CONNECTOR_SNAP_RADIUS:            30,
+    CONNECTOR_SNAP_RADIUS_SQUARED:    30 * 30,
+    OUTPUT_WIDTH:                     250,
+    OUTPUT_HEIGHT:                    70,
+    ADD_OUTPUT_HEIGHT:                50,
+    OUTPUT_SPACING:                   10
+};

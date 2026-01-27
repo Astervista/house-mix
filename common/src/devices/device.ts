@@ -1,5 +1,6 @@
 import {IsArray, IsNotEmpty, Matches, Type, ValidateNested} from "rest-decorators";
 import {Datum, DatumChange, DatumChangeType, DatumJSON} from "../mixing/mix/datum";
+import {UNIQUE_NAME_PATTERN} from "../utils/constants";
 
 export class Device {
     
@@ -50,7 +51,7 @@ export class DeviceJSON {
     public zigbeeAddress: string;
     
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public name: string;
     
     @IsNotEmpty()

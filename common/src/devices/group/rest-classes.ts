@@ -1,4 +1,4 @@
-import {IsInt, IsNotEmpty, IsOptional, Matches, Transform, ValidateIf} from "rest-decorators";
+import {IsBoolean, IsInt, IsNotEmpty, IsOptional, Matches, Transform, ValidateIf} from "rest-decorators";
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class GetGroupsOptions {
@@ -30,6 +30,11 @@ export class GetGroupsOptions {
     @IsInt()
     @IsOptional()
     public sensorMix?: number | null;
+    
+    @IsBoolean()
+    @IsOptional()
+    public anyMixed?: boolean;
+    
 }
 
 export class GroupCreateOptions {

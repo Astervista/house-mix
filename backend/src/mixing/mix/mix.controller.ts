@@ -3,6 +3,7 @@ import MixService from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {createMixInfo, mixInfoFromJSON, MixPositionInfoJSON, PutMixBodyJSON} from "@common/mixing/mix/rest-classes";
 import {ExportedDatumJSON} from "@common/mixing/mix/datum";
+import {MixingGraphJSON} from "@common/mixing/mixing-graph";
 
 @Controller('mixing/')
 export class MixController {
@@ -55,6 +56,11 @@ export class MixController {
         }
         const imports = await this.mixService.getAvailableImports(mixPosition);
         return imports.map(imp => imp.toJSON());
+    }
+    
+    @Get("graph")
+    public async getGraph(): Promise<MixingGraphJSON> {
+        return (await this.mixService.getGraph()).toJSON();
     }
     
 }

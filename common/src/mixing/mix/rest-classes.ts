@@ -1,6 +1,7 @@
 import {IsEnum, IsNotEmpty, IsOptional, Matches, Type, ValidateNested} from "rest-decorators";
 import {DatumJSON} from "./datum";
 import {MixJSON} from "./mix";
+import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export enum MixPhase {
     SENSORS   = 'SENSORS',
@@ -143,17 +144,17 @@ export class MixPositionInfoJSON {
     
     @IsOptional()
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public actuatorName?: string;
     
     @IsOptional()
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public groupName?: string;
     
     @IsOptional()
     @IsNotEmpty()
-    @Matches(/^[a-z\-0-9_]+$/)
+    @Matches(UNIQUE_NAME_PATTERN)
     public sensorName?: string;
     
     constructor(phase: MixPhase, target: MixTarget) {
@@ -195,3 +196,5 @@ export enum PutMixShowableError {
     CYCLE = "CYCLE",
     WRONG_CONNECTIONS = "WRONG_CONNECTIONS",
 }
+
+

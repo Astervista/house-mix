@@ -10,6 +10,7 @@ import {SystemOrigin} from "@common/system/constants";
 import {SensorService} from "../../devices/sensor/sensor.service";
 import {GroupService} from "../../devices/group/group.service";
 import {ActuatorService} from "../../devices/actuator/actuator.service";
+import {MixingGraph, MixingGraphActuator, MixingGraphDependency, MixingGraphGroup, MixingGraphSensor} from "@common/mixing/mixing-graph";
 
 const SAVE_FILE = "mixing/mix.json";
 
@@ -351,6 +352,82 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
         // TODO: Check if it's not at the center, otherwise throw
         throw new NotFoundException("Mix not found");
+    }
+    
+    public async getGraph(): Promise<MixingGraph> {
+        const data = await this.data;
+        const graph = new MixingGraph();
+        
+        const mixedGroups = await this.groupService.getAllGroups({ anyMixed: true });
+        const mixedSensors = await this.sensorService.getAllSensors({ anyMixed: true});
+        const mixedActuators = await this.actuatorService.getAllActuators({ anyMixed: true});
+        
+        //TODO we still need the mix in the middle
+        
+        for (const group of mixedGroups) {
+            if (group.sensorMix != null) {
+                const mix = data.mixes.find(otherMix => otherMix.id == group.sensorMix);
+                if (mix != null) {
+                    const graphGroup: MixingGraphGroup = new MixingGraphGroup(
+                        group.name,
+                        group.displayName,
+                        true,
+                        group.sensorMix
+                    );
+                    graph.sensorGroups.push(graphGroup);
+                    this.extractMixingDependencies(mix, graph, graphGroup);
+                }
+            }
+        }
+        for (const sensor of mixedSensors) {
+            if (sensor.mix != null) {
+                const mix = data.mixes.find(otherMix => otherMix.id == sensor.mix);
+                if (mix != null) {
+                    const graphSensor: MixingGraphSensor = new MixingGraphSensor(
+                        sensor.name,
+                        sensor.displayName,
+                        sensor.type,
+                        sensor.mix
+                    );
+                    graph.sensors.push(graphSensor);
+                    this.extractMixingDependencies(mix, graph, graphSensor);
+                }
+            }
+            for (const actuator of mixedActuators) {
+                if (actuator.mix != null) {
+                    const mix = data.mixes.find(otherMix => otherMix.id == actuator.mix);
+                    if (mix != null) {
+                        const graphActuator: MixingGraphActuator = new MixingGraphActuator(
+                            actuator.name,
+                            actuator.displayName,
+                            actuator.type,
+                            actuator.mix
+                        );
+                        graph.actuators.push(graphActuator);
+                        this.extractMixingDependencies(mix, graph, graphActuator);
+                    }
+                }
+            }
+        }
+        return graph;
+    }
+    
+    private extractMixingDependencies(mix: Mix, graph: MixingGraph, dependencyObject: {dependingOn: MixingGraphDependency[]}): void {
+        for (const imp of mix.imports) {
+            if (imp.origin == DatumOrigin.SYSTEM) {
+                graph.addOrigin(DatumOrigin.SYSTEM);
+                dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SYSTEM));
+            } else if (imp.origin == DatumOrigin.SENSOR_DATA) {
+                graph.addOrigin(DatumOrigin.SENSOR_DATA);
+                dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR_DATA));
+            } else if (imp.origin == DatumOrigin.GROUP) {
+                graph.addOrigin(DatumOrigin.GROUP);
+                dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.GROUP, imp.originName));
+            } else {
+                graph.addOrigin(imp.origin);
+                dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR, imp.originName));
+            }
+        }
     }
 }
 

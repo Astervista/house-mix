@@ -25,15 +25,25 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
     }
     
     public async getAllSensors(options: GetDevicesOptions = {}): Promise<Sensor[]> {
-        return (await this.data).sensors
+        if (options.anyMixed != undefined && options.anyMixed) {
+            if (options.mix !== undefined) {
+                throw new BadRequestException("Either set anyMixed to false/undefined, of do not specify the mix");
+            }
+        }
+        return (await this.data)
+            .sensors
             .filter(
                 sensor => {
-                    if (options.mix !== undefined) {
-                        if (sensor.mix !== options.mix) {
-                            return false;
+                    if (options.anyMixed === true) {
+                        return sensor.mix != null;
+                    } else {
+                        if (options.mix !== undefined) {
+                            if (sensor.mix !== options.mix) {
+                                return false;
+                            }
                         }
+                        return true;
                     }
-                    return true;
                 }
             );
     }
@@ -47,7 +57,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
     }
     
     public async createSensor(sensor: Sensor, parentName: string | null): Promise<void> {
-        const data = await this.data;
+        const data            = await this.data;
         const alreadyExisting = data.sensors.some(otherSensor => otherSensor.name === sensor.name);
         if (alreadyExisting) {
             throw new ConflictException();
@@ -57,7 +67,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         }
         data.sensors.push(sensor);
         
-        this.saveData()
+        this.saveData();
     }
     
     public async sensorExists(sensorName: string): Promise<boolean> {
@@ -65,7 +75,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
     }
     
     public async deleteSensor(name: string): Promise<void> {
-        const data = await this.data;
+        const data           = await this.data;
         const sensorToDelete = data.sensors.find(otherSensor => otherSensor.name === name);
         if (sensorToDelete == null) {
             throw new NotFoundException();
@@ -78,8 +88,8 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
     }
     
     public async editSensor(oldName: string, edit: SensorEditChanges): Promise<void> {
-        const data        = await this.data;
-        const newName     = edit.name;
+        const data         = await this.data;
+        const newName      = edit.name;
         const sensorToEdit = data.sensors.find(otherSensor => otherSensor.name === oldName);
         if (sensorToEdit == null) {
             throw new NotFoundException();
@@ -100,7 +110,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
                 sensorToEdit.zigbeeAddress = edit.zigbeeAddress;
             }
             if (edit.type != null) {
-                sensorToEdit.type = edit.type
+                sensorToEdit.type = edit.type;
             }
             if (edit.exposes != null) {
                 const exposeChanges = sensorToEdit.calculateExposesChanges(edit.exposes.map(expose => Datum.fromJSON(expose)));
@@ -127,10 +137,10 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         }
         const sensor = await this.getSensorByName(sensorName);
         if (sensor == null) {
-            throw new NotFoundException(`Cannot find sensor "${sensorName}"`)
+            throw new NotFoundException(`Cannot find sensor "${sensorName}"`);
         } else {
             if (await this.mixService.getMixById(mixId) == null) {
-                throw new NotFoundException(`Cannot find mix with id ${mixId}`)
+                throw new NotFoundException(`Cannot find mix with id ${mixId}`);
             }
         }
         sensor.mix = mixId;
@@ -153,10 +163,10 @@ class SensorData {
     
     public toJSON(): SensorDataJSON {
         return {
-            sensors: this.sensors.map((sensor: Sensor) => sensor.toJSON()),
-        }
+            sensors: this.sensors.map((sensor: Sensor) => sensor.toJSON())
+        };
     }
-
+    
 }
 
 interface SensorDataJSON {

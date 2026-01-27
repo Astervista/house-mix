@@ -1,18 +1,23 @@
 @use "dimensions";
 @use "colors";
 
-@mixin container {
+@mixin container() {
 
     --house-mix-entity-border-color: #{colors.$border-color};
+
+    --highlight-color: var(--house-mix-text-color-30);
+    --stroke-color-animation-duration: 0.2s;
 
     border-radius: 5px;
     display: flex;
     flex-direction: column;
     transition: outline-width 0.15s ease-in-out, outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
     outline: solid 1px var(--house-mix-entity-border-color);
+    background: var(--house-mix-background-color);
 
     &.selected {
-        --house-mix-entity-border-color: var(--mat-sys-primary);
+        --highlight-color: var(--mat-sys-primary);
+        --house-mix-entity-border-color: var(--house-mix-entity-selected-color, var(--mat-sys-primary));
         outline-width: 3px;
         outline-offset: -1.5px;
     }
