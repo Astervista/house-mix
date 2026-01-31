@@ -1,8 +1,11 @@
-import {IsArray, IsNotEmpty, Matches, Type, ValidateNested} from "rest-decorators";
+import {IsArray, IsEnum, IsInt, IsNotEmpty, Matches, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {Datum, DatumChange, DatumChangeType, DatumJSON} from "../mixing/mix/datum";
 import {UNIQUE_NAME_PATTERN} from "../utils/constants";
+import {ActuatorType} from "./actuator/actuator";
 
 export class Device {
+    
+    public mix: number | null = null;
     
     public readonly exposes: Datum[] = [];
     
@@ -35,12 +38,15 @@ export class Device {
             zigbeeAddress: this.zigbeeAddress,
             name: this.name,
             displayName: this.displayName,
-            exposes: this.exposes.map(datum => datum.toJSON())
+            exposes: this.exposes.map(datum => datum.toJSON()),
+            mix: this.mix
         }
     }
     
-    public static fromJSON(JSON: DeviceJSON): Device {
-        return new Device(JSON.zigbeeAddress, JSON.name, JSON.displayName);
+    public static fromJSON(deviceJSON: DeviceJSON): Device {
+        const device = new Device(deviceJSON.zigbeeAddress, deviceJSON.name, deviceJSON.displayName);
+        device.mix = deviceJSON.mix;
+        return device;
     }
 }
 
@@ -63,6 +69,11 @@ export class DeviceJSON {
     })
     @Type(() => DatumJSON)
     public exposes: DatumJSON[] = [];
+    
+    @ValidateIf((o: DeviceJSON) => o.mix !== null)
+    @IsInt()
+    @Min(0)
+    public mix: number | null = null;
     
     constructor(zigbeeAddress: string, name: string, displayName: string) {
         this.zigbeeAddress = zigbeeAddress;

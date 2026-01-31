@@ -1,4 +1,5 @@
 @use '@angular/material' as mat;
+@use "colors";
 
 html, body {
     height: 100%;
@@ -11,7 +12,7 @@ body {
     min-width: 100%;
     width: 100%;
     user-select: none;
-    font-family: "Fira Sans", "Roboto", "Helvetica Neue", sans-serif
+    font-family: "Fira Sans", "Roboto", "Helvetica Neue", sans-serif;
 }
 
 house-mix-root {
@@ -37,3 +38,52 @@ html {
         density: 0,
     ));
 }
+
+
+$scrollbar-track-color-light: colors.$background-color;
+$scrollbar-thumb-color-light: #9f9f9f;
+$scrollbar-track-color-dark: colors.$background-color-dark;
+$scrollbar-thumb-color-dark: colors.$neutral-dark;
+$scrollbar-size: 13px;
+
+    *::-webkit-scrollbar {
+        width: $scrollbar-size;
+    }
+
+    *::-webkit-scrollbar-track {
+        background: $scrollbar-track-color-light;
+        border-radius: $scrollbar-size;
+    }
+
+    *::-webkit-scrollbar-thumb {
+        background: $scrollbar-thumb-color-light;
+        border-radius: $scrollbar-size;
+        border: 2px solid #{$scrollbar-track-color-light};
+    }
+
+    * {
+        scrollbar-color: #{$scrollbar-thumb-color-light} #{$scrollbar-track-color-light};
+    }
+
+    html.dark {
+        *::-webkit-scrollbar {
+            width: $scrollbar-size;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: $scrollbar-track-color-dark;
+            border-radius: $scrollbar-size;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: $scrollbar-thumb-color-dark;
+            border-radius: $scrollbar-size;
+            border: 2px solid #{$scrollbar-track-color-dark};
+        }
+
+        * {
+            scrollbar-color: #{$scrollbar-thumb-color-dark} #{$scrollbar-track-color-dark};
+        }
+    }
+
+

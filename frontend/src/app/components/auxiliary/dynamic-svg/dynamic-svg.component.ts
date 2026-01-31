@@ -1,7 +1,7 @@
 import {Component, HostBinding, Input} from '@angular/core';
 import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
 import {HttpClient} from '@angular/common/http';
-import {catchError, of} from 'rxjs';
+import {catchError, firstValueFrom, of} from 'rxjs';
 
 @Component({
                selector: 'house-mix-dynamic-svg',
@@ -18,35 +18,51 @@ export class DynamicSvgComponent {
             } else {
                 const cached = DynamicSvgComponent.cache.get(src);
                 if (cached != null) {
-                    this.svg = cached;
-                } else {
-                    this.http
-                        .get(src, {responseType: 'text'})
-                        .pipe(
-                            catchError(() => {
-                                return of(null)
-                            })
-                        )
-                        .subscribe(rawSvg => {
-                            if (rawSvg == null) {
-                                this.svg = null;
-                                return;
-                            }
-                            const commentPos = rawSvg.indexOf("<!-- Dynamic SVG -->");
-                            const svgPos = rawSvg.indexOf("<svg");
-                            if (svgPos == -1) {
-                                console.error("The provided file does not contain a svg tag. This file will not be displayed.")
-                                return;
-                            }
-                            if ((commentPos == -1) || (commentPos > svgPos)) {
-                                console.error("The svg must be a Dynamic SVG, marked with the comment '<!-- Dynamic SVG -->' at the beginning " +
-                                              "of the file, after the xml definition tag and before the start of the svg code. The svg will not be displayed.");
-                                return;
-                            }
-                            const safe = this.sanitizer.bypassSecurityTrustHtml(rawSvg);
-                            DynamicSvgComponent.cache.set(src, safe);
-                            this.svg = safe;
+                    cached
+                        .then((cachedValue) => {
+                            this.svg = cachedValue;
+                        })
+                        .catch(() => {
+                            this.svg = null;
                         });
+                } else {
+                    const tempPromise =
+                              firstValueFrom(
+                                  this.http
+                                      .get(src, {responseType: 'text'})
+                                      .pipe(
+                                          catchError(() => {
+                                              return of(null);
+                                          })
+                                      )
+                              )
+                                  .then((rawSvg) => {
+                                      if (rawSvg == null) {
+                                          return null;
+                                      }
+                                      const commentPos = rawSvg.indexOf('<!-- Dynamic SVG -->');
+                                      const svgPos     = rawSvg.indexOf('<svg');
+                                      if (svgPos == -1) {
+                                          console.error('The provided file does not contain a svg tag. This file will not be displayed.');
+                                          return null;
+                                      }
+                                      if ((commentPos == -1) || (commentPos > svgPos)) {
+                                          console.error('The svg must be a Dynamic SVG, marked with the comment \'<!-- Dynamic SVG -->\' at the beginning ' +
+                                                        'of the file, after the xml definition tag and before the start of the svg code. The svg will not be displayed.');
+                                          return null;
+                                      }
+                                      const safe = this.sanitizer.bypassSecurityTrustHtml(rawSvg);
+                                      DynamicSvgComponent.cache.set(src, Promise.resolve(safe));
+                                      return safe;
+                                  })
+                                  .catch(() => {
+                                      return null;
+                                  })
+                                  .then((result) => {
+                                      this.svg = result;
+                                      return result;
+                                  });
+                    DynamicSvgComponent.cache.set(src, tempPromise);
                 }
             }
         }
@@ -58,7 +74,7 @@ export class DynamicSvgComponent {
     @HostBinding('innerHTML')
     protected svg: SafeHtml | null = null;
 
-    private static cache = new Map<string, SafeHtml>();
+    private static cache = new Map<string, Promise<SafeHtml | null>>();
 
     constructor(
         private http: HttpClient,

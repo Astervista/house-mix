@@ -12,6 +12,8 @@ export class MixingGraph {
     
     public sensorGroups: MixingGraphGroup[] = [];
     
+    public centers: MixingGraphCenter[] = [];
+    
     public actuatorGroups: MixingGraphGroup[] = [];
     
     public actuators: MixingGraphActuator[] = [];
@@ -27,8 +29,9 @@ export class MixingGraph {
             origins:        this.origins.slice(),
             sensors:        this.sensors.map(sensor => sensor.toJSON()),
             sensorGroups:        this.sensorGroups.map(group => group.toJSON()),
+            centers: this.centers.map(center => center.toJSON()),
             actuatorGroups:        this.actuatorGroups.map(group => group.toJSON()),
-            actuators:        this.actuators.map(actuator => actuator.toJSON()),
+            actuators:        this.actuators.map(actuator => actuator.toJSON())
         }
     }
     
@@ -37,8 +40,9 @@ export class MixingGraph {
         graph.origins = json.origins.slice();
         graph.sensors = json.sensors.map(sensor => MixingGraphSensor.fromJSON(sensor));
         graph.sensorGroups = json.sensorGroups.map(group => MixingGraphGroup.fromJSON(group));
+        graph.centers = json.centers.map(center => MixingGraphCenter.fromJSON(center));
         graph.actuatorGroups = json.actuatorGroups.map(group => MixingGraphGroup.fromJSON(group));
-        graph.actuators = json.actuators.map(actuator => MixingGraphActuator.fromJSON(actuator));
+        graph.actuators = json.actuators.map(actuator => MixingGraphActuator.fromJSON(actuator))
         return graph;
     }
     
@@ -92,6 +96,39 @@ export class MixingGraphSensor {
             mixingGraphSensorJSON.mix
         )
         mixingGraphSensor.dependingOn = mixingGraphSensorJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency))
+        return mixingGraphSensor;
+    }
+}
+
+
+export class MixingGraphCenter {
+    
+    public dependingOn: MixingGraphDependency[] = [];
+    
+    constructor(
+        public name: string,
+        public displayName: string,
+        public mix: number
+    ) {
+    
+    }
+    
+    public toJSON(): MixingGraphCenterJSON {
+        return {
+            name:        this.name,
+            displayName: this.displayName,
+            dependingOn: this.dependingOn.map(dependency => dependency.toJSON()),
+            mix: this.mix
+        }
+    }
+    
+    public static fromJSON(mixingGraphCenterJSON: MixingGraphCenterJSON): MixingGraphCenter {
+        const mixingGraphSensor = new MixingGraphCenter(
+            mixingGraphCenterJSON.name,
+            mixingGraphCenterJSON.displayName,
+            mixingGraphCenterJSON.mix
+        )
+        mixingGraphSensor.dependingOn = mixingGraphCenterJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency))
         return mixingGraphSensor;
     }
 }
@@ -190,6 +227,13 @@ export class MixingGraphJSON {
     @ValidateNested({
                         each: true
                     })
+    @Type(() => MixingGraphCenterJSON)
+    public centers: MixingGraphCenterJSON[] = [];
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
     @Type(() => MixingGraphGroupJSON)
     public actuatorGroups: MixingGraphGroupJSON[] = [];
     
@@ -253,6 +297,42 @@ export class MixingGraphSensorJSON {
         this.name = name;
         this.displayName = displayName;
         this.type = type;
+        this.dependingOn = dependingOn;
+        this.mix = mix;
+    }
+}
+
+
+export class MixingGraphCenterJSON {
+    
+    
+    @IsNotEmpty()
+    @Matches(UNIQUE_NAME_PATTERN)
+    public name: string;
+    
+    @IsNotEmpty()
+    public displayName: string;
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => MixingGraphDependencyJSON)
+    public dependingOn: MixingGraphDependencyJSON[];
+    
+    @IsDefined()
+    @Min(0)
+    @IsInt()
+    public mix: number;
+    
+    constructor(
+        name: string,
+        displayName: string,
+        dependingOn: MixingGraphDependencyJSON[],
+        mix: number
+    ) {
+        this.name = name;
+        this.displayName = displayName;
         this.dependingOn = dependingOn;
         this.mix = mix;
     }

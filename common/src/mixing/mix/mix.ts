@@ -1,5 +1,5 @@
 import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
-import {Datum, DatumJSON, DatumType, ExportedDatum, ExportedDatumJSON} from "./datum";
+import {Datum, DatumJSON, DatumOrigin, DatumType, ExportedDatum, ExportedDatumJSON} from "./datum";
 import {ElaborationNode, ElaborationNodeJSON} from "./elaboration-node";
 
 
@@ -92,7 +92,11 @@ export class Mix {
     }
     
     public removeNode(elaborationNode: ElaborationNode): void {
-        this._nodes.splice(this._nodes.indexOf(elaborationNode), 1);
+        const index = this._nodes.indexOf(elaborationNode);
+        if (index == -1) {
+            return;
+        }
+        this._nodes.splice(index, 1);
         const incomingConnections =
                   this
                       ._connections
@@ -134,7 +138,11 @@ export class Mix {
     }
     
     public removeOutput(output: Datum): void {
-        this._outputs.splice(this._outputs.indexOf(output), 1);
+        const index = this._outputs.indexOf(output);
+        if (index == -1) {
+            return;
+        }
+        this._outputs.splice(index, 1);
         for (const connection of this._connections) {
             if (connection.drainType == ConnectionDrainType.OUTPUT && connection.outputName == output.name) {
                 this.removeConnection(connection);
@@ -158,8 +166,19 @@ export class Mix {
         this._inputs.push(new Datum(datum.uniqueName, datum.type, datum.nullable));
     }
     
-    public removeInput(input: Datum): void {
-        this._inputs.splice(this._inputs.indexOf(input), 1);
+    public removeImport(imp: ExportedDatum): void {
+        const position = this._imports.indexOf(imp);
+        if (position == -1) {
+            return;
+        }
+        this._imports.splice(position, 1);
+        
+        const input = this._inputs.find(otherInput => otherInput.name == imp.uniqueName);
+        if (input == null) {
+            return;
+        }
+        const inputPosition = this._inputs.indexOf(input);
+        this._inputs.splice(inputPosition, 1);
         for (const connection of this._connections) {
             if (connection.sourceType == ConnectionSourceType.INPUT && connection.inputName == input.name) {
                 this.removeConnection(connection);
@@ -183,7 +202,11 @@ export class Mix {
                               otherConnection.drainNodeInputName == connection.drainNodeInputName
                       );
             if (conflictingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
-                this._connections.splice(this._connections.indexOf(conflictingConnection), 1);
+                const index = this._connections.indexOf(conflictingConnection);
+                if (index == -1) {
+                    return;
+                }
+                this._connections.splice(index, 1);
             }
         } else { // ConnectionDrainType.OUTPUT
             const conflictingConnection =
@@ -192,14 +215,22 @@ export class Mix {
                               otherConnection.drainType == ConnectionDrainType.OUTPUT && otherConnection.outputName == connection.outputName
                       );
             if (conflictingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
-                this._connections.splice(this._connections.indexOf(conflictingConnection), 1);
+                const index = this._connections.indexOf(conflictingConnection);
+                if (index == -1) {
+                    return;
+                }
+                this._connections.splice(index, 1);
             }
         }
         this._connections.push(connection);
     }
     
     public removeConnection(connection: Connection): void {
-        this._connections.splice(this._connections.indexOf(connection), 1);
+        const index = this._connections.indexOf(connection);
+        if (index == -1) {
+            return;
+        }
+        this._connections.splice(index, 1);
         // Transform connections to constant so that no nullable input hangs
         if (connection.drainType == ConnectionDrainType.NODE) {
             const drainNode = this._nodes.find(node => node.id == connection.drainNodeId);
@@ -239,7 +270,7 @@ export class Mix {
     }
     
     public calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
-        if (this.containsCycles()) {
+        if (this.containsCycles) {
             throw new CompositionCalculationError(CompositionCalculationErrorType.CYCLIC_GRAPH);
         }
         if (this.wrongConnections.length > 0) {
@@ -392,7 +423,7 @@ export class Mix {
         });
     }
     
-    public containsCycles(): boolean {
+    public get containsCycles(): boolean {
         const firstChildren = new Set<number>(
             this
                 ._connections
@@ -441,17 +472,49 @@ export class Mix {
                 return false;
             }
             this._connections.push(connection);
-            const result = this.containsCycles();
+            const result = this.containsCycles;
             this._connections.pop();
             return result;
         } else if ((connection.sourceType == ConnectionSourceType.INPUT) && (connection.drainType == ConnectionDrainType.NODE)) {
             this._connections.push(connection);
-            const result = this.containsCycles();
+            const result = this.containsCycles;
             this._connections.pop();
             return result;
         } else {
             return false;
         }
+    }
+    
+    public get hasFreeNonNull(): boolean {
+        return this
+                   .outputs
+                   .some(
+                       output => {
+                           return !output.nullable
+                                  && !this.connections
+                                          .some(
+                                              connection => {
+                                                  return connection.drainType == ConnectionDrainType.OUTPUT
+                                                         && connection.outputName == output.name;
+                                              });
+                       }
+                   )
+               || this
+                   .nodes
+                   .some(
+                       node => {
+                           return node.inputs
+                                      .some(input => {
+                                                return !input.nullable
+                                                       && !this.connections
+                                                               .some(connection => {
+                                                                   return connection.drainType == ConnectionDrainType.NODE
+                                                                          && connection.drainNodeInputName == input.name;
+                                                               });
+                                            }
+                                      );
+                       }
+                   );
     }
     
     public getInputByNodeAndName(nodeId: number, inputName: string): Datum | null {
@@ -460,6 +523,25 @@ export class Mix {
             return node.inputs.find(input => input.name == inputName) ?? null;
         }
         return null;
+    }
+    
+    public renameImportOriginName(oldOrigin: DatumOrigin, oldName: string, newName: string, newDisplayName: string): void {
+        for (const imp of this._imports) {
+            if ((imp.origin == oldOrigin) && imp.originName == oldName) {
+                const oldUniqueName   = imp.uniqueName;
+                imp.originName        = newName;
+                imp.originDisplayName = newDisplayName;
+                const input           = this._inputs.find(otherInput => otherInput.name == oldUniqueName);
+                if (input != null) {
+                    input.name = imp.uniqueName;
+                    this._connections.forEach(connection => {
+                        if (connection.sourceType == ConnectionSourceType.INPUT && connection.inputName == oldUniqueName) {
+                            connection.inputName = imp.uniqueName;
+                        }
+                    });
+                }
+            }
+        }
     }
     
     public toJSON(): MixJSON {
@@ -742,28 +824,28 @@ export class ConnectionJSON {
         let result = new ConnectionJSON(connection.sourceType, connection.drainType);
         switch (connection.sourceType) {
             case ConnectionSourceType.INPUT: {
-                    result.inputName =  connection.inputName;
+                result.inputName = connection.inputName;
                 break;
             }
             case ConnectionSourceType.NODE: {
-                    result.sourceNodeId =         connection.sourceNodeId;
-                    result.sourceNodeOutputName = connection.sourceNodeOutputName;
+                result.sourceNodeId         = connection.sourceNodeId;
+                result.sourceNodeOutputName = connection.sourceNodeOutputName;
                 break;
             }
             case ConnectionSourceType.CONSTANT: {
-                    result.sourceValue =     Datum.valueToJSON(connection.sourceValue, connection.sourceValueType);
-                    result.sourceValueType = connection.sourceValueType;
+                result.sourceValue     = Datum.valueToJSON(connection.sourceValue, connection.sourceValueType);
+                result.sourceValueType = connection.sourceValueType;
                 break;
             }
         }
         switch (connection.drainType) {
             case ConnectionDrainType.OUTPUT: {
-                    result.outputName = connection.outputName;
+                result.outputName = connection.outputName;
                 break;
             }
             case ConnectionDrainType.NODE: {
-                    result.drainNodeId =        connection.drainNodeId;
-                    result.drainNodeInputName = connection.drainNodeInputName;
+                result.drainNodeId        = connection.drainNodeId;
+                result.drainNodeInputName = connection.drainNodeInputName;
                 break;
             }
         }

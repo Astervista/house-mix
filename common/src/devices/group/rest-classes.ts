@@ -57,13 +57,6 @@ export class GroupEditChanges {
     public displayName?: string;
 }
 
-// TODO: should be moved
-export class EntityPathParams {
-    @IsNotEmpty()
-    @Matches(UNIQUE_NAME_PATTERN)
-    public name: string = "";
-}
-
 export class ChangeParentChange {
     @IsOptional()
     @Matches(UNIQUE_NAME_PATTERN)

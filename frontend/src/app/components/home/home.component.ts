@@ -530,7 +530,6 @@ export class HomeComponent {
                 break;
             }
             case ToolbarAction.EDIT: {
-                // FIXME: Editing a sensor doesn't show the data, they are empty. Actuators do
                 const selectedObject = this.selectedObject;
                 if (selectedObject != null) {
                     if (selectedObject instanceof Group) {

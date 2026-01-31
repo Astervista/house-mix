@@ -4,7 +4,7 @@ import {ElaborationNode} from "./elaboration-node";
 export class Datum {
     
     constructor(
-        public readonly name: string,
+        public name: string,
         public readonly type: DatumType,
         public readonly nullable: boolean
     ) {
@@ -200,7 +200,7 @@ export class ExportedDatum extends Datum {
         );
     }
     
-    public equals(exp: ExportedDatum): boolean {
+    public sameIdentification(exp: ExportedDatum): boolean {
         return this.name === exp.name && this.origin === exp.origin && this.originName === exp.originName;
     }
     
@@ -241,6 +241,7 @@ export enum DatumOrigin {
     SENSOR = "SENSOR",
     SENSOR_DATA = "SENSOR_DATA",
     SYSTEM = "SYSTEM",
+    CENTER = "CENTER"
 }
 
 export class ExportedDatumJSON extends DatumJSON {

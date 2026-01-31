@@ -6,6 +6,10 @@
     &.horizontal {
         flex-direction: row;
         gap: dimensions.$margin-medium;
+
+        >mat-form-field {
+            flex-grow: 1;
+        }
     }
 }
 

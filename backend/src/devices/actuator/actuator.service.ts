@@ -4,10 +4,11 @@ import MixService from "../../mixing/mix/mix.service";
 import {Actuator, ActuatorJSON} from "@common/devices/actuator/actuator";
 import {GroupService} from "../group/group.service";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
-import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
+import {Datum, DatumChangeType, DatumOrigin, ExportedDatum} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {GetDevicesOptions} from "@common/devices/rest-classes";
+import {Sensor} from "@common/devices/sensor/sensor";
 
 const SAVE_FILE = "devices/actuator.json";
 
@@ -53,6 +54,10 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         return (await this.data).actuators.find(a => a.name === name) ?? null;
     }
     
+    public async getActuatorsByName(names: string[]): Promise<Actuator[]> {
+        return (await this.data).actuators.filter(a => names.includes(a.name));
+    }
+    
     public async createActuator(actuator: Actuator, parentName: string | null): Promise<void> {
         const data            = await this.data;
         const alreadyExisting = data.actuators.some(otherActuator => otherActuator.name === actuator.name);
@@ -96,6 +101,22 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
             alreadyExisting = data.actuators.some(otherActuator => otherActuator.name === edit.name);
         }
         if (!alreadyExisting) {
+            if (edit.exposes != null) {
+                const exposeChanges = actuatorToEdit.calculateExposesChanges(edit.exposes.map(expose => Datum.fromJSON(expose)));
+                for (const change of exposeChanges.filter(deletion => deletion.change === DatumChangeType.DELETED)) {
+                    const index = actuatorToEdit.exposes.findIndex(otherExpose => otherExpose.name == change.datum.name);
+                    if (index != -1) {
+                        actuatorToEdit.exposes.splice(index, 1);
+                    }
+                    // If an output is removed, we need to delete the output from the relative mix if it exists
+                    if (actuatorToEdit.mix != null) {
+                        await this.mixService.removeOutputFromMix(actuatorToEdit.mix, change.datum.name);
+                    }
+                }
+                for (const change of exposeChanges.filter(addition => addition.change === DatumChangeType.NEW)) {
+                    actuatorToEdit.exposes.push(change.datum);
+                }
+            }
             if ((newName != null) && (oldName != newName)) {
                 actuatorToEdit.name = newName;
                 await this.groupService.actuatorRenamed(oldName, newName);
@@ -109,32 +130,19 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
             if (edit.type != null) {
                 actuatorToEdit.type = edit.type;
             }
-            if (edit.exposes != null) {
-                const exposeChanges = actuatorToEdit.calculateExposesChanges(edit.exposes.map(expose => Datum.fromJSON(expose)));
-                // TODO: Cascade effect into mixes
-                for (const change of exposeChanges.filter(deletion => deletion.change === DatumChangeType.DELETED)) {
-                    const index = actuatorToEdit.exposes.findIndex(otherExpose => otherExpose.name == change.datum.name);
-                    if (index != -1) {
-                        actuatorToEdit.exposes.splice(index, 1);
-                    }
-                }
-                for (const change of exposeChanges.filter(addition => addition.change === DatumChangeType.NEW)) {
-                    actuatorToEdit.exposes.push(change.datum);
-                }
-            }
             this.saveData();
         } else {
             throw new ConflictException();
         }
     }
     
-    public async setMixForActuator(sensorName: string, mixId: number | "NEW"): Promise<void> {
+    public async setMixForActuator(actuatorName: string, mixId: number | "NEW"): Promise<void> {
         if (mixId == "NEW") {
             throw new BadRequestException("Cannot assign a new mix directly");
         }
-        const actuator = await this.getActuatorByName(sensorName);
+        const actuator = await this.getActuatorByName(actuatorName);
         if (actuator == null) {
-            throw new NotFoundException(`Cannot find actuator "${sensorName}"`);
+            throw new NotFoundException(`Cannot find actuator "${actuatorName}"`);
         } else {
             if (await this.mixService.getMixById(mixId) == null) {
                 throw new NotFoundException(`Cannot find mix with id ${mixId}`);
@@ -143,6 +151,17 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
         actuator.mix = mixId;
         this.saveData();
     }
+    
+    public async removeMixFromActuator(name: string): Promise<void> {
+        const actuator = await this.getActuatorByName(name);
+        if (actuator == null) {
+            throw new NotFoundException(`Cannot find actuator "${name}"`);
+        }
+        actuator.mix = null;
+        this.saveData();
+    }
+    
+    
 }
 
 

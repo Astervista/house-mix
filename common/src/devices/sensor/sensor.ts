@@ -1,10 +1,8 @@
 import {Device, DeviceJSON} from "../device";
 import {Datum} from "../../mixing/mix/datum";
-import {IsEnum, IsInt, IsPositive, Min, ValidateIf} from "rest-decorators";
+import {IsEnum} from "rest-decorators";
 
 export class Sensor extends Device {
-
-    public mix: number | null = null;
     
     constructor(
         name: string,
@@ -27,16 +25,16 @@ export class Sensor extends Device {
         }
     }
     
-    public static override fromJSON(actuatorJSON: SensorJSON): Sensor {
+    public static override fromJSON(sensorJSON: SensorJSON): Sensor {
         let type = SensorType.UNKNOWN;
-        if (actuatorJSON.type in SensorType) {
-            type = actuatorJSON.type as SensorType;
+        if (sensorJSON.type in SensorType) {
+            type = sensorJSON.type as SensorType;
         }
-        const parent = Device.fromJSON(actuatorJSON);
-        const actuator = new Sensor(parent.name, parent.displayName, type, parent.zigbeeAddress);
-        actuator.exposes.push(...actuatorJSON.exposes.map(exposed => Datum.fromJSON(exposed)));
-        actuator.mix = actuatorJSON.mix;
-        return actuator;
+        const parent = Device.fromJSON(sensorJSON);
+        const sensor = new Sensor(parent.name, parent.displayName, type, parent.zigbeeAddress);
+        sensor.exposes.push(...sensorJSON.exposes.map(exposed => Datum.fromJSON(exposed)));
+        sensor.mix = parent.mix;
+        return sensor;
     }
 }
 
@@ -48,11 +46,6 @@ export enum SensorType {
 }
 
 export class SensorJSON extends DeviceJSON {
-    
-    @ValidateIf((o: SensorJSON) => o.mix !== null)
-    @IsInt()
-    @Min(0)
-    public mix: number | null = null;
     
     @IsEnum(SensorType)
     public type: string = SensorType.UNKNOWN;

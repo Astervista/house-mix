@@ -1,9 +1,9 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Post} from '../utils/networking/decorators';
-import { EntityPathParams } from "@common/devices/group/rest-classes";
 import { SystemParameter } from "@common/system/parameter/system-parameter";
 import { SystemTimer } from "@common/system/timer/system-timer";
+import { EntityPathParams } from "@common/utils/rest-classes";
 
 @Injectable({
                 providedIn: 'root'

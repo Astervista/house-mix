@@ -21,7 +21,9 @@ export type MixPositionInfoSensors = MixPositionInfoSensorsDevice | MixPositionI
 
 export interface MixPositionInfoCenter {
     phase: MixPhase.CENTER,
-    target: MixTarget.CENTER
+    target: MixTarget.CENTER,
+    mixName: string,
+    mixDisplayName: string
 }
 
 export type MixPositionInfoActuators = MixPositionInfoActuatorsDevice | MixPositionInfoActuatorsGroup;
@@ -54,10 +56,16 @@ export function createMixInfo(values: Record<string, string>): MixPositionInfo |
     if (
         values['phase'] == MixPhase.CENTER) {
         if (values['target'] == MixTarget.CENTER) {
-            return {
-                phase:  values['phase'],
-                target: values['target']
-            };
+            if (values['mixName'] != null && values['mixDisplayName'] != null) {
+                return {
+                    phase:   values['phase'],
+                    target:  values['target'],
+                    mixName: values['mixName'],
+                    mixDisplayName: values['mixDisplayName']
+                };
+            } else {
+                return null
+            }
         } else {
             return null;
         }
@@ -131,6 +139,12 @@ export function mixInfoFromJSON(json: MixPositionInfoJSON): MixPositionInfo | nu
     if (json.sensorName != null) {
         values["sensorName"] = json.sensorName;
     }
+    if (json.mixName != null) {
+        values["mixName"] = json.mixName;
+    }
+    if (json.mixDisplayName != null) {
+        values["mixDisplayName"] = json.mixDisplayName;
+    }
     return createMixInfo(values);
 }
 
@@ -157,6 +171,15 @@ export class MixPositionInfoJSON {
     @Matches(UNIQUE_NAME_PATTERN)
     public sensorName?: string;
     
+    @IsOptional()
+    @IsNotEmpty()
+    @Matches(UNIQUE_NAME_PATTERN)
+    public mixName?: string;
+    
+    @IsOptional()
+    @IsNotEmpty()
+    public mixDisplayName?: string;
+    
     constructor(phase: MixPhase, target: MixTarget) {
         this.phase = phase;
         this.target = target;
@@ -168,7 +191,9 @@ export class MixPositionInfoJSON {
             target: mixInfo.target,
             sensorName: (mixInfo as MixPositionInfoSensorsDevice).sensorName,
             actuatorName: (mixInfo as MixPositionInfoActuatorsDevice).actuatorName,
-            groupName: (mixInfo as MixPositionInfoActuatorsGroup | MixPositionInfoSensorsGroup).groupName
+            groupName: (mixInfo as MixPositionInfoActuatorsGroup | MixPositionInfoSensorsGroup).groupName,
+            mixName: (mixInfo as MixPositionInfoCenter).mixName,
+            mixDisplayName: (mixInfo as MixPositionInfoCenter).mixDisplayName
         }
     }
 }
@@ -195,6 +220,7 @@ export enum PutMixShowableError {
     INPUTS_WITHOUT_IMPORT = "INPUTS_WITHOUT_IMPORT",
     CYCLE = "CYCLE",
     WRONG_CONNECTIONS = "WRONG_CONNECTIONS",
+    OUTPUTS_IN_USE = "OUTPUTS_IN_USE"
 }
 
 

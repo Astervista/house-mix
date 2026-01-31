@@ -6,12 +6,12 @@
     --house-mix-entity-border-color: #{colors.$border-color};
 
     --highlight-color: var(--house-mix-text-color-30);
-    --stroke-color-animation-duration: 0.2s;
+    --stroke-color-animation-duration: var(--house-mix-entity-animation-speed, 0.2s);
 
     border-radius: 5px;
     display: flex;
     flex-direction: column;
-    transition: outline-width 0.15s ease-in-out, outline-color 0.15s ease-in-out, outline-offset 0.15s ease-in-out;
+    transition: outline-width var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, outline-color var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, outline-offset var(--house-mix-entity-animation-speed, 0.2s) ease-in-out;
     outline: solid 1px var(--house-mix-entity-border-color);
     background: var(--house-mix-background-color);
 
@@ -43,5 +43,5 @@
     } @else {
         align-self: stretch;
     }
-    transition: border-bottom-color 0.15s ease-in-out, border-right-color 0.15s ease-in-out, border-top-color 0.15s ease-in-out, border-left-color 0.15s ease-in-out;
+    transition: border-bottom-color var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, border-right-color var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, border-top-color var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, border-left-color var(--house-mix-entity-animation-speed, 0.2s) ease-in-out;
 }

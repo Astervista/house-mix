@@ -33,7 +33,9 @@
         <svg
             #canvas
             class="mix-canvas"
+            resizeEvent
             [style.--connector-radius]="MEASURES.CONNECTOR_RADIUS"
+            (onResize)="uiManager.viewSize = $event"
             (wheel)="uiManager.wheel($event)"
             (mousemove)="uiManager.svgElement = canvas; uiManager.mouseMove($event)"
             (mouseup)="uiManager.mouseUp()">
@@ -277,7 +279,7 @@
                                                 Value: {{ constantSource.sourceValue }}
                                             </text>
                                         } @else if (output.type == DatumType.DATE || output.type == DatumType.TIME || output.type == DatumType.DATE_TIME) {
-                                            @let format = output.type == DatumType.DATE ? "yyyy-MM-dd" : (output.type == DatumType.TIME ? "HH:mm:ss" : "yyyy-MM-dd HH:mm:ss");
+                                            @let format = getDateDisplayFormat(output.type);
                                             <text
                                                 class="node-external-output-name node-external-output-constant"
                                                 [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
@@ -353,25 +355,27 @@
                             }
                         </g>
                     }
-                    <g
-                        class="output-group add-output"
-                        [attr.transform]="`translate(${uiManager.outputsPosition}, ${-uiManager.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * mix.outputs.length})`"
-                        (click)="addOutput()">
+                    @if (this.exposes == null) {
+                        <g
+                            class="output-group add-output"
+                            [attr.transform]="`translate(${uiManager.outputsPosition}, ${-uiManager.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * mix.outputs.length})`"
+                            (click)="addOutput()">
 
-                        <rect
-                            [attr.width]="MEASURES.OUTPUT_WIDTH"
-                            [attr.height]="MEASURES.ADD_OUTPUT_HEIGHT"
-                            rx="10px"
-                            ry="10px"
-                            class="output-container">
-                        </rect>
-                        <text
-                            class="add-output-text"
-                            [attr.x]="20"
-                            [attr.y]="MEASURES.ADD_INPUT_HEIGHT / 2">
-                            Define a new output
-                        </text>
-                    </g>
+                            <rect
+                                [attr.width]="MEASURES.OUTPUT_WIDTH"
+                                [attr.height]="MEASURES.ADD_OUTPUT_HEIGHT"
+                                rx="10px"
+                                ry="10px"
+                                class="output-container">
+                            </rect>
+                            <text
+                                class="add-output-text"
+                                [attr.x]="20"
+                                [attr.y]="MEASURES.ADD_INPUT_HEIGHT / 2">
+                                Define a new output
+                            </text>
+                        </g>
+                    }
 
 
                     <!-- NODES -->

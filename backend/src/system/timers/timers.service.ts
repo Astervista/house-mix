@@ -1,14 +1,21 @@
-import {Injectable, NotFoundException} from "@nestjs/common";
+import {ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {SystemTimer, SystemTimerJSON} from "@common/system/timer/system-timer";
 import {FileService} from "../../helpers/file/file.service";
+import {DatumOrigin} from "@common/mixing/mix/datum";
+import {SystemOrigin} from "@common/system/constants";
+import MixService from "../../mixing/mix/mix.service";
 
 const SAVE_FILE = "system/timers.json";
 
 @Injectable()
 export class TimersService extends PersistentDataService<SystemTimerData, SystemTimerDataJSON> {
     
-    constructor(fileService: FileService) {
+    constructor(
+        fileService: FileService,
+        @Inject(forwardRef(() => MixService))
+        private mixService: MixService
+    ) {
         super(fileService, SAVE_FILE, SystemTimerData);
     }
     
@@ -31,6 +38,9 @@ export class TimersService extends PersistentDataService<SystemTimerData, System
         const timerToDelete = data.timers.find(otherParam => otherParam.name === name);
         if (timerToDelete == null) {
             throw new NotFoundException("Timer does not exist");
+        }
+        if (await this.mixService.dependencyExists(DatumOrigin.SYSTEM, SystemOrigin.TIMER, name)) {
+            throw new ConflictException("Cannot delete the timer, it's used in a mix");
         }
         const toDeleteIndex = data.timers.indexOf(timerToDelete);
         if (toDeleteIndex !== -1) {

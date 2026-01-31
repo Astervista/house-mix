@@ -3,6 +3,7 @@ import {ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {Connection, ConnectionDrainToNode, ConnectionDrainType, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
 import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mixing/mix/datum';
 import { Line, MEASURES } from "../constants";
+import {ResizeEvent} from '../../../directives/resize-event/resize-event.directive';
 
 export class MixUiManager {
 
@@ -23,10 +24,18 @@ export class MixUiManager {
 
     public svgElement: HTMLElement | null = null;
 
+    public showOutputAdd: boolean = true;
+
+    private _viewSize: Point = { x: 0, y: 0};
+
     public set mix(mix: Mix) {
         this._mix = mix;
         this.refreshMix();
         this.rearrangeNodes();
+    }
+
+    public set viewSize(resizeEvent: ResizeEvent) {
+        this._viewSize = {x: resizeEvent.width, y: resizeEvent.height};
     }
 
     public refreshMix(): void {
@@ -335,7 +344,7 @@ export class MixUiManager {
         let topShift: number | null = null;
         let bottomShift: number | null = null;
         let shift: "CENTER" | "TOP" | "BOTTOM";
-        if (maxHeight == null) {
+        if ((maxHeight == null) || (tree.length == 0)) {
             centerY = 0;
             shift   = "CENTER";
         } else {
@@ -386,6 +395,12 @@ export class MixUiManager {
             }
         }
         this.refreshMix();
+        const viewWidth = this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR + MEASURES.OUTPUT_WIDTH;
+        this.translation.x = this._viewSize.x / 2 - viewWidth / 2 + (MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR * 0.5) / 2;
+        if (this.translation.x < MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR) {
+            this.translation.x = MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR;
+        }
+        this.translation.y = this._viewSize.y / 2;
     }
 
     private shiftNode(delta: Point, node: ElaborationNode): void {
@@ -665,12 +680,16 @@ export class MixUiManager {
         let outputsOnly: number;
 
         if (this._mix.outputs.length != 0) {
-            outputsOnly = this._mix.outputs.length * MEASURES.INPUT_HEIGHT + (this._mix.outputs.length - 1) * MEASURES.INPUT_SPACING;
+            outputsOnly = this._mix.outputs.length * MEASURES.OUTPUT_HEIGHT + (this._mix.outputs.length - 1) * MEASURES.OUTPUT_SPACING;
         } else {
-            return MEASURES.ADD_INPUT_HEIGHT;
+            return MEASURES.ADD_OUTPUT_HEIGHT;
         }
 
-        return MEASURES.ADD_INPUT_HEIGHT + MEASURES.INPUT_SPACING + outputsOnly;
+        if (this.showOutputAdd) {
+            return MEASURES.ADD_OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING + outputsOnly;
+        } else {
+            return outputsOnly;
+        }
     }
 
     public get outputsPosition(): number {

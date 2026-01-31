@@ -1,7 +1,10 @@
-import {BadRequestException, Injectable, NotFoundException} from "@nestjs/common";
+import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, NotFoundException} from "@nestjs/common";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
-import {SystemParameterJSON, SystemParameter} from "@common/system/parameter/system-parameter";
+import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
 import {FileService} from "../../helpers/file/file.service";
+import MixService from "../../mixing/mix/mix.service";
+import {DatumOrigin} from "@common/mixing/mix/datum";
+import {SystemOrigin} from "@common/system/constants";
 
 const SAVE_FILE = "system/parameters.json";
 
@@ -9,7 +12,9 @@ const SAVE_FILE = "system/parameters.json";
 export class ParametersService extends PersistentDataService<ParameterData, ParameterDataJSON>{
     
     constructor(
-        fileService: FileService
+        fileService: FileService,
+        @Inject(forwardRef(() => MixService))
+        private mixService: MixService
     ) {
         super(fileService, SAVE_FILE, ParameterData);
     }
@@ -34,6 +39,9 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
         const parameterToDelete = data.parameters.find(otherParam => otherParam.name === name);
         if (parameterToDelete == null) {
             throw new NotFoundException("Parameter does not exist");
+        }
+        if (await this.mixService.dependencyExists(DatumOrigin.SYSTEM, SystemOrigin.PARAMETER, name)) {
+            throw new ConflictException("Cannot delete the parameter, it's used in a mix");
         }
         const toDeleteIndex = data.parameters.indexOf(parameterToDelete);
         if (toDeleteIndex !== -1) {

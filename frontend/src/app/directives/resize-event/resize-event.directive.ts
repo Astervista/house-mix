@@ -15,7 +15,7 @@ export class ResizeEventDirective implements OnInit, OnDestroy {
     private resizeObserver: ResizeObserver | null = null;
 
     constructor(
-        private elementRef: ElementRef<HTMLElement>,
+        private elementRef: ElementRef<HTMLElement | SVGElement>,
         private changeDetectorRef: ChangeDetectorRef) { }
 
     public ngOnInit(): void {
@@ -39,11 +39,19 @@ export class ResizeEventDirective implements OnInit, OnDestroy {
     }
 
     private emitResizeEvent(): void {
-        this.onResize.emit({
-            width: this.elementRef.nativeElement.offsetWidth,
-            height: this.elementRef.nativeElement.offsetHeight,
-            target: this.elementRef.nativeElement
-        });
+        if (this.elementRef.nativeElement instanceof HTMLElement) {
+            this.onResize.emit({
+                                   width:  this.elementRef.nativeElement.offsetWidth ,
+                                   height: this.elementRef.nativeElement.offsetHeight ,
+                                   target: this.elementRef.nativeElement
+                               });
+        } else {
+            this.onResize.emit({
+                                   width:  this.elementRef.nativeElement.clientWidth,
+                                   height: this.elementRef.nativeElement.clientHeight,
+                                   target: this.elementRef.nativeElement
+                               });
+        }
         const newHasVerticalScrollbar = this.elementRef.nativeElement.scrollHeight > this.elementRef.nativeElement.clientHeight;
         if (newHasVerticalScrollbar != this.hasVerticalScrollbars) {
             this.hasVerticalScrollbars = newHasVerticalScrollbar;
@@ -61,5 +69,5 @@ export class ResizeEventDirective implements OnInit, OnDestroy {
 export interface ResizeEvent {
     width: number;
     height: number;
-    target: HTMLElement;
+    target: HTMLElement | SVGElement;
 }

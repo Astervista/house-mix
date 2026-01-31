@@ -1,4 +1,4 @@
-import {Component, ElementRef, OnInit} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
@@ -15,11 +15,14 @@ import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog} from '../../../utils/better-mat-dialog';
-import {createMixInfo, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
+import {createMixInfo, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget} from '@common/mixing/mix/rest-classes';
 import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
 import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../../auxiliary/toolbar/toolbar.component';
+import {DeviceService} from '../../../services/device.service';
+import {ResizeEventDirective} from '../../../directives/resize-event/resize-event.directive';
+import {getDateDisplayFormat} from '../../../utils/constants';
 
 @Component({
                selector:    'house-mix-mix',
@@ -28,12 +31,13 @@ import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../../auxili
                    LoadingScrimComponent,
                    DynamicSvgComponent,
                    MatButton,
-                   ToolbarComponent
+                   ToolbarComponent,
+                   ResizeEventDirective
                ],
                templateUrl: './mix.component.html',
                styleUrl:    './mix.component.scss'
            })
-export class MixComponent implements OnInit {
+export class MixComponent implements AfterViewInit {
 
     protected mix: Mix | null = null;
 
@@ -49,10 +53,13 @@ export class MixComponent implements OnInit {
 
     protected selectedElements: SelectedElement[] = [];
 
+    protected exposes: Datum[] | null = null;
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
         protected mixService: MixingService,
+        protected deviceService: DeviceService,
         private elementRef: ElementRef<HTMLElement>,
         private matDialog: BetterMatDialog,
         protected location: Location
@@ -117,16 +124,24 @@ export class MixComponent implements OnInit {
                     }
                 })
             .then(
-                (mixPosition) => {
+                async (mixPosition): Promise<Datum[] | null> => {
                     this.mixPosition = mixPosition;
+                    if ((mixPosition?.phase == MixPhase.ACTUATORS) && (mixPosition.target == MixTarget.DEVICE)) {
+                        const actuator = await this.deviceService.getActuatorByName({name: mixPosition.actuatorName});
+                        return actuator.exposes;
+                    } else {
+                        return null;
+                    }
                 })
             .then(
-                () => {
+                async (exposes) => {
+                    this.exposes = exposes;
+                    if ((exposes != null) && (this.mix?.id == 'NEW')) {
+                        exposes.forEach(output => this.mix?.addOutput(output));
+                    }
+                    this.uiManager.showOutputAdd = exposes == null;
                     if (this.mixPosition && this.mix) {
-                        return this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition))
-                                   .then((imports) => {
-                                       this.availableImports = imports;
-                                   });
+                        this.availableImports          = await this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition));
                     } else {
                         throw new Error();
                     }
@@ -159,8 +174,13 @@ export class MixComponent implements OnInit {
                 });
     }
 
-    public ngOnInit(): void {
-        this.uiManager.translation.y = this.elementRef.nativeElement.offsetHeight / 2;
+    public ngAfterViewInit(): void {
+        this.uiManager.viewSize = {
+            width: this.elementRef.nativeElement.offsetWidth,
+            height: this.elementRef.nativeElement.offsetHeight - 62,
+            target: this.elementRef.nativeElement
+        }
+        this.uiManager.rearrangeNodes();
     }
 
     protected addInput(): void {
@@ -170,7 +190,7 @@ export class MixComponent implements OnInit {
                       this
                           .availableImports
                           .filter(
-                              exp => !mix.imports.some(imp => imp.equals(exp)));
+                              exp => !mix.imports.some(imp => imp.sameIdentification(exp)));
             const dialogRef     = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
             dialogRef
                 .afterClosed()
@@ -203,6 +223,9 @@ export class MixComponent implements OnInit {
     }
 
     protected addOutput(): void {
+        if (this.exposes != null) {
+            return;
+        }
         const mix = this.mix;
         if (mix != null) {
             const dialogRef =
@@ -520,7 +543,12 @@ export class MixComponent implements OnInit {
                 // TODO: if a new status is created, use it here too
                 return this.loadingStatus == LoadingStatus.LOADED;
             case ToolbarAction.DELETE as string:
-                return this.selectedElements.length > 0;
+                return this.selectedElements.length > 0
+                       && (
+                           this
+                               .selectedElements
+                               .every(element => element.type != SelectedElementType.OUTPUT)
+                           || this.exposes == null);
         }
     }
 
@@ -534,7 +562,7 @@ export class MixComponent implements OnInit {
                 for (const selectedElement of this.selectedElements) {
                     switch (selectedElement.type) {
                         case SelectedElementType.INPUT:
-                            this.mix?.removeInput(selectedElement.exportedDatum);
+                            this.mix?.removeImport(selectedElement.exportedDatum);
                             this.uiManager.refreshMix();
                             break;
                         case SelectedElementType.NODE:
@@ -542,6 +570,9 @@ export class MixComponent implements OnInit {
                             this.uiManager.refreshMix();
                             break;
                         case SelectedElementType.OUTPUT:
+                            if (this.exposes != null) {
+                                return;
+                            }
                             this.mix?.removeOutput(selectedElement.datum);
                             this.uiManager.refreshMix();
                             break;
@@ -595,7 +626,8 @@ export class MixComponent implements OnInit {
     protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly connectable                                         = connectable;
-    protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
+    protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
+    protected readonly getDateDisplayFormat      = getDateDisplayFormat;
 }
 
 type SelectedElement = {

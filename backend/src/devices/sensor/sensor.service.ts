@@ -4,7 +4,7 @@ import MixService from "../../mixing/mix/mix.service";
 import {Sensor, SensorJSON} from "@common/devices/sensor/sensor";
 import {GroupService} from "../group/group.service";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
-import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
+import {Datum, DatumChangeType, DatumOrigin} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {GetDevicesOptions} from "@common/devices/rest-classes";
@@ -99,22 +99,15 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
             alreadyExisting = data.sensors.some(otherSensor => otherSensor.name === edit.name);
         }
         if (!alreadyExisting) {
-            if ((newName != null) && (oldName != newName)) {
-                sensorToEdit.name = newName;
-                await this.groupService.sensorRenamed(oldName, newName);
-            }
-            if (edit.displayName != null) {
-                sensorToEdit.displayName = edit.displayName;
-            }
-            if (edit.zigbeeAddress != null) {
-                sensorToEdit.zigbeeAddress = edit.zigbeeAddress;
-            }
-            if (edit.type != null) {
-                sensorToEdit.type = edit.type;
-            }
             if (edit.exposes != null) {
                 const exposeChanges = sensorToEdit.calculateExposesChanges(edit.exposes.map(expose => Datum.fromJSON(expose)));
-                // TODO: Cascade effect into mixes
+                for (const change of exposeChanges.filter(deletion => deletion.change === DatumChangeType.DELETED)) {
+                    // We have to check the exposes doesn't break any mix connections
+                    if (await this.mixService.dependencyExists(DatumOrigin.SENSOR_DATA, sensorToEdit.name, change.datum.name)) {
+                        // Cannot delete/edit dependency, it's used somewhere
+                        throw new ConflictException(`Cannot delete/edit export ${change.datum.name}, it's used in a mix`);
+                    }
+                }
                 for (const change of exposeChanges.filter(deletion => deletion.change === DatumChangeType.DELETED)) {
                     const index = sensorToEdit.exposes.findIndex(otherExpose => otherExpose.name == change.datum.name);
                     if (index != -1) {
@@ -124,6 +117,26 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
                 for (const change of exposeChanges.filter(addition => addition.change === DatumChangeType.NEW)) {
                     sensorToEdit.exposes.push(change.datum);
                 }
+            }
+            let displayChanged = false;
+            let nameChanged = false;
+            if (edit.displayName != null) {
+                displayChanged = sensorToEdit.displayName != edit.displayName;
+                sensorToEdit.displayName = edit.displayName;
+            }
+            if ((newName != null) && (oldName != newName)) {
+                sensorToEdit.name = newName;
+                nameChanged = true;
+                await this.groupService.sensorRenamed(oldName, newName);
+            }
+            if (displayChanged || nameChanged) {
+                await this.mixService.sensorRenamed(oldName, sensorToEdit.name, sensorToEdit.displayName);
+            }
+            if (edit.zigbeeAddress != null) {
+                sensorToEdit.zigbeeAddress = edit.zigbeeAddress;
+            }
+            if (edit.type != null) {
+                sensorToEdit.type = edit.type;
             }
             this.saveData();
         } else {
@@ -146,6 +159,16 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         sensor.mix = mixId;
         this.saveData();
     }
+    
+    public async removeMixFromSensor(name: string): Promise<void> {
+        const sensor = await this.getSensorByName(name);
+        if (sensor == null) {
+            throw new NotFoundException(`Cannot find sensor "${name}"`);
+        }
+        sensor.mix = null;
+        this.saveData();
+    }
+    
 }
 
 

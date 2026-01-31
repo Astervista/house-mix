@@ -7,6 +7,7 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    --house-mix-entity-animation-speed: 0.2s;
 }
 
 .main-content-scroll {
@@ -32,6 +33,7 @@
         padding: dimensions.$indent-msmall;
         gap: dimensions.$indent-msmall;
         --highlight-color: var(--house-mix-border-color);
+        cursor: pointer;
 
         house-mix-dynamic-svg {
             display: block;
@@ -45,7 +47,7 @@
             align-self: stretch;
             width: 2px;
             background: var(--house-mix-border-color);
-            margin: 15px 0;
+            margin: 15px -2px 15px 0;
         }
 
         &.selected {
@@ -62,6 +64,7 @@
     .row-group {
         align-self: stretch;
         flex-grow: 1;
+        max-width: calc(100% - 45px - 3 * #{dimensions.$indent-msmall});
     }
 
 }
@@ -80,7 +83,7 @@
 
     @media (pointer: fine) {
         &.scrolling {
-            padding: 0 calc(40px + 2 * #{dimensions.$margin-large});
+            padding: 0 calc(45px + 2 * #{dimensions.$indent-msmall});
         }
     }
 }
@@ -92,12 +95,13 @@
     width: 100%;
     height: 100%;
     z-index: -1;
+    clip-path: rect(0px 100% 100% calc(45px + 3 * #{dimensions.$indent-msmall}));
 }
 
 .scroll-arrow {
 
     position: absolute;
-    left: 0;
+    left: calc(45px + 3 * #{dimensions.$indent-msmall});
     background: var(--house-mix-body-background);
     box-shadow: 0 0 6px 2px var(--house-mix-body-background);
     border-radius: 0 100px 100px 0;
@@ -139,7 +143,7 @@
     gap: dimensions.$margin-mlarge;
 
     --highlight-color: var(--house-mix-text-color-30);
-    --stroke-color-animation-duration: 0.2s;
+    --stroke-color-animation-duration: var(--house-mix-entity-animation-speed, 0.2s);
 
     &.with-button .name {
         min-height: 40px;
@@ -160,21 +164,52 @@
 }
 
 .connection {
-    stroke: #{colors.$border-color};
+    stroke: white;
     fill: none;
 
     stroke-width: 1.5px;
-    transition: stroke-width 0.2s ease-in-out, stroke 0.2s ease-in-out;
+    transition: stroke-width var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, stroke var(--house-mix-entity-animation-speed, 0.2s) ease-in-out;
 
     &.selected {
         stroke-width: 3px;
         stroke: var(--mat-sys-primary);
-        z-index: 2;
     }
 
     &.selected-phase {
         stroke-width: 3px;
         stroke: var(--mat-sys-primary-container);
-        z-index: 2;
+    }
+}
+
+.link-group-opacity {
+    transition: opacity var(--house-mix-entity-animation-speed, 0.2s) ease-in-out;
+    opacity: 0.2;
+
+    &.selected {
+        opacity: 1;
+    }
+}
+
+.connector {
+    fill: white;
+    stroke: none;
+    r: 4.5px;
+
+    transition: fill var(--house-mix-entity-animation-speed, 0.2s) ease-in-out, r var(--house-mix-entity-animation-speed, 0.2s) ease-in-out;
+
+    &.selected-phase-light {
+        fill: var(--mat-sys-primary-container);
+    }
+
+    &.selected-phase {
+        r: 6px;
+    }
+
+    &.selected-light {
+        fill: var(--mat-sys-primary);
+    }
+
+    &.selected {
+        r: 7.5px;
     }
 }

@@ -2,7 +2,9 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {Group} from '@common/devices/group/group';
-import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, EntityPathParams, DeleteGroupOptions, GetGroupsOptions} from '@common/devices/group/rest-classes';
+import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, DeleteGroupOptions, GetGroupsOptions} from '@common/devices/group/rest-classes';
+import {EntityPathParams} from '@common/utils/rest-classes';
+
 
 @Injectable({
                 providedIn: 'root'

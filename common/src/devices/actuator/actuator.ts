@@ -4,8 +4,6 @@ import {IsEnum, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
 
 export class Actuator extends Device {
     
-    public mix: number | null = null;
-    
     constructor(
         name: string,
         displayName: string,
@@ -35,7 +33,7 @@ export class Actuator extends Device {
         const parent = Device.fromJSON(actuatorJSON);
         const actuator = new Actuator(parent.name, parent.displayName, type, parent.zigbeeAddress);
         actuator.exposes.push(...actuatorJSON.exposes.map(exposed => Datum.fromJSON(exposed)));
-        actuator.mix = actuatorJSON.mix;
+        actuator.mix = parent.mix;
         return actuator;
     }
 }
@@ -47,11 +45,6 @@ export enum ActuatorType {
 }
 
 export class ActuatorJSON extends DeviceJSON {
-    
-    @ValidateIf((o: ActuatorJSON) => o.mix !== null)
-    @IsInt()
-    @Min(0)
-    public mix: number | null = null;
     
     @IsEnum(ActuatorType)
     public type: string = ActuatorType.UNKNOWN;

@@ -1,4 +1,4 @@
-import {Component, Inject} from '@angular/core';
+import {Component, Inject, ViewChild} from '@angular/core';
 import {MatDialogComponent} from '../../../utils/better-mat-dialog';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton} from '@angular/material/button';
@@ -15,6 +15,9 @@ import {ACTUATOR_TYPE_DISPLAY, ACTUATOR_TYPE_ICON, SENSOR_TYPE_DISPLAY, SENSOR_T
 import {MatTooltip} from '@angular/material/tooltip';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
 import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
+import {ReactiveFormsModule} from '@angular/forms';
+import {MixingService} from '../../mixing/mixing.service';
+import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/entity-names-inputs.component';
 
 
 @Component({
@@ -26,7 +29,9 @@ import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-clas
                    MatDialogTitle,
                    DynamicSvgComponent,
                    LoadingScrimComponent,
-                   MatTooltip
+                   MatTooltip,
+                   ReactiveFormsModule,
+                   EntityNamesInputsComponent
                ],
                templateUrl: './add-mix-dialog.component.html',
                styleUrl:    './add-mix-dialog.component.scss'
@@ -48,13 +53,20 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
     protected rightGroups: Group[] | null             = null;
     protected rightGroupsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    protected mixNames: string[] | null            = null;
+    protected mixNamesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
+
     protected selectedElement: Group | Actuator | Sensor | null = null;
+
+    @ViewChild(EntityNamesInputsComponent)
+    protected mixNamesComponent?: EntityNamesInputsComponent;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) data: MixPositionInfo,
         dialogRef: MatDialogRef<AddMixDialogComponent, MixPositionInfo>,
         private deviceService: DeviceService,
-        private groupService: GroupService
+        private groupService: GroupService,
+        private mixService: MixingService
     ) {
         super(data, dialogRef);
     }
@@ -191,13 +203,43 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
         }
     }
 
+    protected loadMixNames(invalidate: boolean = false): void {
+        if (invalidate) {
+            this.mixNamesLoadingStatus = LoadingStatus.LOADING;
+            this.mixNames              = null;
+        }
+        if (this.mixNames == null) {
+            this
+                .mixService
+                .getCenterMixNames()
+                .then((result) => {
+                    this.mixNames              = result;
+                    this.mixNamesLoadingStatus = LoadingStatus.LOADED;
+                })
+                .catch(() => {
+                    this.mixNamesLoadingStatus = LoadingStatus.ERROR;
+                });
+        }
+    }
+
     protected get result(): MixPositionInfo | null {
         if (this.selectedPhase == MixPhase.CENTER) {
             if (this.selectedTarget == MixTarget.CENTER) {
-                return {
-                    phase:  this.selectedPhase,
-                    target: this.selectedTarget
-                };
+                if (this.mixNamesComponent != null
+                    && this.mixNamesComponent.nameFormControl.valid
+                    && this.mixNamesComponent.nameFormControl.value != null
+                    && this.mixNamesComponent.displayNameFormControl.valid
+                    && this.mixNamesComponent.displayNameFormControl.value != null
+                ) {
+                    return {
+                        phase:          this.selectedPhase,
+                        target:         this.selectedTarget,
+                        mixName:        this.mixNamesComponent.nameFormControl.value,
+                        mixDisplayName: this.mixNamesComponent.displayNameFormControl.value
+                    };
+                } else {
+                    return null;
+                }
             } else {
                 return null;
             }

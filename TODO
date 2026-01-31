@@ -1,0 +1,15 @@
+// TODO: Do something with empty home
+// TODO: Do something with empty mixing
+// TODO: Do something with empty mix input select and open only one available and maybe multiple choices?
+// TODO: Maybe don't let mixes on actuators that don't have properties?
+// TODO: Show dead ends in the graph
+// TODO: Error and loading
+// TODO: Add tooltips to mixing phase icons
+// TODO: Deleting an actuator doesn't remove the link
+
+Todos for the ui part of the correctness checks
+
+// TODO: check if an exposes of a sensor is deletable
+// TODO: moving group error name is wrong. Better check all the snackbars
+// TODO: Ask to exit before going back from a mix in edit
+// TODO: Put some ui checks before giving the errors

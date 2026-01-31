@@ -103,8 +103,8 @@
                     @for (actuator of actuators; track actuator.name) {
                         <div
                             class="device-display"
-                             [class.selected]="selectedElement == actuator"
-                             (click)="selectedElement = actuator">
+                            [class.selected]="selectedElement == actuator"
+                            (click)="selectedElement = actuator">
                             <house-mix-dynamic-svg
                                 class="device-icon"
                                 [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[actuator.type]}`">
@@ -212,6 +212,21 @@
                 }
             }
         </div>
+    } @else {
+        @if (mixNamesLoadingStatus != LoadingStatus.LOADED) {
+            <div class="loading-container">
+                <house-mix-loading-scrim
+                    [loadingStatus]="mixNamesLoadingStatus"
+                    (loadingSet)="loadMixNames()"
+                    (reload)="loadMixNames(true)">
+                </house-mix-loading-scrim>
+            </div>
+        } @else {
+            <house-mix-entity-names-inputs
+                [forbiddenNames]="mixNames ?? []"
+                [horizontal]="true">
+            </house-mix-entity-names-inputs>
+        }
     }
 </mat-dialog-content>
 <mat-dialog-actions>

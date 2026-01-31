@@ -128,7 +128,8 @@ export const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
     GROUP:       'Group mixes output',
     SENSOR_DATA: 'Raw data from sensors',
     SENSOR:      'Sensor mixes outputs',
-    SYSTEM:      'System'
+    SYSTEM:      'System',
+    CENTER:      'Center mixes outputs'
 };
 
 export function getExternalDatumOriginNameDisplay(datum: ExportedDatum): string {
@@ -198,5 +199,6 @@ export const MEASURES = {
     OUTPUT_WIDTH:                     250,
     OUTPUT_HEIGHT:                    70,
     ADD_OUTPUT_HEIGHT:                50,
-    OUTPUT_SPACING:                   10
+    OUTPUT_SPACING:                   10,
+    UNDERPASS_BORDER_WIDTH: 7.5
 };

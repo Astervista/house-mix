@@ -104,6 +104,11 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             this.actuatorTypeFormControl.setValue(this.data.edit.actuatorType)
             this.deviceExposes = this.data.edit.exposes;
         }
+        if (this.data.entityType == EntityType.SENSOR && this.data.edit != null) {
+            this.zigbeeAddressFormControl.setValue(this.data.edit.zigbeeAddress)
+            this.sensorTypeFormControl.setValue(this.data.edit.sensorType)
+            this.deviceExposes = this.data.edit.exposes;
+        }
     }
 
     public ngAfterViewInit(): void {

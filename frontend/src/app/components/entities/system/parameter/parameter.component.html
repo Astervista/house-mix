@@ -17,6 +17,26 @@
 </span>
 <span class="current-value">
     <span class="title">Current value</span>
-    <!--TODO: stylize the value -->
-    <span class="value">{{ parameter.value }}</span>
+    @if (parameter.datum.type == DatumType.BOOLEAN) {
+        <svg width="18" height="18" viewBox="0 0 960 960">
+            @if (Datum.getValueFromUnknownAndType(parameter.value, parameter.datum.type)) {
+                <path
+                    [style.transform]="'translateY(960px)'"
+                    [style.fill]="'var(--mat-sys-on-background)'"
+                    d="m424-312 282-282-56-56-226 226-114-114-56 56 170 170ZM120-120v-720h720v720H120Zm80-80h560v-560H200v560Zm0 0v-560 560Z"
+                />
+            } @else {
+                <path
+                    [style.transform]="'translateY(960px)'"
+                    [style.fill]="'var(--mat-sys-on-background)'"
+                    d="M120-120v-720h720v720H120Zm80-80h560v-560H200v560Z"
+                />
+            }
+        </svg>
+    } @else if (parameter.datum.type == DatumType.DATE || parameter.datum.type == DatumType.TIME ||parameter.datum.type == DatumType.DATE_TIME) {
+        @let format = getDateDisplayFormat(parameter.datum.type);
+        <span class="value">{{ Datum.getValueFromUnknownAndType(parameter.value, parameter.datum.type)  | date:format  }}</span>
+    } @else {
+        <span class="value">{{ parameter.value }}</span>
+    }
 </span>

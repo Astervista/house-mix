@@ -5,8 +5,9 @@ import { Sensor } from '@common/devices/sensor/sensor';
 import { ActuatorCreateOptions, ActuatorEditChanges } from '@common/devices/actuator/rest-classes';
 import { SensorCreateOptions, SensorEditChanges } from '@common/devices/sensor/rest-classes';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
-import {ChangeParentChange, EntityPathParams} from '@common/devices/group/rest-classes';
+import {ChangeParentChange} from '@common/devices/group/rest-classes';
 import { GetDevicesOptions } from "@common/devices/rest-classes";
+import { EntityPathParams } from "@common/utils/rest-classes";
 
 @Injectable({
     providedIn: 'root'
@@ -36,6 +37,14 @@ export class DeviceService {
         }
     )
     public createActuator!: (actuator: Actuator, options?: ActuatorCreateOptions) => Promise<void>;
+
+    @Get<Actuator>(
+        '/actuators/:name',
+        {
+            result: Actuator
+        }
+    )
+    public getActuatorByName!: (pathParams: { name: string }) => Promise<Actuator>;
 
     @Patch<ActuatorEditChanges, null>(
         '/actuators/:name'

@@ -1,4 +1,4 @@
-import {BadRequestException, Body, Controller, Get, NotFoundException, Param, ParseIntPipe, Post, Put, Query} from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query} from "@nestjs/common";
 import MixService from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {createMixInfo, mixInfoFromJSON, MixPositionInfoJSON, PutMixBodyJSON} from "@common/mixing/mix/rest-classes";
@@ -24,6 +24,21 @@ export class MixController {
         } else {
             throw new NotFoundException();
         }
+    }
+    
+    @Patch("mixes/:id")
+    public async editMix(@Body() newMix: MixJSON, @Param('id', new ParseIntPipe()) id: number): Promise<void> {
+        const mix = Mix.fromJSON(newMix);
+        if (mix.id != id) {
+            throw new BadRequestException("The sent mix id doesn't match with the path id requested");
+        }
+        const position = await this.mixService.getMixPosition(id);
+        await this.mixService.putMix(mix, position);
+    }
+    
+    @Delete("mixes/:id")
+    public async deleteMix(@Param('id', new ParseIntPipe()) id: number): Promise<void> {
+        await this.mixService.deleteMix(id);
     }
     
     @Get("mixes/:id/position")
@@ -52,7 +67,7 @@ export class MixController {
     ): Promise<ExportedDatumJSON[]> {
         const mixPosition = createMixInfo(queryParams);
         if (mixPosition == null) {
-            throw new BadRequestException("The filters defining the position is not valid");
+            throw new BadRequestException("The filter defining the position is not valid");
         }
         const imports = await this.mixService.getAvailableImports(mixPosition);
         return imports.map(imp => imp.toJSON());
@@ -61,6 +76,11 @@ export class MixController {
     @Get("graph")
     public async getGraph(): Promise<MixingGraphJSON> {
         return (await this.mixService.getGraph()).toJSON();
+    }
+    
+    @Get("center-mixes-names")
+    public async getCenterMixNames(): Promise<string[]> {
+        return (await this.mixService.getCenterMixes()).map(centerMix => centerMix.name);
     }
     
 }
