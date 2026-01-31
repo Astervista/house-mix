@@ -4,11 +4,10 @@ import MixService from "../../mixing/mix/mix.service";
 import {Actuator, ActuatorJSON} from "@common/devices/actuator/actuator";
 import {GroupService} from "../group/group.service";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
-import {Datum, DatumChangeType, DatumOrigin, ExportedDatum} from "@common/mixing/mix/datum";
+import {Datum, DatumChangeType} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {GetDevicesOptions} from "@common/devices/rest-classes";
-import {Sensor} from "@common/devices/sensor/sensor";
 
 const SAVE_FILE = "devices/actuator.json";
 

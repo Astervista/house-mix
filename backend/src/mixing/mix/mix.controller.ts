@@ -1,11 +1,11 @@
-import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Patch, Post, Put, Query} from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Patch, Put, Query} from "@nestjs/common";
 import MixService from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {createMixInfo, mixInfoFromJSON, MixPositionInfoJSON, PutMixBodyJSON} from "@common/mixing/mix/rest-classes";
 import {ExportedDatumJSON} from "@common/mixing/mix/datum";
 import {MixingGraphJSON} from "@common/mixing/mixing-graph";
 
-@Controller('mixing/')
+@Controller("mixing/")
 export class MixController {
     
     constructor(private readonly mixService: MixService) {}
@@ -17,8 +17,8 @@ export class MixController {
     }
     
     @Get("mixes/:id")
-    public async getById(@Param('id', new ParseIntPipe()) id: number): Promise<MixJSON> {
-        const  mix = await this.mixService.getMixById(id);
+    public async getById(@Param("id", new ParseIntPipe()) id: number): Promise<MixJSON> {
+        const mix = await this.mixService.getMixById(id);
         if (mix) {
             return mix.toJSON();
         } else {
@@ -27,7 +27,7 @@ export class MixController {
     }
     
     @Patch("mixes/:id")
-    public async editMix(@Body() newMix: MixJSON, @Param('id', new ParseIntPipe()) id: number): Promise<void> {
+    public async editMix(@Body() newMix: MixJSON, @Param("id", new ParseIntPipe()) id: number): Promise<void> {
         const mix = Mix.fromJSON(newMix);
         if (mix.id != id) {
             throw new BadRequestException("The sent mix id doesn't match with the path id requested");
@@ -37,12 +37,12 @@ export class MixController {
     }
     
     @Delete("mixes/:id")
-    public async deleteMix(@Param('id', new ParseIntPipe()) id: number): Promise<void> {
+    public async deleteMix(@Param("id", new ParseIntPipe()) id: number): Promise<void> {
         await this.mixService.deleteMix(id);
     }
     
     @Get("mixes/:id/position")
-    public async getMixPosition(@Param('id', new ParseIntPipe()) id: number): Promise<MixPositionInfoJSON> {
+    public async getMixPosition(@Param("id", new ParseIntPipe()) id: number): Promise<MixPositionInfoJSON> {
         return MixPositionInfoJSON.toJSON(await this.mixService.getMixPosition(id));
     }
     

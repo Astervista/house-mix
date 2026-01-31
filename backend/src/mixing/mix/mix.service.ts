@@ -925,7 +925,12 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 throw new NotFoundException();
             }
             descendingGroups.push(group);
-            descendingActuators = await this.actuatorService.getActuatorsByName(descendingGroups.flatMap(group => group.actuators));
+            descendingActuators = await this
+                .actuatorService
+                .getActuatorsByName(
+                    descendingGroups
+                        .flatMap(otherGroup => otherGroup.actuators)
+                );
         }
         const mixesToCheck: { mix: Mix, entity: Group | Actuator }[] = [];
         for (const group of descendingGroups) {

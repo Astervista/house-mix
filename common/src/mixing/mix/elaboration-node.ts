@@ -1,5 +1,5 @@
 import {Datum, DatumType} from "./datum";
-import {IsEnum, IsInt, IsOptional, IsPositive, Min} from "rest-decorators";
+import {IsEnum, IsInt, IsOptional, Min} from "rest-decorators";
 import {Allow} from "../../decorators/decorators-mock";
 
 export enum ElaborationNodeCode {
@@ -10,7 +10,7 @@ export enum ElaborationNodeCode {
     MAX            = "MAX",
     MIN            = "MIN",
     NULL_GUARD     = "NULL_GUARD",
-    TEST     = "TEST"
+    TEST           = "TEST"
 }
 
 export enum ElaborationNodeErrorType {
@@ -66,9 +66,9 @@ export abstract class ElaborationNode {
     
     public toJSON(): ElaborationNodeJSON {
         return {
-            id:   this.id,
-            code: this.code,
-            options: null,
+            id:      this.id,
+            code:    this.code,
+            options: null
         };
     }
     
@@ -94,7 +94,7 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeNullGuard(id, options as ElaborationModeNullGuardOptions);
             case ElaborationNodeCode.TEST:
                 return new ElaborationNodeAllTypesTest(id);
-            }
+        }
     }
     
 }
@@ -122,8 +122,8 @@ export class ElaborationNodeJSON {
 }
 
 export class ElaborationNodeAllTypesTest extends ElaborationNode {
-
-    public readonly inputs: readonly Datum[] = [
+    
+    public readonly inputs: readonly Datum[]  = [
         new Datum("Boolean", DatumType.BOOLEAN, false),
         new Datum("Number", DatumType.NUMBER, false),
         new Datum("Time", DatumType.TIME, false),
@@ -147,11 +147,11 @@ export class ElaborationNodeAllTypesTest extends ElaborationNode {
         new Datum("Date?", DatumType.DATE, true),
         new Datum("Date Time?", DatumType.DATE_TIME, true)
     ];
-
+    
     constructor(id: number) {
         super(id, ElaborationNodeCode.TEST);
     }
-
+    
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         return new Map(inputValues);
     }
@@ -319,7 +319,7 @@ export class ElaborationNodeNullGuard extends ElaborationNode {
     }
     
     public override toJSON(): ElaborationNodeJSON {
-        const result = super.toJSON();
+        const result   = super.toJSON();
         result.options = this.options;
         return result;
     }

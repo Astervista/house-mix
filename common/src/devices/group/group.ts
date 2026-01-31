@@ -1,17 +1,17 @@
-import {IsArray, IsNotEmpty, Matches, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
+import {IsArray, IsInt, IsNotEmpty, Matches, Min, ValidateIf} from "rest-decorators";
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class Group {
     
-    private readonly _groups: string[] = [];
+    private readonly _groups: string[]    = [];
     private readonly _actuators: string[] = [];
-    private readonly _sensors: string[] = [];
-    public sensorMix: number | null = null;
-    public actuatorMix: number | null = null;
+    private readonly _sensors: string[]   = [];
+    public sensorMix: number | null       = null;
+    public actuatorMix: number | null     = null;
     
     constructor(
         public name: string,
-        public displayName: string,
+        public displayName: string
     ) {
     }
     
@@ -122,14 +122,14 @@ export class Group {
     
     public toJSON(): GroupJSON {
         return {
-            name: this.name,
+            name:        this.name,
             displayName: this.displayName,
-            groups: this._groups.slice(),
-            actuators: this._actuators.slice(),
-            sensors: this._sensors.slice(),
-            sensorMix: this.sensorMix,
+            groups:      this._groups.slice(),
+            actuators:   this._actuators.slice(),
+            sensors:     this._sensors.slice(),
+            sensorMix:   this.sensorMix,
             actuatorMix: this.actuatorMix
-        }
+        };
     }
     
     public static fromJSON(JSON: GroupJSON): Group {
@@ -137,7 +137,7 @@ export class Group {
         group._groups.push(...new Set(JSON.groups));
         group._actuators.push(...new Set(JSON.actuators));
         group._sensors.push(...new Set(JSON.sensors));
-        group.sensorMix = JSON.sensorMix;
+        group.sensorMix   = JSON.sensorMix;
         group.actuatorMix = JSON.actuatorMix;
         return group;
     }
@@ -154,15 +154,15 @@ export class GroupJSON {
     public displayName: string;
     
     @IsArray()
-    @Matches(UNIQUE_NAME_PATTERN, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, {each: true})
     public groups: string[] = [];
     
     @IsArray()
-    @Matches(UNIQUE_NAME_PATTERN, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, {each: true})
     public actuators: string[] = [];
     
     @IsArray()
-    @Matches(UNIQUE_NAME_PATTERN, { each: true})
+    @Matches(UNIQUE_NAME_PATTERN, {each: true})
     public sensors: string[] = [];
     
     @ValidateIf((o: GroupJSON) => o.sensorMix !== null)
@@ -176,8 +176,8 @@ export class GroupJSON {
     public actuatorMix: number | null = null;
     
     constructor(name: string, displayName: string) {
-        this.name = name;
+        this.name        = name;
         this.displayName = displayName;
     }
-
+    
 }

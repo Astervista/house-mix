@@ -821,21 +821,21 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
             this.reorderLinks(outputSlots);
         }
 
-        const elements = [...originElements, ...sensorElements, ...centerElements, ...actuatorElements, ...groupElements];
+        const elements          = [...originElements, ...sensorElements, ...centerElements, ...actuatorElements, ...groupElements];
         const elementFootprints = elements.map(el => ({
             from: {
                 x: el.elementRef.nativeElement.offsetLeft - MEASURES.UNDERPASS_BORDER_WIDTH,
-                y: el.elementRef.nativeElement.offsetTop - MEASURES.UNDERPASS_BORDER_WIDTH,
+                y: el.elementRef.nativeElement.offsetTop - MEASURES.UNDERPASS_BORDER_WIDTH
             },
-            to: {
+            to:   {
                 x: el.elementRef.nativeElement.offsetLeft + el.elementRef.nativeElement.offsetWidth + MEASURES.UNDERPASS_BORDER_WIDTH,
                 y: el.elementRef.nativeElement.offsetTop + el.elementRef.nativeElement.offsetHeight + MEASURES.UNDERPASS_BORDER_WIDTH
             }
         }));
 
         queueMicrotask(() => {
-            this.links = newLinks;
-            this.elementFootprints      = elementFootprints;
+            this.links             = newLinks;
+            this.elementFootprints = elementFootprints;
         });
     }
 
@@ -1016,7 +1016,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                                 .then(() => {
                                     void this
                                         .reloadGraph()
-                                        .then((graph) => {
+                                        .then(() => {
                                             this.ngOnDestroy();
                                             this.ngAfterViewInit();
                                         });
@@ -1097,8 +1097,8 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly SENSOR_TYPE_ICON          = SENSOR_TYPE_ICON;
     protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
     protected readonly MixGraphPhase             = MixGraphPhase;
-    protected readonly DatumOrigin = DatumOrigin;
-    protected readonly MEASURES    = MEASURES;
+    protected readonly DatumOrigin               = DatumOrigin;
+    protected readonly MEASURES                  = MEASURES;
 }
 
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA;

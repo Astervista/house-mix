@@ -1,4 +1,4 @@
-import {IsEnum, IsInt, IsNotEmpty, IsPositive, Matches, Min} from "rest-decorators";
+import {IsEnum, IsInt, IsNotEmpty, Matches, Min} from "rest-decorators";
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class SystemTimer {
@@ -136,10 +136,10 @@ export class SystemTimerJSON {
         type: TimerType,
         occurrence: number
     ) {
-        this.name       = name;
+        this.name        = name;
         this.displayName = displayName;
-        this.type       = type;
-        this.occurrence = occurrence;
+        this.type        = type;
+        this.occurrence  = occurrence;
     }
     
 }

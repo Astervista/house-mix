@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef, OnInit} from '@angular/core';
+import {AfterViewInit, Component, ElementRef} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
@@ -141,7 +141,7 @@ export class MixComponent implements AfterViewInit {
                     }
                     this.uiManager.showOutputAdd = exposes == null;
                     if (this.mixPosition && this.mix) {
-                        this.availableImports          = await this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition));
+                        this.availableImports = await this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition));
                     } else {
                         throw new Error();
                     }
@@ -176,10 +176,10 @@ export class MixComponent implements AfterViewInit {
 
     public ngAfterViewInit(): void {
         this.uiManager.viewSize = {
-            width: this.elementRef.nativeElement.offsetWidth,
+            width:  this.elementRef.nativeElement.offsetWidth,
             height: this.elementRef.nativeElement.offsetHeight - 62,
             target: this.elementRef.nativeElement
-        }
+        };
         this.uiManager.rearrangeNodes();
     }
 
@@ -626,8 +626,8 @@ export class MixComponent implements AfterViewInit {
     protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly connectable                                         = connectable;
-    protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
-    protected readonly getDateDisplayFormat      = getDateDisplayFormat;
+    protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
+    protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
 }
 
 type SelectedElement = {

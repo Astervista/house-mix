@@ -821,7 +821,7 @@ export class ConnectionJSON {
     }
     
     public static fromConnection(connection: Connection): ConnectionJSON {
-        let result = new ConnectionJSON(connection.sourceType, connection.drainType);
+        const result = new ConnectionJSON(connection.sourceType, connection.drainType);
         switch (connection.sourceType) {
             case ConnectionSourceType.INPUT: {
                 result.inputName = connection.inputName;

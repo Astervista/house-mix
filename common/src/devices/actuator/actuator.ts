@@ -1,6 +1,6 @@
 import {Device, DeviceJSON} from "../device";
 import {Datum} from "../../mixing/mix/datum";
-import {IsEnum, IsInt, IsPositive, ValidateIf, Min} from "rest-decorators";
+import {IsEnum} from "rest-decorators";
 
 export class Actuator extends Device {
     
@@ -17,12 +17,12 @@ export class Actuator extends Device {
         const parentJSON = super.toJSON();
         return {
             zigbeeAddress: parentJSON.zigbeeAddress,
-            name: parentJSON.name,
-            displayName: parentJSON.displayName,
-            exposes: parentJSON.exposes,
-            mix: this.mix,
-            type: this.type
-        }
+            name:          parentJSON.name,
+            displayName:   parentJSON.displayName,
+            exposes:       parentJSON.exposes,
+            mix:           this.mix,
+            type:          this.type
+        };
     }
     
     public static override fromJSON(actuatorJSON: ActuatorJSON): Actuator {
@@ -30,7 +30,7 @@ export class Actuator extends Device {
         if (actuatorJSON.type in ActuatorType) {
             type = actuatorJSON.type as ActuatorType;
         }
-        const parent = Device.fromJSON(actuatorJSON);
+        const parent   = Device.fromJSON(actuatorJSON);
         const actuator = new Actuator(parent.name, parent.displayName, type, parent.zigbeeAddress);
         actuator.exposes.push(...actuatorJSON.exposes.map(exposed => Datum.fromJSON(exposed)));
         actuator.mix = parent.mix;
@@ -39,8 +39,8 @@ export class Actuator extends Device {
 }
 
 export enum ActuatorType {
-    BULB = "BULB",
-    STRIP = "STRIP",
+    BULB    = "BULB",
+    STRIP   = "STRIP",
     UNKNOWN = "UNKNOWN",
 }
 
