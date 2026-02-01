@@ -6,6 +6,4 @@
 
 Todos for the ui part of the correctness checks
 
-// TODO: check if an exposes of a sensor is deletable
-// TODO: all others
 // TODO: check that dialogs with loading don't let delete without loading

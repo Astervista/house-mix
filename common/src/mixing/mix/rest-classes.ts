@@ -1,6 +1,7 @@
 import {IsEnum, IsNotEmpty, IsOptional, Matches, Type, ValidateNested} from "rest-decorators";
-import {MixJSON} from "./mix";
+import {Connection, MixJSON} from "./mix";
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
+import {Datum, ExportedDatum} from "./datum";
 
 export enum MixPhase {
     SENSORS   = "SENSORS",
@@ -254,4 +255,30 @@ export enum PutMixShowableError {
     OUTPUTS_IN_USE        = "OUTPUTS_IN_USE"
 }
 
-
+export type PutMixShowableErrorObject = {
+    showable:  true,
+    errorType: PutMixShowableError.INPUTS_WITHOUT_IMPORT,
+    orphanInputs: Datum[],
+    message: string
+} | {
+    showable:  true,
+    errorType: PutMixShowableError.IMPORTS_UNAVAILABLE,
+    unavailableImports: ExportedDatum[],
+    message:  string
+} | {
+    showable:         true,
+    errorType:        PutMixShowableError.OUTPUTS_IN_USE,
+    dependingOutputs: string[],
+    message:          string
+} | {
+    showable:  true,
+    errorType: PutMixShowableError.CYCLE,
+    message:   string
+} | {
+    showable:  true,
+    errorType: PutMixShowableError.WRONG_CONNECTIONS,
+    wrongConnections: Connection[],
+    message:   string
+} | {
+    showable?: false
+}

@@ -1,5 +1,6 @@
 @switch (this.loadingStatus) {
     @case (LoadingStatus.LOADING) {
+        <!--suppress HtmlUnknownAttribute, RequiredAttributes -->
         <house-mix-loading-scrim
             [loadingStatus]="LoadingStatus.LOADING">
 
@@ -119,16 +120,17 @@
                                         || ((temporaryConnectorDatumInfo != null) && (input.nullable && !temporaryConnectorDatumInfo.nullable));
                         <g
                             class="input-group"
+                            [class.error]="errorImports.includes(input.uniqueName)"
                             [class.selected]="isSelected({type: SelectedElementType.INPUT, exportedDatum: input})"
                             [attr.transform]="`translate(${-MEASURES.INPUT_WIDTH - MEASURES.SECTIONS_SEPARATOR / 2}, ${-uiManager.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * inputIndex})`"
                             (click)="selectElement({type: SelectedElementType.INPUT, exportedDatum: input}, $event); $event.stopPropagation()">
 
                             <rect
-                                [attr.width]="MEASURES.INPUT_WIDTH"
-                                [attr.height]="MEASURES.INPUT_HEIGHT"
                                 rx="10px"
                                 ry="10px"
-                                class="input-container">
+                                class="input-container"
+                                [attr.width]="MEASURES.INPUT_WIDTH"
+                                [attr.height]="MEASURES.INPUT_HEIGHT">
                             </rect>
                             <text
                                 class="input-text-name"
@@ -207,8 +209,9 @@
                         <g
                             class="output-group"
                             [class.selected]="isSelected({type: SelectedElementType.OUTPUT, datum: output})"
+                            [class.restored]="restoredOutputs.includes(output.name)"
                             [attr.transform]="`translate(${uiManager.outputsPosition}, ${-uiManager.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * outputIndex})`"
-                            (click)="selectElement({type: SelectedElementType.OUTPUT, datum: output}, $event); $event.stopPropagation()">
+                            (click)="selectElement({type: SelectedElementType.OUTPUT, datum: output}, $event); clearRestored(output.name); $event.stopPropagation()">
 
                             <rect
                                 [attr.width]="MEASURES.OUTPUT_WIDTH"

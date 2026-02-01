@@ -2,7 +2,7 @@ import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, 
 import {Connection, Mix, MixJSON} from "@common/mixing/mix/mix";
 import {FileService} from "../../helpers/file/file.service";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
-import {MixPhase, MixPositionInfo, MixTarget, PutMixShowableError} from "@common/mixing/mix/rest-classes";
+import {MixPhase, MixPositionInfo, MixTarget, PutMixShowableError, PutMixShowableErrorObject} from "@common/mixing/mix/rest-classes";
 import {Datum, DatumOrigin, DatumType, ExportedDatum} from "@common/mixing/mix/datum";
 import {ParametersService} from "../../system/parameters/parameters.service";
 import {TimersService} from "src/system/timers/timers.service";
@@ -182,7 +182,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     errorType: PutMixShowableError.IMPORTS_UNAVAILABLE,
                     unavailableImports,
                     message:   "The new mix requires imports that are either not existing anymore or outside the scope it is put into"
-                });
+                } as PutMixShowableErrorObject);
         }
         const orphanInputs =
                   mix.inputs.filter(
@@ -196,7 +196,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     errorType: PutMixShowableError.INPUTS_WITHOUT_IMPORT,
                     orphanInputs,
                     message:   "The new mix has some inputs that are not corresponding to its imports"
-                });
+                } as PutMixShowableErrorObject);
         }
         
         // Checking outputs
@@ -305,7 +305,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                         errorType:        PutMixShowableError.OUTPUTS_IN_USE,
                         dependingOutputs: [...dependingOutputs],
                         message:          "Some outputs are used downstream by other mixes"
-                    });
+                    } as PutMixShowableErrorObject);
             }
         }
         
@@ -316,7 +316,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     showable:  true,
                     errorType: PutMixShowableError.CYCLE,
                     message:   "The new mix has cycles that are reachable from the inputs"
-                });
+                } as PutMixShowableErrorObject);
         }
         const wrongConnections: Connection[] = mix.wrongConnections;
         if (wrongConnections.length > 0) {
@@ -326,7 +326,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     errorType: PutMixShowableError.WRONG_CONNECTIONS,
                     wrongConnections,
                     message:   "Some connections are not correct"
-                });
+                } as PutMixShowableErrorObject);
         }
         if (mix.hasFreeNonNull) {
             throw new BadRequestException("The new mix has non-null inputs that are free-floating");
@@ -732,7 +732,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     break;
                 case DatumOrigin.SENSOR_DATA:
                     graph.addOrigin(DatumOrigin.SENSOR_DATA);
-                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR_DATA));
+                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR_DATA, imp.originName));
                     break;
                 case DatumOrigin.GROUP:
                     graph.addOrigin(DatumOrigin.GROUP);

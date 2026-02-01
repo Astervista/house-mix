@@ -166,7 +166,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         private router: Router,
         private matDialog: BetterMatDialog,
         private mixingService: MixingService,
-        private snackbar: MatSnackBar
+        private snackBar: MatSnackBar
     ) {
         this.graphReady = this.reloadGraph();
     }
@@ -1032,7 +1032,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                                         });
                                 })
                                 .catch(() => {
-                                    this.snackbar.open(
+                                    this.snackBar.open(
                                         'There has been an error while deleting the mix',
                                         undefined,
                                         {
@@ -1082,12 +1082,67 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
         switch (toolbarElement.id as ToolbarAction) {
             case ToolbarAction.DELETE:
-                return this.selectedElement != null && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin);
+                return this.selectedElement != null
+                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
+                       && !this.hasDependencies(this.selectedElement);
             case ToolbarAction.ADD:
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
                 return true;
+        }
+    }
+
+    private hasDependencies(selectedElement: MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA): boolean {
+        if (selectedElement == DatumOrigin.SYSTEM || selectedElement == DatumOrigin.SENSOR_DATA) {
+            return true;
+        } else if (selectedElement instanceof MixingGraphActuator) {
+            return false;
+        } else if (selectedElement instanceof MixingGraphSensor) {
+            const checkDependency = (dependency: MixingGraphDependency): boolean => {
+                return dependency.origin == DatumOrigin.SENSOR
+                       && dependency.name == selectedElement.name;
+
+            };
+            if (this.graph != null) {
+                return this.graph.sensorGroups.flatMap(group => group.dependingOn).some(checkDependency)
+                       || this.graph.centers.flatMap(center => center.dependingOn).some(checkDependency);
+            } else {
+                return false;
+            }
+        } else if (selectedElement instanceof MixingGraphGroup) {
+            const checkDependency = (dependency: MixingGraphDependency): boolean => {
+                return dependency.origin == DatumOrigin.GROUP
+                       && dependency.name == selectedElement.name;
+
+            };
+            if (selectedElement.sensorPhase) {
+                if (this.graph != null) {
+                    return this.graph.sensorGroups.flatMap(group => group.dependingOn).some(checkDependency)
+                           || this.graph.centers.flatMap(center => center.dependingOn).some(checkDependency);
+                } else {
+                    return false;
+                }
+            } else {
+                if (this.graph != null) {
+                    return this.graph.actuatorGroups.flatMap(group => group.dependingOn).some(checkDependency)
+                           || this.graph.actuators.flatMap(center => center.dependingOn).some(checkDependency);
+                } else {
+                    return false;
+                }
+            }
+        } else { // MixingGraphCenter
+            const checkDependency = (dependency: MixingGraphDependency): boolean => {
+                return dependency.origin == DatumOrigin.CENTER
+                       && dependency.name == selectedElement.name;
+
+            };
+            if (this.graph != null) {
+                return this.graph.actuatorGroups.flatMap(group => group.dependingOn).some(checkDependency)
+                       || this.graph.actuators.flatMap(center => center.dependingOn).some(checkDependency);
+            } else {
+                return false;
+            }
         }
     }
 
@@ -1110,6 +1165,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly DatumOrigin               = DatumOrigin;
     protected readonly MEASURES        = MEASURES;
     protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
+
 }
 
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA;

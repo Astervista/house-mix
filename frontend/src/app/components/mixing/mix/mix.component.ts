@@ -15,14 +15,16 @@ import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog} from '../../../utils/better-mat-dialog';
-import {createMixInfo, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget} from '@common/mixing/mix/rest-classes';
+import {createMixInfo, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget, PutMixShowableError, PutMixShowableErrorObject} from '@common/mixing/mix/rest-classes';
 import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
 import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
 import {HttpErrorResponse} from '@angular/common/http';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType, ToolbarTitle} from '../../auxiliary/toolbar/toolbar.component';
 import {DeviceService} from '../../../services/device.service';
 import {ResizeEventDirective} from '../../../directives/resize-event/resize-event.directive';
-import {getDateDisplayFormat} from '../../../utils/constants';
+import {getDateDisplayFormat, SNACKBAR_TIMEOUT} from '../../../utils/constants';
+import {MatSnackBar} from '@angular/material/snack-bar';
+import {ConfirmDialogComponent} from '../../dialogs/confirm-dialog/confirm-dialog.component';
 
 @Component({
                selector:    'house-mix-mix',
@@ -42,6 +44,9 @@ export class MixComponent implements AfterViewInit {
     protected mix: Mix | null = null;
 
     protected availableImports: ExportedDatum[] = [];
+    protected errorImports: string[]            = [];
+    protected savedOutputs: Datum[]            = [];
+    protected restoredOutputs: string[] = [];
 
     protected uiManager: MixUiManager = new MixUiManager();
 
@@ -62,9 +67,10 @@ export class MixComponent implements AfterViewInit {
         protected deviceService: DeviceService,
         private elementRef: ElementRef<HTMLElement>,
         private matDialog: BetterMatDialog,
-        protected location: Location
+        protected location: Location,
+        private snackBar: MatSnackBar
     ) {
-        TOOLBAR_TITLE.text = '';
+        TOOLBAR_TITLE.text     = '';
         let id: number | 'NEW' = 'NEW';
         firstValueFrom(this.route.params)
             .then(
@@ -118,6 +124,7 @@ export class MixComponent implements AfterViewInit {
                      );*/
                     this.mix           = mix;
                     this.uiManager.mix = mix;
+                    this.savedOutputs = mix.outputs.slice();
                     if (id == 'NEW') {
                         return this.mixPosition;
                     } else {
@@ -220,7 +227,7 @@ export class MixComponent implements AfterViewInit {
                 }
             }
         } else {
-            TOOLBAR_TITLE.text = "";
+            TOOLBAR_TITLE.text = '';
         }
     }
 
@@ -457,8 +464,8 @@ export class MixComponent implements AfterViewInit {
                               ConstantEditDialogComponent,
                               {
                                   data: {
-                                      type:  connector.datum.type,
-                                      value: constantConnection?.sourceValue ?? Datum.getDefaultForType(connector.datum.type),
+                                      type:      connector.datum.type,
+                                      value:     constantConnection?.sourceValue ?? Datum.getDefaultForType(connector.datum.type),
                                       datumName: connector.datum.name
                                   }
                               }
@@ -535,6 +542,10 @@ export class MixComponent implements AfterViewInit {
                 this.mix.removeConnection(constantConnection);
             }
         }
+    }
+
+    protected clearRestored(name: string): void {
+        this.restoredOutputs = this.restoredOutputs.filter(otherOutput => otherOutput != name);
     }
 
     private static areSameSelected(selectedA: SelectedElement, selectedB: SelectedElement): boolean {
@@ -615,6 +626,7 @@ export class MixComponent implements AfterViewInit {
                         case SelectedElementType.INPUT:
                             this.mix?.removeImport(selectedElement.exportedDatum);
                             this.uiManager.refreshMix();
+                            this.errorImports = this.errorImports.filter(imp => imp != selectedElement.exportedDatum.uniqueName);
                             break;
                         case SelectedElementType.NODE:
                             this.mix?.removeNode(selectedElement.node);
@@ -648,11 +660,88 @@ export class MixComponent implements AfterViewInit {
                         .updateMix(mix, position)
                         .then((newId: number) => {
                             void this.router.navigate(['mixing', 'edit', newId]);
+                            this.savedOutputs = mix.outputs.slice();
+                            this.errorImports = [];
+                            this.restoredOutputs = [];
                             mix.id = newId;
                         })
                         .catch((error: unknown) => {
-                            // TODO: Handle handleable errors
-                            console.log(error);
+                            if (error instanceof HttpErrorResponse) {
+                                const showableError: PutMixShowableErrorObject = error.error as PutMixShowableErrorObject;
+                                if (showableError.showable == true) {
+                                    switch (showableError.errorType) {
+                                        case PutMixShowableError.IMPORTS_UNAVAILABLE: {
+                                            this.matDialog.open(ConfirmDialogComponent, {
+                                                data: {
+                                                    title:       'Error saving',
+                                                    message:     'Some input used in the mix are no longer available or they have changed. ' +
+                                                                 'They are outlined in red, please remove them and save again',
+                                                    confirmText: 'OK',
+                                                    cancelText:  null
+                                                }
+                                            });
+                                            this.availableImports = [];
+                                            this.errorImports     = showableError.unavailableImports.map(datum => datum.uniqueName);
+                                            if (this.mixPosition != null) {
+                                                void this
+                                                    .mixService
+                                                    .getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition))
+                                                    .then((availableImports) => {
+                                                        this.availableImports = availableImports;
+                                                        this.errorImports     =
+                                                            this
+                                                                .mix
+                                                                ?.imports
+                                                                .filter(
+                                                                    imp =>
+                                                                        !this
+                                                                            .availableImports
+                                                                            .some(otherImp =>
+                                                                                      otherImp.uniqueName == imp.uniqueName
+                                                                                      && otherImp.type == imp.type
+                                                                                      && otherImp.nullable == imp.nullable
+                                                                            ))
+                                                                .map(imp => imp.uniqueName) ?? [];
+                                                    });
+                                            }
+                                            return;
+                                        }
+                                        case PutMixShowableError.OUTPUTS_IN_USE: {
+                                            this.matDialog.open(ConfirmDialogComponent, {
+                                                data: {
+                                                    title:       'Error saving',
+                                                    message:     'Some outputs have been deleted but they are used in some other mix. ' +
+                                                                 'They have been restored as constants, and outlined in green. The mix has not been saved, check and then save again',
+                                                    confirmText: 'OK',
+                                                    cancelText:  null
+                                                }
+                                            });
+                                            showableError.dependingOutputs.forEach(outputName => {
+                                                const output = this.savedOutputs.find(otherOutput => otherOutput.name == outputName);
+                                                this.restoredOutputs.push(outputName)
+                                                if (output != null) {
+                                                    mix.addOutput(output);
+                                                    this.uiManager.updateEdgeConnections(false);
+                                                }
+                                            })
+                                            return;
+                                        }
+                                        case PutMixShowableError.INPUTS_WITHOUT_IMPORT:
+                                        case PutMixShowableError.CYCLE:
+                                        case PutMixShowableError.WRONG_CONNECTIONS: {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            this.snackBar.open(
+                                'There was an error while saving the mix, and the mix has not been saved. Check for errors and try again. ' +
+                                'You can also reload the page, but you will lose your changes',
+                                undefined,
+                                {
+                                    duration: SNACKBAR_TIMEOUT
+                                }
+                            );
                         });
                 }
                 break;
@@ -712,7 +801,7 @@ enum ToolbarAction {
 }
 
 
-const TOOLBAR_TITLE: ToolbarTitle                                       = {
+const TOOLBAR_TITLE: ToolbarTitle            = {
     type:  ToolBarElementType.TITLE,
     id:    'title',
     text:  '',

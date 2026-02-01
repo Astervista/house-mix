@@ -18,7 +18,6 @@ import {DeleteEntityDialogComponent} from '../dialogs/delete-entity-dialog/delet
 import {DeleteGroupChildFate} from '@common/devices/group/rest-classes';
 import {DeviceService} from '../../services/device.service';
 import {DeviceComponent} from '../entities/devices/device/device.component';
-import {ConfirmDialogComponent} from '../dialogs/confirm-dialog/confirm-dialog.component';
 import {MatIcon} from '@angular/material/icon';
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
 
@@ -52,7 +51,7 @@ export class HomeComponent {
         private matDialog: BetterMatDialog,
         private groupService: GroupService,
         private deviceService: DeviceService,
-        private snackbar: MatSnackBar
+        private snackBar: MatSnackBar
     ) {
         Promise
             .all([
@@ -203,7 +202,7 @@ export class HomeComponent {
                                 .catch((e: unknown) => {
                                     if (e instanceof HttpErrorResponse) {
                                         if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'The group codename is already in use. Create a group with a different one',
                                                 undefined,
                                                 {
@@ -213,7 +212,7 @@ export class HomeComponent {
                                             return;
                                         }
                                     }
-                                    this.snackbar.open(
+                                    this.snackBar.open(
                                         'There has been an error while creating the group',
                                         undefined,
                                         {
@@ -268,7 +267,7 @@ export class HomeComponent {
                                     .catch((e: unknown) => {
                                         if (e instanceof HttpErrorResponse) {
                                             if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                                this.snackbar.open(
+                                                this.snackBar.open(
                                                     'The actuator codename is already in use. Create an actuator with a different one',
                                                     undefined,
                                                     {
@@ -278,7 +277,7 @@ export class HomeComponent {
                                                 return;
                                             }
                                         }
-                                        this.snackbar.open(
+                                        this.snackBar.open(
                                             'There has been an error while creating the actuator',
                                             undefined,
                                             {
@@ -309,7 +308,7 @@ export class HomeComponent {
                                     .catch((e: unknown) => {
                                         if (e instanceof HttpErrorResponse) {
                                             if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                                this.snackbar.open(
+                                                this.snackBar.open(
                                                     'The sensor codename is already in use. Create an sensor with a different one',
                                                     undefined,
                                                     {
@@ -319,7 +318,7 @@ export class HomeComponent {
                                                 return;
                                             }
                                         }
-                                        this.snackbar.open(
+                                        this.snackBar.open(
                                             'There has been an error while creating the sensor',
                                             undefined,
                                             {
@@ -345,7 +344,7 @@ export class HomeComponent {
                                     groupNames:    availableGroups.map(group => group.name),
                                     groupDisplays: availableGroups.map(group => group.displayName),
                                     entityType:    EntityType.GROUP,
-                                    groupToDelete:      selectedObject
+                                    groupToDelete: selectedObject
                                 }
                             }
                         )
@@ -420,7 +419,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while deleting the group',
                                                 undefined,
                                                 {
@@ -436,7 +435,7 @@ export class HomeComponent {
                             DeleteEntityDialogComponent,
                             {
                                 data: {
-                                    entityType: EntityType.ACTUATOR,
+                                    entityType:       EntityType.ACTUATOR,
                                     actuatorToDelete: selectedObject
                                 }
                             }
@@ -466,7 +465,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while deleting the actuator',
                                                 undefined,
                                                 {
@@ -482,7 +481,7 @@ export class HomeComponent {
                             DeleteEntityDialogComponent,
                             {
                                 data: {
-                                    entityType: EntityType.SENSOR,
+                                    entityType:     EntityType.SENSOR,
                                     sensorToDelete: selectedObject
                                 }
                             }
@@ -512,7 +511,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while deleting the sensor',
                                                 undefined,
                                                 {
@@ -561,6 +560,7 @@ export class HomeComponent {
                                             }
                                         )
                                         .then(() => {
+                                            // noinspection UnnecessaryLocalVariableJS
                                             const oldName = selectedObject.name;
                                             if (result.group.name != null) {
                                                 selectedObject.name = result.group.name;
@@ -575,7 +575,7 @@ export class HomeComponent {
                                         .catch((e: unknown) => {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                                    this.snackbar.open(
+                                                    this.snackBar.open(
                                                         'The group codename is already in use. Use a different one',
                                                         undefined,
                                                         {
@@ -585,7 +585,7 @@ export class HomeComponent {
                                                     return;
                                                 }
                                             }
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while editing the group',
                                                 undefined,
                                                 {
@@ -654,7 +654,7 @@ export class HomeComponent {
                                         .catch((e: unknown) => {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                                    this.snackbar.open(
+                                                    this.snackBar.open(
                                                         'The actuator codename is already in use. Use a different one',
                                                         undefined,
                                                         {
@@ -664,7 +664,7 @@ export class HomeComponent {
                                                     return;
                                                 }
                                             }
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while editing the actuator',
                                                 undefined,
                                                 {
@@ -733,7 +733,7 @@ export class HomeComponent {
                                         .catch((e: unknown) => {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.Conflict) {
-                                                    this.snackbar.open(
+                                                    this.snackBar.open(
                                                         'The sensor codename is already in use. Use a different one',
                                                         undefined,
                                                         {
@@ -743,7 +743,7 @@ export class HomeComponent {
                                                     return;
                                                 }
                                             }
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while editing the sensor',
                                                 undefined,
                                                 {
@@ -765,26 +765,25 @@ export class HomeComponent {
                     if (selectedObject instanceof Group) {
                         const descendants = selectedObject.getAllDescendants(this.allGroups);
                         availableGroups   = this.allGroups.filter(group => !descendants.includes(group.name));
-                        sonOfGroup = this.allGroups.find(group => group.containsGroup(selectedObject.name))?.name ?? null;
+                        sonOfGroup        = this.allGroups.find(group => group.containsGroup(selectedObject.name))?.name ?? null;
                     } else if (selectedObject instanceof Actuator) {
                         availableGroups = this.allGroups;
-                        sonOfGroup = this.allGroups.find(group => group.containsActuator(selectedObject.name))?.name ?? null;
+                        sonOfGroup      = this.allGroups.find(group => group.containsActuator(selectedObject.name))?.name ?? null;
                     } else {
                         availableGroups = this.allGroups;
-                        sonOfGroup = this.allGroups.find(group => group.containsSensor(selectedObject.name))?.name ?? null;
+                        sonOfGroup      = this.allGroups.find(group => group.containsSensor(selectedObject.name))?.name ?? null;
                     }
                     this.matDialog.open(
                         ChangeGroupDialogComponent,
                         {
                             data: {
                                 sonOfGroup,
-                                groupNames:    availableGroups.map(group => group.name),
-                                groupDisplays: availableGroups.map(group => group.displayName),
-                                toMove: selectedObject.name,
+                                groupNames:       availableGroups.map(group => group.name),
+                                groupDisplays:    availableGroups.map(group => group.displayName),
+                                toMove:           selectedObject.name,
                                 movingEntityType: selectedObject instanceof Group ? EntityType.GROUP : (selectedObject instanceof Actuator ? EntityType.ACTUATOR : EntityType.SENSOR)
                             }
                         }
-
                     )
                         .afterClosed()
                         .subscribe(result => {
@@ -824,7 +823,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while moving the group',
                                                 undefined,
                                                 {
@@ -861,7 +860,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while moving the actuator',
                                                 undefined,
                                                 {
@@ -898,7 +897,7 @@ export class HomeComponent {
                                             }
                                         })
                                         .catch(() => {
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 'There has been an error while moving the sensor',
                                                 undefined,
                                                 {

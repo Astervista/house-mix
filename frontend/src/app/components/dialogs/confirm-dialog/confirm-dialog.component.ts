@@ -12,7 +12,7 @@ export interface DefaultDialogData {
     title?: string;
     message?: string;
     confirmText?: string;
-    cancelText?: string;
+    cancelText?: string | null;
 }
 
 @Component({

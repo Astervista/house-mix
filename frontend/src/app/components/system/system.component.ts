@@ -49,7 +49,7 @@ export class SystemComponent {
         private router: Router,
         private systemService: SystemService,
         private matDialog: BetterMatDialog,
-        private snackbar: MatSnackBar
+        private snackBar: MatSnackBar
     ) {
         systemService
             .getParameters()
@@ -150,7 +150,7 @@ export class SystemComponent {
                                         .catch((e: unknown) => {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.NotFound) {
-                                                    this.snackbar.open(
+                                                    this.snackBar.open(
                                                         "The parameter cannot be set because it doesn't exist",
                                                         undefined,
                                                         {
@@ -160,7 +160,7 @@ export class SystemComponent {
                                                     return;
                                                 }
                                             }
-                                            this.snackbar.open(
+                                            this.snackBar.open(
                                                 "There has been an error while setting this parameter's value",
                                                 undefined,
                                                 {
@@ -214,7 +214,7 @@ export class SystemComponent {
                                         }
                                     })
                                     .catch(() => {
-                                        this.snackbar.open(
+                                        this.snackBar.open(
                                             'There has been an error while deleting the parameter',
                                             undefined,
                                             {
@@ -235,7 +235,7 @@ export class SystemComponent {
                                         }
                                     })
                                     .catch(() => {
-                                        this.snackbar.open(
+                                        this.snackBar.open(
                                             'There has been an error while deleting the timer',
                                             undefined,
                                             {
@@ -269,7 +269,7 @@ export class SystemComponent {
                             this.timers.push(result);
                         })
                         .catch(() => {
-                            this.snackbar.open(
+                            this.snackBar.open(
                                 'There has been an error while creating the timer',
                                 undefined,
                                 {
@@ -300,7 +300,7 @@ export class SystemComponent {
                             this.parameters.push(result);
                         })
                         .catch(() => {
-                            this.snackbar.open(
+                            this.snackBar.open(
                                 'There has been an error while creating the parameter',
                                 undefined,
                                 {

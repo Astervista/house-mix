@@ -64,13 +64,45 @@
             cursor: pointer;
         }
 
+        &.error {
+            .output-container,
+            .input-container {
+                stroke: var(--mat-sys-error);
+                stroke-width: 3px;
+            }
+        }
+
+        &.restored {
+            .output-container,
+            .input-container {
+                stroke: colors.$correct;
+                stroke-width: 3px;
+            }
+        }
 
         &.selected {
             .output-container,
             .input-container {
                 @include selected-style
             }
+
+
+            &.error {
+                .output-container,
+                .input-container {
+                    stroke: var(--mat-sys-error);
+                    stroke-width: 6px;
+                }
+            }
+            &.restored {
+                .output-container,
+                .input-container {
+                    stroke: colors.$correct;
+                    stroke-width: 6px;
+                }
+            }
         }
+
 
         .input-text-name,
         .add-input-text {
