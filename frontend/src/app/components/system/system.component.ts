@@ -17,10 +17,13 @@ import {ParameterComponent} from '../entities/system/parameter/parameter.compone
 import {ConfirmDialogComponent, ConfirmDialogData} from '../dialogs/confirm-dialog/confirm-dialog.component';
 import {SystemTimerDialogComponent} from '../dialogs/system-timer-dialog/system-timer-dialog.component';
 import {TimerComponent} from '../entities/system/timer/timer.component';
+import {ConstantEditDialogComponent} from '../mixing/mix/constant-edit-dialog/constant-edit-dialog.component';
+import {Datum} from '@common/mixing/mix/datum';
+import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 
 @Component({
                selector:    'house-mix-system',
-               imports: [
+               imports:     [
                    ToolbarComponent,
                    LoadingScrimComponent,
                    MatIcon,
@@ -94,6 +97,8 @@ export class SystemComponent {
         switch (toolbarElement.id as ToolbarAction) {
             case ToolbarAction.DELETE:
                 return this.selected != null;
+            case ToolbarAction.CHANGE_PARAMETER_VALUE:
+                return this.selected != null && this.selected instanceof SystemParameter;
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
@@ -118,9 +123,60 @@ export class SystemComponent {
             case ToolbarAction.SYSTEM: {
                 break;
             }
+            case ToolbarAction.CHANGE_PARAMETER_VALUE: {
+                const selected = this.selected;
+                if (selected != null && selected instanceof SystemParameter) {
+                    this.matDialog.open(
+                        ConstantEditDialogComponent,
+                        {
+                            data: {
+                                type:      selected.datum.type,
+                                value:     selected.value ?? Datum.getDefaultForType(selected.datum.type),
+                                datumName: selected.displayName,
+                                canClear:  selected.datum.nullable
+                            }
+                        }
+                    )
+                        .afterClosed()
+                        .subscribe(
+                            value => {
+                                if (value?.successful == true) {
+                                    this.systemService.setParameterValue({
+                                                                             value: value.value
+                                                                         }, {name: selected.name})
+                                        .then(() => {
+                                            selected.value = value.value;
+                                        })
+                                        .catch((e: unknown) => {
+                                            if (e instanceof HttpErrorResponse) {
+                                                if (e.status as HttpStatusCode == HttpStatusCode.NotFound) {
+                                                    this.snackbar.open(
+                                                        "The parameter cannot be set because it doesn't exist",
+                                                        undefined,
+                                                        {
+                                                            duration: SNACKBAR_TIMEOUT
+                                                        }
+                                                    );
+                                                    return;
+                                                }
+                                            }
+                                            this.snackbar.open(
+                                                "There has been an error while setting this parameter's value",
+                                                undefined,
+                                                {
+                                                    duration: SNACKBAR_TIMEOUT
+                                                }
+                                            );
+                                        });
+                                }
+                            }
+                        );
+                }
+                break;
+            }
             case ToolbarAction.DELETE: {
                 let data: ConfirmDialogData | null = null;
-                const selected            = this.selected;
+                const selected                     = this.selected;
                 if (this.selected instanceof SystemParameter) {
                     data = {
                         message:     `Are you sure you want to delete the parameter "${this.selected.displayName}"?`,
@@ -159,7 +215,7 @@ export class SystemComponent {
                                     })
                                     .catch(() => {
                                         this.snackbar.open(
-                                            'There has been an error while creating the parameter',
+                                            'There has been an error while deleting the parameter',
                                             undefined,
                                             {
                                                 duration: SNACKBAR_TIMEOUT
@@ -170,8 +226,8 @@ export class SystemComponent {
                             if (selected instanceof SystemTimer) {
                                 this.systemService
                                     .deleteTimer({
-                                                         name: selected.name
-                                                     })
+                                                     name: selected.name
+                                                 })
                                     .then(() => {
                                         const index = this.timers.indexOf(selected);
                                         if (index != -1) {
@@ -180,7 +236,7 @@ export class SystemComponent {
                                     })
                                     .catch(() => {
                                         this.snackbar.open(
-                                            'There has been an error while creating the timer',
+                                            'There has been an error while deleting the timer',
                                             undefined,
                                             {
                                                 duration: SNACKBAR_TIMEOUT
@@ -264,10 +320,11 @@ export class SystemComponent {
 }
 
 enum ToolbarAction {
-    DEVICES = 'devices',
-    MIXING  = 'mixing',
-    SYSTEM  = 'system',
-    DELETE  = 'delete'
+    DEVICES                = 'devices',
+    MIXING                 = 'mixing',
+    SYSTEM                 = 'system',
+    DELETE                 = 'delete',
+    CHANGE_PARAMETER_VALUE = 'change-parameter-value'
 }
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
@@ -296,6 +353,13 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.SPACER,
         id:    'spacer-1',
         order: 1
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'edit_square',
+        id:    ToolbarAction.CHANGE_PARAMETER_VALUE,
+        hint:  'Change parameter value',
+        order: 2
     },
     {
         type:  ToolBarElementType.BUTTON,

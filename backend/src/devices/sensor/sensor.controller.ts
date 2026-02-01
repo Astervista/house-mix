@@ -6,14 +6,17 @@ import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
-import {GetDevicesOptions} from "@common/devices/rest-classes";
+import {GetDevicesOptions, LockedExposes, UnavailableParents} from "@common/devices/rest-classes";
+import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
+import MixService from "../../mixing/mix/mix.service";
 
 @Controller('device/sensors')
 export class SensorController {
     
     constructor(
         private readonly sensorService: SensorService,
-        private readonly groupService: GroupService
+        private readonly groupService: GroupService,
+        private readonly mixService: MixService
     ) {}
     
     @Get("")
@@ -67,6 +70,15 @@ export class SensorController {
         await this.groupService.removeDevice(name, EntityType.SENSOR);
     }
     
+    @Get("/:name/delete-locks")
+    public async canDelete(
+        @Param('name')
+        name: string
+    ): Promise<MixPositionInfo[]> {
+        return await this.mixService.deleteLocks(EntityType.SENSOR, name);
+    }
+    
+    
     @Patch("/:name/parent")
     public async changeParent(
         @Param('name')
@@ -75,6 +87,22 @@ export class SensorController {
         data: ChangeParentChange
     ): Promise<void> {
         await this.groupService.changeParent(name, data.parent, EntityType.SENSOR);
+    }
+    
+    @Get("/:name/unavailable-parents")
+    public async getUnavailableParents(
+        @Param('name')
+        name: string
+    ): Promise<UnavailableParents> {
+        return this.groupService.getUnavailableParents(name, EntityType.SENSOR);
+    }
+    
+    @Get("/:name/locked-exposes")
+    public async getLockedExposes(
+        @Param('name')
+        name: string
+    ): Promise<LockedExposes[]> {
+        return await this.sensorService.getLockedExposes(name);
     }
 
 }

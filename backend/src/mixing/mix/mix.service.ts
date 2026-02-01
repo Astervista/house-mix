@@ -220,18 +220,18 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 }
             }
             const dependingOutputs: Set<string> = new Set<string>;
-            const centerMix = data.centerMixes.find(centerMixInfo => centerMixInfo.mixId == mixId);
+            const centerMix                     = data.centerMixes.find(centerMixInfo => centerMixInfo.mixId == mixId);
             if (centerMix != null) {
                 const undeletable = data
                     .mixes
                     .flatMap(otherMix =>
-                              otherMix
-                                  .imports
-                                  .filter(imp =>
-                                            this.importDependsOnCenter(imp, centerMix.name, deletedOrChanged)));
+                                 otherMix
+                                     .imports
+                                     .filter(imp =>
+                                                 this.importDependsOnCenter(imp, centerMix.name, deletedOrChanged)));
                 undeletable.forEach((imp) => {
-                    dependingOutputs.add(imp.name)
-                })
+                    dependingOutputs.add(imp.name);
+                });
             }
             const sensor = (await this.sensorService.getAllSensors({mix: mixId})).at(0);
             if (sensor != null) {
@@ -239,13 +239,13 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     .mixes
                     .filter(otherMix => otherMix.id != mixId)
                     .flatMap(otherMix =>
-                              otherMix
-                                  .imports
-                                  .filter(imp =>
-                                            this.importDependsOn(imp, [sensor.name], [], deletedOrChanged)));
+                                 otherMix
+                                     .imports
+                                     .filter(imp =>
+                                                 this.importDependsOn(imp, [sensor.name], [], deletedOrChanged)));
                 undeletable.forEach((imp) => {
-                    dependingOutputs.add(imp.name)
-                })
+                    dependingOutputs.add(imp.name);
+                });
             }
             const sensorGroup = (await this.groupService.getAllGroups({sensorMix: mixId})).at(0);
             if (sensorGroup != null) {
@@ -270,8 +270,8 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                                      .filter(imp =>
                                                  this.importDependsOn(imp, [], [sensorGroup.name], deletedOrChanged)));
                 undeletable.forEach((imp) => {
-                    dependingOutputs.add(imp.name)
-                })
+                    dependingOutputs.add(imp.name);
+                });
             }
             const actuatorGroup = (await this.groupService.getAllGroups({actuatorMix: mixId})).at(0);
             if (actuatorGroup != null) {
@@ -295,16 +295,16 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                                      .filter(imp =>
                                                  this.importDependsOn(imp, [], [actuatorGroup.name], deletedOrChanged)));
                 undeletable.forEach((imp) => {
-                    dependingOutputs.add(imp.name)
-                })
+                    dependingOutputs.add(imp.name);
+                });
             }
             if (dependingOutputs.size > 0) {
                 throw new ConflictException(
                     {
-                        showable:  true,
-                        errorType: PutMixShowableError.OUTPUTS_IN_USE,
+                        showable:         true,
+                        errorType:        PutMixShowableError.OUTPUTS_IN_USE,
                         dependingOutputs: [...dependingOutputs],
-                        message:   "Some outputs are used downstream by other mixes"
+                        message:          "Some outputs are used downstream by other mixes"
                     });
             }
         }
@@ -351,9 +351,9 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     throw new InternalServerErrorException();
                 }
                 data.centerMixes.push({
-                                          name:  position.mixName,
+                                          name:        position.mixName,
                                           displayName: position.mixDisplayName,
-                                          mixId: mix.id
+                                          mixId:       mix.id
                                       });
             }
         } else {
@@ -592,42 +592,46 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         const sensor = (await this.sensorService.getAllSensors({mix: id}))[0];
         if (sensor != null) {
             return {
-                phase:      MixPhase.SENSORS,
-                target:     MixTarget.DEVICE,
-                sensorName: sensor.name
+                phase:             MixPhase.SENSORS,
+                target:            MixTarget.DEVICE,
+                sensorName:        sensor.name,
+                sensorDisplayName: sensor.displayName
             };
         }
         const sensorGroup = (await this.groupService.getAllGroups({sensorMix: id}))[0];
         if (sensorGroup != null) {
             return {
-                phase:     MixPhase.SENSORS,
-                target:    MixTarget.GROUP,
-                groupName: sensorGroup.name
+                phase:            MixPhase.SENSORS,
+                target:           MixTarget.GROUP,
+                groupName:        sensorGroup.name,
+                groupDisplayName: sensorGroup.displayName
             };
         }
         const center = data.centerMixes.find(mixInfo => mixInfo.mixId == id);
         if (center != null) {
             return {
-                phase:   MixPhase.CENTER,
-                target:  MixTarget.CENTER,
-                mixName: center.name,
+                phase:          MixPhase.CENTER,
+                target:         MixTarget.CENTER,
+                mixName:        center.name,
                 mixDisplayName: center.displayName
             };
         }
         const actuatorGroup = (await this.groupService.getAllGroups({actuatorMix: id}))[0];
         if (actuatorGroup != null) {
             return {
-                phase:     MixPhase.ACTUATORS,
-                target:    MixTarget.GROUP,
-                groupName: actuatorGroup.name
+                phase:            MixPhase.ACTUATORS,
+                target:           MixTarget.GROUP,
+                groupName:        actuatorGroup.name,
+                groupDisplayName: actuatorGroup.displayName
             };
         }
         const actuator = (await this.actuatorService.getAllActuators({mix: id}))[0];
         if (actuator != null) {
             return {
-                phase:        MixPhase.ACTUATORS,
-                target:       MixTarget.DEVICE,
-                actuatorName: actuator.name
+                phase:               MixPhase.ACTUATORS,
+                target:              MixTarget.DEVICE,
+                actuatorName:        actuator.name,
+                actuatorDisplayName: actuator.displayName
             };
         }
         throw new NotFoundException("Mix not found");
@@ -766,6 +770,21 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return false;
     }
     
+    /**
+     * Returns all the mixes that have an import depending on a specific external datum
+     *
+     * @param {DatumOrigin} origin - The origin type of the dependency to check.
+     * @param {string} originName - The name of the origin associated with the dependency.
+     * @param {string} name - The single input name to check.
+     * @return {Promise<Mix[]>} The depending mixes.
+     */
+    public async getDependingMixes(origin: DatumOrigin, originName: string, name: string): Promise<Mix[]> {
+        const data = await this.data;
+        return data.mixes.filter(mix =>
+                                     mix.imports.some(imp => imp.origin == origin && imp.originName == originName && imp.name == name)
+        );
+    }
+    
     public async removeOutputFromMix(mixId: number, outputName: string): Promise<void> {
         const data = await this.data;
         const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
@@ -803,12 +822,21 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
      *
      * @param {string} entityType - Whether the entity is a sensor or a group.
      * @param {string} entityName - The name of the group for which to fetch available groups.
-     * @return {Promise<{available: (Group | null)[], blocking: Group | null}>} A promise that resolves to an object containing:
+     * @return {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
      * - `available`: An array of groups that the sensor/group can be a part of. If no restrictions are found, all groups are returned.
      *                `null` means it can be put in the system's root
      * - `blocking`: The group that is currently blocking further participation, if any. Otherwise, it's null.
+     * - `unreachableMix`: The mix on the blocking group that would become unreachable, if any.
+     * - `dependingMix`: The mix within the moving entity (or its descendants) that depends on the blocking group, if any.
      */
-    public async sensorMixAvailableGroups(entityType: EntityType.SENSOR | EntityType.GROUP, entityName: string): Promise<{ available: (Group | null)[], blocking: Group | null }> {
+    public async sensorMixAvailableGroups(
+        entityType: EntityType.SENSOR | EntityType.GROUP, entityName: string
+    ): Promise<{
+        available: (Group | null)[],
+        blocking: Group | null,
+        unreachableMix: Mix | null,
+        dependingMix: Mix | null
+    }> {
         const data                          = await this.data;
         const parentChain: (Group | null)[] = [...await this.groupService.getParentChain(entityType, entityName), null];
         let descendingGroupNames: string[]  = [];
@@ -822,7 +850,9 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             descendingSensorNames   = descendingSensors.map(s => s.name);
             descendingGroupNames.push(entityName);
         }
-        let nearestDepending: Group | null = null;
+        let nearestDepending: Group | null          = null;
+        let nearestDependingMixUpstream: Mix | null = null;
+        
         for (const ancestor of parentChain) {
             if (ancestor == null) {
                 // We have reached the root node: it means we have finished
@@ -838,16 +868,23 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                         .some((imp) => this.importDependsOn(imp, descendingSensorNames, descendingGroupNames)
                         )
                     ) {
-                        nearestDepending = ancestor;
+                        nearestDepending            = ancestor;
+                        nearestDependingMixUpstream = mixToCheck;
+                        
                         break;
                     }
                 }
             }
         }
         if (nearestDepending == null) {
-            return {available: [null, ...(await this.groupService.getAllGroups())], blocking: null};
+            return {available: [null, ...(await this.groupService.getAllGroups())], blocking: null, unreachableMix: null, dependingMix: null};
         } else {
-            return {available: [nearestDepending, ...(await this.groupService.getDescendingGroups(nearestDepending.name))], blocking: nearestDepending};
+            return {
+                available:      [nearestDepending, ...(await this.groupService.getDescendingGroups(nearestDepending.name))],
+                blocking:       nearestDepending,
+                unreachableMix: nearestDependingMixUpstream,
+                dependingMix:   null
+            };
         }
     }
     
@@ -902,12 +939,22 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
      *
      * @param {string} entityType - Whether the entity is an actuator or a group.
      * @param {string} entityName - The name of the actuator or group for which to fetch available groups.
-     * @return {Promise<{available: (Group | null)[], blocking: Group | null}>} A promise that resolves to an object containing:
+     * @return {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
      * - `available`: An array of groups that the actuator/group can be a part of. If no restrictions are found, all groups are returned.
      *                `null` means it can be put in the system's root
      * - `blocking`: The group that is currently blocking further participation, if any. Otherwise, it's null.
+     * - `unreachableMix`: The mix on the blocking group that would become unreachable, if any.
+     * - `dependingMix`: The mix within the moving entity (or its descendants) that depends on the blocking group, if any.
      */
-    public async actuatorMixAvailableGroups(entityType: EntityType.ACTUATOR | EntityType.GROUP, entityName: string): Promise<{ available: (Group | null)[], blocking: Group | null }> {
+    public async actuatorMixAvailableGroups(
+        entityType: EntityType.ACTUATOR | EntityType.GROUP,
+        entityName: string
+    ): Promise<{
+        available: (Group | null)[],
+        blocking: Group | null,
+        unreachableMix: Mix | null,
+        dependingMix: Mix | null
+    }> {
         const data                          = await this.data;
         const parentChain: Group[]          = await this.groupService.getParentChain(entityType, entityName);
         let descendingGroups: Group[]       = [];
@@ -947,8 +994,10 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 mixesToCheck.push({mix: mixToCheck, entity: actuator});
             }
         }
-        let lowerDepending: number | null  = null;
-        let nearestDepending: Group | null = null;
+        let lowerDepending: number | null             = null;
+        let nearestDepending: Group | null            = null;
+        let nearestDependingMixDownstream: Mix | null = null;
+        let nearestDependingMixUpstream: Mix | null   = null;
         for (const mixToCheck of mixesToCheck) {
             const collisions = mixToCheck
                 .mix
@@ -968,15 +1017,27 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     continue;
                 }
                 if (lowerDepending == null || dependingIndex < lowerDepending) {
-                    lowerDepending   = dependingIndex;
-                    nearestDepending = dependingParent;
+                    lowerDepending                = dependingIndex;
+                    nearestDepending              = dependingParent;
+                    nearestDependingMixDownstream = mixToCheck.mix;
+                    nearestDependingMixUpstream   = data.mixes.find(otherMix => otherMix.id == dependingParent.actuatorMix) ?? null;
                 }
             }
         }
         if (nearestDepending == null) {
-            return {available: [null, ...(await this.groupService.getAllGroups())], blocking: null};
+            return {
+                available:      [null, ...(await this.groupService.getAllGroups())],
+                blocking:       null,
+                dependingMix:   null,
+                unreachableMix: null
+            };
         } else {
-            return {available: [nearestDepending, ...(await this.groupService.getDescendingGroups(nearestDepending.name))], blocking: nearestDepending};
+            return {
+                available:      [nearestDepending, ...(await this.groupService.getDescendingGroups(nearestDepending.name))],
+                blocking:       nearestDepending,
+                dependingMix:   nearestDependingMixDownstream,
+                unreachableMix: nearestDependingMixUpstream
+            };
         }
     }
     
@@ -1002,6 +1063,80 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 );
             }
         }
+    }
+    
+    public async deleteLocks(entityType: EntityType, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
+        const data = await this.data;
+        let mixes: Mix[];
+        switch (entityType) {
+            case EntityType.GROUP: {
+                const group = await this.groupService.getGroupByName(name);
+                if (group == null) {
+                    throw new NotFoundException();
+                }
+                const groupArray = [name];
+                mixes            = data.mixes.filter(
+                    mix => !excludeMixes.includes(mix.id) && mix.imports.some(
+                        imp => this.importDependsOn(imp, [], groupArray)
+                    )
+                );
+                if (group.actuatorMix != null) {
+                    const mix = data.mixes.find(otherMix => otherMix.id == group.actuatorMix);
+                    if (mix != null) {
+                        mixes.push(mix);
+                    }
+                }
+                if (group.sensorMix != null) {
+                    const mix = data.mixes.find(otherMix => otherMix.id == group.sensorMix);
+                    if (mix != null) {
+                        mixes.push(mix);
+                    }
+                }
+                break;
+            }
+            case EntityType.ACTUATOR: {
+                const actuator = await this.actuatorService.getActuatorByName(name);
+                if (actuator == null) {
+                    throw new NotFoundException();
+                }
+                if (actuator.mix != null) {
+                    const mix = data.mixes.find(otherMix => otherMix.id == actuator.mix);
+                    if (mix != null) {
+                        mixes = [mix];
+                        break;
+                    }
+                }
+                mixes = [];
+                break;
+            }
+            case EntityType.SENSOR: {
+                const sensor = await this.sensorService.getSensorByName(name);
+                if (sensor == null) {
+                    throw new NotFoundException();
+                }
+                const sensorArray = [name];
+                mixes             = data.mixes.filter(
+                    mix => !excludeMixes.includes(mix.id) && mix.imports.some(
+                        imp => this.importDependsOn(imp, sensorArray, [])
+                    )
+                );
+                if (sensor.mix != null) {
+                    const mix = data.mixes.find(otherMix => otherMix.id == sensor.mix);
+                    if (mix != null) {
+                        mixes.push(mix);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        const result: MixPositionInfo[] = [];
+        for (const mix of mixes) {
+            if (mix.id != "NEW") {
+                result.push(await this.getMixPosition(mix.id));
+            }
+        }
+        return result;
     }
     
     public async deleteMix(mixId: number, avoidCorrectnessCheck: boolean = false): Promise<void> {

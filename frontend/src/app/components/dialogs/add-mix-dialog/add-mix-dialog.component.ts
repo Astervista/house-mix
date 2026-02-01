@@ -252,7 +252,8 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
                     return {
                         phase:        this.selectedPhase,
                         target:       this.selectedTarget,
-                        actuatorName: this.selectedElement.name
+                        actuatorName: this.selectedElement.name,
+                        actuatorDisplayName: this.selectedElement.displayName
                     };
                 } else {
                     return null;
@@ -262,7 +263,8 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
                     return {
                         phase:      this.selectedPhase,
                         target:     this.selectedTarget,
-                        sensorName: this.selectedElement.name
+                        sensorName: this.selectedElement.name,
+                        sensorDisplayName: this.selectedElement.displayName
                     };
                 } else {
                     return null;
@@ -274,7 +276,8 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
                     return {
                         phase:     this.selectedPhase,
                         target:    this.selectedTarget,
-                        groupName: this.selectedElement.name
+                        groupName: this.selectedElement.name,
+                        groupDisplayName: this.selectedElement.displayName
                     };
                 } else {
                     return null;
@@ -284,7 +287,8 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
                     return {
                         phase:     this.selectedPhase,
                         target:    this.selectedTarget,
-                        groupName: this.selectedElement.name
+                        groupName: this.selectedElement.name,
+                        groupDisplayName: this.selectedElement.displayName
                     };
                 } else {
                     return null;

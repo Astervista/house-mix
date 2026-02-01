@@ -6,14 +6,17 @@ import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
-import {GetDevicesOptions} from "@common/devices/rest-classes";
+import {GetDevicesOptions, UnavailableParents} from "@common/devices/rest-classes";
+import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
+import MixService from "../../mixing/mix/mix.service";
 
 @Controller('device/actuators')
 export class ActuatorController {
     
     constructor(
         private readonly actuatorService: ActuatorService,
-        private readonly groupService: GroupService
+        private readonly groupService: GroupService,
+        private readonly mixService: MixService
     ) {}
     
     @Get("")
@@ -67,6 +70,14 @@ export class ActuatorController {
         await this.groupService.removeDevice(name, EntityType.ACTUATOR);
     }
     
+    @Get("/:name/delete-locks")
+    public async canDelete(
+        @Param('name')
+        name: string
+    ): Promise<MixPositionInfo[]> {
+        return await this.mixService.deleteLocks(EntityType.ACTUATOR, name);
+    }
+    
     @Patch("/:name/parent")
     public async changeParent(
         @Param('name')
@@ -75,6 +86,14 @@ export class ActuatorController {
         data: ChangeParentChange
     ): Promise<void> {
         await this.groupService.changeParent(name, data.parent, EntityType.ACTUATOR);
+    }
+    
+    @Get("/:name/unavailable-parents")
+    public async getUnavailableParents(
+        @Param('name')
+        name: string
+    ): Promise<UnavailableParents> {
+        return this.groupService.getUnavailableParents(name, EntityType.ACTUATOR);
     }
 
 }

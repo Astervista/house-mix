@@ -1,10 +1,18 @@
 <h2 mat-dialog-title>{{ getTitle() }}</h2>
 <mat-dialog-content>
+    <p>Change value{{ this.data.datumName == null ? '' : ` of "${this.data.datumName}"`}}</p>
     @if (this.data.type == DatumType.NUMBER) {
         <mat-form-field>
             <mat-label>Value</mat-label>
             <input matInput type="number" [formControl]="numberFormControl">
         </mat-form-field>
+    }
+    @if (this.data.type == DatumType.BOOLEAN) {
+        <mat-checkbox
+            style="margin-bottom: 5px"
+            [formControl]="booleanFormControl">
+            Change to {{ booleanFormControl.value }}
+        </mat-checkbox>
     }
     @if (this.data.type == DatumType.TIME || this.data.type == DatumType.DATE_TIME) {
         <mat-form-field>
@@ -29,9 +37,17 @@
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button
-            (click)="closeDialog({successful: false, value: null})">Cancel</button>
-    <button mat-button [disabled]="selectedValue == null"
-
+            (click)="closeDialog({successful: false, value: null})">
+        Cancel
+    </button>
+    @if (this.data.canClear) {
+        <button mat-button
+                (click)="closeDialog({successful: true, value: null})">
+            Clear to null
+        </button>
+    }
+    <button mat-button
+            [disabled]="selectedValue == null"
             (click)="closeDialog({successful: true, value: selectedValue})">
         Set
     </button>

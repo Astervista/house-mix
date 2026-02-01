@@ -30,25 +30,29 @@ export type MixPositionInfoActuators = MixPositionInfoActuatorsDevice | MixPosit
 export interface MixPositionInfoSensorsDevice {
     phase: MixPhase.SENSORS,
     target: MixTarget.DEVICE,
-    sensorName: string
+    sensorName: string,
+    sensorDisplayName: string
 }
 
 export interface MixPositionInfoSensorsGroup {
     phase: MixPhase.SENSORS,
     target: MixTarget.GROUP,
-    groupName: string
+    groupName: string,
+    groupDisplayName: string
 }
 
 export interface MixPositionInfoActuatorsDevice {
     phase: MixPhase.ACTUATORS,
     target: MixTarget.DEVICE,
     actuatorName: string
+    actuatorDisplayName: string
 }
 
 export interface MixPositionInfoActuatorsGroup {
     phase: MixPhase.ACTUATORS,
     target: MixTarget.GROUP,
-    groupName: string
+    groupName: string,
+    groupDisplayName: string
 }
 
 export function createMixInfo(values: Record<string, string>): MixPositionInfo | null {
@@ -73,21 +77,23 @@ export function createMixInfo(values: Record<string, string>): MixPositionInfo |
         return null;
     } else if (values["target"] == MixTarget.DEVICE) {
         if (values["phase"] == MixPhase.ACTUATORS) {
-            if (values["actuatorName"] != null) {
+            if (values["actuatorName"] != null && values["actuatorDisplayName"] != null) {
                 return {
                     phase:        values["phase"],
                     target:       values["target"],
-                    actuatorName: values["actuatorName"]
+                    actuatorName: values["actuatorName"],
+                    actuatorDisplayName: values["actuatorDisplayName"]
                 };
             } else {
                 return null;
             }
         } else if (values["phase"] == MixPhase.SENSORS) {
-            if (values["sensorName"] != null) {
+            if (values["sensorName"] != null && values["sensorDisplayName"] != null) {
                 return {
                     phase:      values["phase"],
                     target:     values["target"],
-                    sensorName: values["sensorName"]
+                    sensorName: values["sensorName"],
+                    sensorDisplayName: values["sensorDisplayName"]
                 };
             } else {
                 return null;
@@ -97,21 +103,23 @@ export function createMixInfo(values: Record<string, string>): MixPositionInfo |
         }
     } else if (values["target"] == MixTarget.GROUP) {
         if (values["phase"] == MixPhase.ACTUATORS) {
-            if (values["groupName"] != null) {
+            if (values["groupName"] != null && values["groupDisplayName"] != null) {
                 return {
                     phase:     values["phase"],
                     target:    values["target"],
-                    groupName: values["groupName"]
+                    groupName: values["groupName"],
+                    groupDisplayName: values["groupDisplayName"]
                 };
             } else {
                 return null;
             }
         } else if (values["phase"] == MixPhase.SENSORS) {
-            if (values["groupName"] != null) {
+            if (values["groupName"] != null && values["groupDisplayName"] != null) {
                 return {
                     phase:     values["phase"],
                     target:    values["target"],
-                    groupName: values["groupName"]
+                    groupName: values["groupName"],
+                    groupDisplayName: values["groupDisplayName"]
                 };
             } else {
                 return null;
@@ -132,11 +140,20 @@ export function mixInfoFromJSON(json: MixPositionInfoJSON): MixPositionInfo | nu
     if (json.actuatorName != null) {
         values["actuatorName"] = json.actuatorName;
     }
+    if (json.actuatorDisplayName != null) {
+        values["actuatorDisplayName"] = json.actuatorDisplayName;
+    }
     if (json.groupName != null) {
         values["groupName"] = json.groupName;
     }
+    if (json.groupDisplayName != null) {
+        values["groupDisplayName"] = json.groupDisplayName;
+    }
     if (json.sensorName != null) {
         values["sensorName"] = json.sensorName;
+    }
+    if (json.sensorDisplayName != null) {
+        values["sensorDisplayName"] = json.sensorDisplayName;
     }
     if (json.mixName != null) {
         values["mixName"] = json.mixName;
@@ -162,13 +179,25 @@ export class MixPositionInfoJSON {
     
     @IsOptional()
     @IsNotEmpty()
+    public actuatorDisplayName?: string;
+    
+    @IsOptional()
+    @IsNotEmpty()
     @Matches(UNIQUE_NAME_PATTERN)
     public groupName?: string;
     
     @IsOptional()
     @IsNotEmpty()
+    public groupDisplayName?: string;
+    
+    @IsOptional()
+    @IsNotEmpty()
     @Matches(UNIQUE_NAME_PATTERN)
     public sensorName?: string;
+    
+    @IsOptional()
+    @IsNotEmpty()
+    public sensorDisplayName?: string;
     
     @IsOptional()
     @IsNotEmpty()
@@ -189,8 +218,11 @@ export class MixPositionInfoJSON {
             phase:          mixInfo.phase,
             target:         mixInfo.target,
             sensorName:     (mixInfo as MixPositionInfoSensorsDevice).sensorName,
+            sensorDisplayName: (mixInfo as MixPositionInfoSensorsDevice).sensorDisplayName,
             actuatorName:   (mixInfo as MixPositionInfoActuatorsDevice).actuatorName,
+            actuatorDisplayName: (mixInfo as MixPositionInfoActuatorsDevice).actuatorDisplayName,
             groupName:      (mixInfo as MixPositionInfoActuatorsGroup | MixPositionInfoSensorsGroup).groupName,
+            groupDisplayName: (mixInfo as MixPositionInfoActuatorsGroup | MixPositionInfoSensorsGroup).groupDisplayName,
             mixName:        (mixInfo as MixPositionInfoCenter).mixName,
             mixDisplayName: (mixInfo as MixPositionInfoCenter).mixDisplayName
         };

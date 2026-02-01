@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, Inject, ViewChild} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Group} from '@common/devices/group/group';
@@ -24,12 +24,18 @@ import {MatIcon} from '@angular/material/icon';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {DATUM_TYPE_DISPLAY} from '../../mixing/constants';
 import {MatInput} from '@angular/material/input';
-import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes"
-import {SensorEditChanges} from "@common/devices/sensor/rest-classes"
-import {GroupEditChanges} from "@common/devices/group/rest-classes"
+import {ActuatorEditChanges} from '@common/devices/actuator/rest-classes';
+import {SensorEditChanges} from '@common/devices/sensor/rest-classes';
+import {GroupEditChanges} from '@common/devices/group/rest-classes';
 import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
 import {DatumDefineDialogComponent} from '../datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog, MatDialogComponent} from '../../../utils/better-mat-dialog';
+import {LoadingStatus} from '../../../utils/enums';
+import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
+import {DeviceService} from '../../../services/device.service';
+import {LockedExposes} from '@common/devices/rest-classes';
+import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
+import {JsonPipe} from '@angular/common';
 
 @Component({
                selector:    'house-mix-add-entity-dialog',
@@ -55,7 +61,8 @@ import {BetterMatDialog, MatDialogComponent} from '../../../utils/better-mat-dia
                    MatHint,
                    MatInput,
                    DynamicSvgComponent,
-                   MatSelectTrigger
+                   MatSelectTrigger,
+                   LoadingScrimComponent
                ],
                templateUrl: './add-entity-dialog.component.html',
                styleUrl:    './add-entity-dialog.component.scss'
@@ -64,7 +71,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
 
     protected groupResult: GroupInfo | null       = null;
     protected actuatorResult: ActuatorInfo | null = null;
-    protected sensorResult: SensorInfo | null = null;
+    protected sensorResult: SensorInfo | null     = null;
 
     @ViewChild(EntityNamesInputsComponent)
     private nameInputsComponent!: EntityNamesInputsComponent;
@@ -73,7 +80,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     private entityLocationInputComponent?: EntityLocationInputComponent;
 
     protected actuatorTypeFormControl: FormControl<ActuatorType | null> = new FormControl<ActuatorType | null>(null, Validators.required);
-    protected sensorTypeFormControl: FormControl<SensorType | null> = new FormControl<SensorType | null>(null, Validators.required);
+    protected sensorTypeFormControl: FormControl<SensorType | null>     = new FormControl<SensorType | null>(null, Validators.required);
     protected zigbeeAddressFormControl: FormControl<string | null>      = new FormControl<string | null>(
         null,
         [
@@ -92,22 +99,39 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
 
     private _exposesDirty: boolean = false;
 
+    protected lockedExposedLoadingStatus: LoadingStatus                                = LoadingStatus.LOADING;
+    protected lockedExposed: LockedExposes[] = [];
+    protected errorDatum: Datum | null = null;
+    protected errorDatumDependencies: MixPositionInfo[] = [];
+
     constructor(
         @Inject(MAT_DIALOG_DATA) data: AddEntityDialogData,
         matDialogRef: MatDialogRef<AddEntityDialogComponent, AddEntityDialogResult>,
-        private matDialog: BetterMatDialog
+        private matDialog: BetterMatDialog,
+        private deviceService: DeviceService
     ) {
         super(data, matDialogRef);
         this.groups = groupsToDialogSelect(data.groupNames, data.groupDisplays);
         if (this.data.entityType == EntityType.ACTUATOR && this.data.edit != null) {
-            this.zigbeeAddressFormControl.setValue(this.data.edit.zigbeeAddress)
-            this.actuatorTypeFormControl.setValue(this.data.edit.actuatorType)
+            this.zigbeeAddressFormControl.setValue(this.data.edit.zigbeeAddress);
+            this.actuatorTypeFormControl.setValue(this.data.edit.actuatorType);
             this.deviceExposes = this.data.edit.exposes;
         }
         if (this.data.entityType == EntityType.SENSOR && this.data.edit != null) {
-            this.zigbeeAddressFormControl.setValue(this.data.edit.zigbeeAddress)
-            this.sensorTypeFormControl.setValue(this.data.edit.sensorType)
+            this.zigbeeAddressFormControl.setValue(this.data.edit.zigbeeAddress);
+            this.sensorTypeFormControl.setValue(this.data.edit.sensorType);
             this.deviceExposes = this.data.edit.exposes;
+        }
+        if (data.edit != null && data.entityType != EntityType.ACTUATOR && this.lockedExposedLoadingStatus != LoadingStatus.LOADED) {
+            deviceService
+                .getLockedSensorExposes({ name: data.edit.name})
+                .then((result) => {
+                    this.lockedExposed = result;
+                    this.lockedExposedLoadingStatus = LoadingStatus.LOADED;
+                })
+                .catch(() => {
+                    this.lockedExposedLoadingStatus = LoadingStatus.ERROR;
+                })
         }
     }
 
@@ -142,7 +166,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                             name:          this.nameInputsComponent.nameFormControl,
                             displayName:   this.nameInputsComponent.displayNameFormControl,
                             zigbeeAddress: this.zigbeeAddressFormControl,
-                            sensorType:  this.sensorTypeFormControl,
+                            sensorType:    this.sensorTypeFormControl,
                             location:      this.entityLocationInputComponent.formGroup
                         }
                     );
@@ -162,10 +186,10 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 case EntityType.ACTUATOR: {
                     this.formGroup = new FormGroup(
                         {
-                            name:        this.nameInputsComponent.nameFormControl,
-                            displayName: this.nameInputsComponent.displayNameFormControl,
+                            name:          this.nameInputsComponent.nameFormControl,
+                            displayName:   this.nameInputsComponent.displayNameFormControl,
                             zigbeeAddress: this.zigbeeAddressFormControl,
-                            actuatorType:  this.actuatorTypeFormControl,
+                            actuatorType:  this.actuatorTypeFormControl
                         }
                     );
                     break;
@@ -173,10 +197,10 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 case EntityType.SENSOR: {
                     this.formGroup = new FormGroup(
                         {
-                            name:        this.nameInputsComponent.nameFormControl,
-                            displayName: this.nameInputsComponent.displayNameFormControl,
+                            name:          this.nameInputsComponent.nameFormControl,
+                            displayName:   this.nameInputsComponent.displayNameFormControl,
                             zigbeeAddress: this.zigbeeAddressFormControl,
-                            sensorType:  this.sensorTypeFormControl,
+                            sensorType:    this.sensorTypeFormControl
                         }
                     );
                     break;
@@ -204,7 +228,8 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             displayName: string | null;
             actuatorType: ActuatorType | null;
             sensorType: SensorType | null;
-            zigbeeAddress: string | null }
+            zigbeeAddress: string | null
+        }
     ): void {
         if (this.formGroup == null) {
             return;
@@ -252,7 +277,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 }
                 break;
             }
-            case EntityType.SENSOR:{
+            case EntityType.SENSOR: {
                 if (
                     values.name == null
                     || values.displayName == null
@@ -272,7 +297,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                     this.sensorResult = {
                         name:          values.name,
                         displayName:   values.displayName,
-                        sensorType:  values.sensorType,
+                        sensorType:    values.sensorType,
                         zigbeeAddress: values.zigbeeAddress
                     };
                 }
@@ -288,13 +313,13 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         this._exposesDirty = value;
         if (this.formGroup != null) {
             this.groupValueChanges(
-                this.formGroup.value as  {
+                this.formGroup.value as {
                     name: string | null;
                     displayName: string | null;
                     actuatorType: ActuatorType | null;
                     sensorType: SensorType | null;
                     zigbeeAddress: string | null
-                })
+                });
         }
     }
 
@@ -315,13 +340,13 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected get nameInputHint(): string {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
-                return "A unique codename for the group"
+                return 'A unique codename for the group';
             }
             case EntityType.ACTUATOR: {
-                return "A unique codename for the actuator";
+                return 'A unique codename for the actuator';
             }
             case EntityType.SENSOR: {
-                return "A unique codename for the sensor";
+                return 'A unique codename for the sensor';
             }
         }
     }
@@ -329,13 +354,13 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected get displayNameInputHint(): string {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
-                return "A name displayed with the group"
+                return 'A name displayed with the group';
             }
             case EntityType.ACTUATOR: {
-                return "A name displayed with the actuator";
+                return 'A name displayed with the actuator';
             }
             case EntityType.SENSOR: {
-                return "A name displayed with the sensor";
+                return 'A name displayed with the sensor';
             }
         }
     }
@@ -356,14 +381,14 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 if (this.data.edit == null) {
                     return {
                         type:   EntityType.GROUP,
-                        edit: false,
+                        edit:   false,
                         group:  new Group(this.groupResult.name, this.groupResult.displayName),
                         parent: this.entityLocationInputComponent?.chosenLocation ?? null
                     };
                 } else {
                     return {
                         type:   EntityType.GROUP,
-                        edit: true,
+                        edit:   true,
                         group:  {
                             name:        this.groupResult.name != this.data.edit.name ? this.groupResult.name : undefined,
                             displayName: this.groupResult.displayName != this.data.edit.displayName ? this.groupResult.displayName : undefined
@@ -385,15 +410,15 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 actuatorResult.exposes.push(...this.deviceExposes);
                 if (this.data.edit == null) {
                     return {
-                        type:   EntityType.ACTUATOR,
-                        edit: false,
+                        type:     EntityType.ACTUATOR,
+                        edit:     false,
                         actuator: actuatorResult,
                         parent:   this.entityLocationInputComponent?.chosenLocation ?? null
                     };
                 } else {
                     return {
-                        type:   EntityType.ACTUATOR,
-                        edit: true,
+                        type:     EntityType.ACTUATOR,
+                        edit:     true,
                         actuator: {
                             name:          this.actuatorResult.name != this.data.edit.name ? this.actuatorResult.name : undefined,
                             displayName:   this.actuatorResult.displayName != this.data.edit.displayName ? this.actuatorResult.displayName : undefined,
@@ -419,14 +444,14 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                 if (this.data.edit == null) {
                     return {
                         type:   EntityType.SENSOR,
-                        edit: false,
+                        edit:   false,
                         sensor: sensorResult,
-                        parent:   this.entityLocationInputComponent?.chosenLocation ?? null
+                        parent: this.entityLocationInputComponent?.chosenLocation ?? null
                     };
                 } else {
                     return {
                         type:   EntityType.SENSOR,
-                        edit: true,
+                        edit:   true,
                         sensor: {
                             name:          this.sensorResult.name != this.data.edit.name ? this.sensorResult.name : undefined,
                             displayName:   this.sensorResult.displayName != this.data.edit.displayName ? this.sensorResult.displayName : undefined,
@@ -434,7 +459,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                             type:          this.sensorResult.sensorType != this.data.edit.sensorType ? this.sensorResult.sensorType : undefined,
                             exposes:       this.exposesDirty ? this.deviceExposes : undefined
                         },
-                        parent:   null
+                        parent: null
                     };
                 }
             }
@@ -460,12 +485,22 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             datum =>
                 new Datum(datum.name, datum.type, datum.nullable)
         );
-        this.exposesDirty = true;
+        this.exposesDirty  = true;
     }
 
     protected removeDeviceExposes(datum: Datum): void {
+        const errorDatum = this.lockedExposed.find(lockedDatum => lockedDatum.name == datum.name);
+        if (errorDatum) {
+            this.errorDatum = datum;
+            this.errorDatumDependencies = errorDatum.dependencies;
+            return;
+        }
         this.deviceExposes = this.deviceExposes.filter(d => d !== datum);
-        this.exposesDirty = true;
+        this.exposesDirty  = true;
+    }
+
+    protected exposeHasError(datum: Datum): boolean {
+        return this.lockedExposed.some(lockedDatum => lockedDatum.name == datum.name);
     }
 
     protected addExposes(): void {
@@ -495,17 +530,21 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
 
     protected readonly ActuatorType                = ActuatorType;
     protected readonly Object                      = Object;
-    protected readonly EntityType   = EntityType;
+    protected readonly EntityType                  = EntityType;
     protected readonly ACTUATOR_TYPE_DISPLAY       = ACTUATOR_TYPE_DISPLAY;
     protected readonly ACTUATOR_TYPE_ICON          = ACTUATOR_TYPE_ICON;
     protected readonly Datum                       = Datum;
     protected readonly ACTUATOR_PROPERTIES_LIBRARY = ACTUATOR_PROPERTIES_LIBRARY;
     protected readonly DATUM_TIME_DISPLAY          = DATUM_TYPE_DISPLAY;
 
-    protected readonly SensorType       = SensorType;
-    protected readonly SENSOR_TYPE_ICON    = SENSOR_TYPE_ICON;
+    protected readonly SensorType                = SensorType;
+    protected readonly SENSOR_TYPE_ICON          = SENSOR_TYPE_ICON;
     protected readonly SENSOR_TYPE_DISPLAY       = SENSOR_TYPE_DISPLAY;
     protected readonly SENSOR_PROPERTIES_LIBRARY = SENSOR_PROPERTIES_LIBRARY;
+    protected readonly LoadingStatus = LoadingStatus;
+    protected readonly MixPhase  = MixPhase;
+    protected readonly MixTarget = MixTarget;
+
 }
 
 export type AddEntityDialogData = {
@@ -531,7 +570,7 @@ export type AddEntityDialogData = {
         actuatorType: ActuatorType;
         exposes: Datum[];
     };
-}| {
+} | {
     entityType: EntityType.SENSOR;
     groupNames: string[];
     groupDisplays: string[];
@@ -546,7 +585,13 @@ export type AddEntityDialogData = {
     };
 }
 
-export type AddEntityDialogResult = AddEntityDialogResultGroup | AddEntityDialogResultActuator | AddEntityDialogResultSensor | EditEntityDialogResultGroup | EditEntityDialogResultActuator | EditEntityDialogResultSensor;
+export type AddEntityDialogResult =
+    AddEntityDialogResultGroup
+    | AddEntityDialogResultActuator
+    | AddEntityDialogResultSensor
+    | EditEntityDialogResultGroup
+    | EditEntityDialogResultActuator
+    | EditEntityDialogResultSensor;
 
 export interface AddEntityDialogResultGroup {
     type: EntityType.GROUP;

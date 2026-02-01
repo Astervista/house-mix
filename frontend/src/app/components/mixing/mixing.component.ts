@@ -15,8 +15,9 @@ import {Subscription} from 'rxjs';
 import {Point} from '@angular/cdk/drag-drop';
 import {ResizeEventDirective} from '../../directives/resize-event/resize-event.directive';
 import {ConfirmDialogComponent} from '../dialogs/confirm-dialog/confirm-dialog.component';
-import {SNACKBAR_TIMEOUT} from '../../utils/constants';
+import {SNACKBAR_TIMEOUT, TOOLTIP_TIMEOUT} from '../../utils/constants';
 import {MatSnackBar} from '@angular/material/snack-bar';
+import {MatTooltip} from '@angular/material/tooltip';
 
 @Directive({
                selector: '[origin-element]'
@@ -109,7 +110,7 @@ export class CenterElementDirective {
 
 @Component({
                selector:    'house-mix-mixing',
-               imports:     [
+               imports: [
                    ToolbarComponent,
                    DynamicSvgComponent,
                    MatIconButton,
@@ -119,7 +120,8 @@ export class CenterElementDirective {
                    GroupElementDirective,
                    CenterElementDirective,
                    ActuatorElementDirective,
-                   ResizeEventDirective
+                   ResizeEventDirective,
+                   MatTooltip
                ],
                templateUrl: './mixing.component.html',
                styleUrl:    './mixing.component.scss'
@@ -218,6 +220,15 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 this.subscriptions.push(
                     this
                         .centerElements
+                        .changes
+                        .subscribe(
+                            () => {
+                                this.recalculateConnections(graph);
+                            }
+                        ));
+                this.subscriptions.push(
+                    this
+                        .actuatorElements
                         .changes
                         .subscribe(
                             () => {
@@ -372,6 +383,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         if (
             (this.originElements.length != graph.origins.filter(origin => ORIGIN_DISPLAYED_TOP.includes(origin as TopDatumOrigin)).length)
             || (this.sensorElements.length != graph.sensors.length)
+            || (this.actuatorElements.length != graph.actuators.length)
             || (this.groupElements.length != graph.sensorGroups.length + graph.actuatorGroups.length)
         ) {
             return;
@@ -841,8 +853,6 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     private reorderLinks(links: (false | MixingGraphLink)[]): void {
         if (links.includes(false)) {
-            // TODO: Remove error
-            console.error('A link has been skipped. This should not happen');
             return;
         }
         const realLinks    = links as MixingGraphLink[];
@@ -1098,7 +1108,8 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
     protected readonly MixGraphPhase             = MixGraphPhase;
     protected readonly DatumOrigin               = DatumOrigin;
-    protected readonly MEASURES                  = MEASURES;
+    protected readonly MEASURES        = MEASURES;
+    protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
 }
 
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA;

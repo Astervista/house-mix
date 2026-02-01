@@ -398,3 +398,14 @@ h3 {
     font-weight: 300;
     font-size: 1.1em;
 }
+
+mat-option.free .mdc-list-item__primary-text {
+    flex-grow: 1;
+    margin-right: 18px;
+}
+mat-option.free.mdc-list-item--selected .mdc-list-item__primary-text {
+    margin-right: 0;
+}
+mat-option.free .mat-pseudo-checkbox-minimal {
+    margin-left: 0;
+}

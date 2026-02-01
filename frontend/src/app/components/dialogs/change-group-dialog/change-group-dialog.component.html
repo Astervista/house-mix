@@ -1,15 +1,119 @@
 <h2 mat-dialog-title>Move to another group</h2>
 <mat-dialog-content>
-    <mat-form-field>
-        <mat-label>New location</mat-label>
-        <mat-select
-            [formControl]="parentGroupFormControl">
-            <mat-option [value]="TOPMOST"><i>Put in the root</i></mat-option>
-            @for (otherGroup of groups; track otherGroup.name) {
-                <mat-option [value]="otherGroup.name">{{ otherGroup.displayName }}</mat-option>
-            }
-        </mat-select>
-    </mat-form-field>
+    @if (this.unavailableLoading == LoadingStatus.LOADED) {
+        <mat-form-field>
+            <mat-label>New location</mat-label>
+            <mat-select
+                [formControl]="parentGroupFormControl">
+                <mat-select-trigger>
+                    @let value = this.parentGroupFormControl.value;
+                    @if (value == TOPMOST) {
+                        <div class="option-content"
+                             [class.problem]="selectedUnavailable">
+                            <span><i>Put in the root</i></span>
+                        </div>
+                    } @else if (value != null) {
+                        <div class="option-content"
+                             [class.problem]="selectedUnavailable">
+                            <span>{{ getDisplayName(`${value}`) }}</span>
+                        </div>
+                    }
+                </mat-select-trigger>
+                <mat-option
+                    class="free"
+                    [value]="TOPMOST">
+                    <div class="option-content"
+                         [class.problem]="unavailableParents?.names?.includes(null)">
+                        <span><i>Put in the root</i></span>
+                        <mat-icon>warning</mat-icon>
+                    </div>
+                </mat-option>
+                @for (otherGroup of groups; track otherGroup.name) {
+                    <mat-option
+                        class="free"
+                        [disabled]="otherGroup.name == this.data.sonOfGroup"
+                        [value]="otherGroup.name">
+                        <div class="option-content"
+                             [class.problem]="unavailableParents?.names?.includes(otherGroup.name)">
+                            <span>{{ otherGroup.displayName }}</span>
+                            <mat-icon>warning</mat-icon>
+                        </div>
+                    </mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+        @if (selectedUnavailable) {
+            <div class="move-error">
+                <div class="message">
+                    @if (data.movingEntityType == EntityType.GROUP) {
+                        Cannot move to this group, the group or one of its children depends on another mix that would become unreachable, or a mix depends on this group and would not reach it anymore.
+                    } @else if (data.movingEntityType == EntityType.SENSOR) {
+                        Cannot move to this group, a mix depends on this sensor and would not reach it anymore.
+                    } @else {
+                        Cannot move to this group, the sensor depends on another mix that would become unreachable.
+                    }
+                    <br>
+                    The blocking mix is:
+                </div>
+                @let dependingOn = this.unavailableParents?.depending;
+                @let unreachable = this.unavailableParents?.unreachable;
+                <div class="dependency">
+                    <mat-icon>close</mat-icon>
+                    <span>
+                        @if (unreachable != null) {
+                            @switch (unreachable.phase) {
+                                @case (MixPhase.SENSORS) {
+                                    @if (unreachable.target == MixTarget.DEVICE) {
+                                        Mix for sensor <i>{{ unreachable.sensorDisplayName }}</i>
+                                    } @else {
+                                        Sensor-side mix for group <i>{{ unreachable.groupDisplayName }}</i>
+                                    }
+                                }
+                                @case (MixPhase.CENTER) {
+                                    Central mix <i>{{ unreachable.mixDisplayName }}</i>
+                                }
+                                @case (MixPhase.ACTUATORS) {
+                                    @if (unreachable.target == MixTarget.DEVICE) {
+                                        Mix for actuator <i>{{ unreachable.actuatorDisplayName }}</i>
+                                    } @else {
+                                        Actuator-side mix for group <i>{{ unreachable.groupDisplayName }}</i>
+                                    }
+                                }
+                            }
+                        }
+                        @if (dependingOn != null) {
+                            is referenced by
+                            @switch (dependingOn.phase) {
+                                @case (MixPhase.SENSORS) {
+                                    @if (dependingOn.target == MixTarget.DEVICE) {
+                                        mix for sensor <i>{{ dependingOn.sensorDisplayName }}</i>
+                                    } @else {
+                                        sensor-side mix for group <i>{{ dependingOn.groupDisplayName }}</i>
+                                    }
+                                }
+                                @case (MixPhase.CENTER) {
+                                    central mix <i>{{ dependingOn.mixDisplayName }}</i>
+                                }
+                                @case (MixPhase.ACTUATORS) {
+                                    @if (dependingOn.target == MixTarget.DEVICE) {
+                                        mix for actuator <i>{{ dependingOn.actuatorDisplayName }}</i>
+                                    } @else {
+                                        actuator-side mix for group <i>{{ dependingOn.groupDisplayName }}</i>
+                                    }
+                                }
+                            }
+                        }
+                    </span>
+                </div>
+            </div>
+        }
+    } @else {
+        <house-mix-loading-scrim
+            [loadingStatus]="unavailableLoading"
+            errorText="Cannot load the available groups"
+            (reload)="loadAvailableGroups()">
+        </house-mix-loading-scrim>
+    }
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button
@@ -19,7 +123,7 @@
     <button
         mat-button
         (click)="closeDialog(parentGroupFormControl.value)"
-        [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null)">
+        [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null) || (unavailableLoading != LoadingStatus.LOADED) || (selectedUnavailable)">
         Move
     </button>
 </mat-dialog-actions>

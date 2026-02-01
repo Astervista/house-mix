@@ -1,0 +1,59 @@
+@use "dimensions";
+
+mat-dialog-content {
+    min-height: 50px;
+    position: relative;
+}
+
+.option-content {
+
+    display: flex;
+    gap: dimensions.$margin-msmall;
+    align-items: center;
+
+    > span {
+        flex-grow: 1;
+    }
+
+    > mat-icon {
+        display: none;
+        color: var(--mat-sys-error);
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+    }
+
+    &.problem {
+        > span {
+            color: var(--house-mix-text-color-40);
+        }
+
+        > mat-icon {
+            display: block;
+        }
+    }
+}
+
+
+.move-error {
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-msmall;
+    align-items: stretch;
+    padding: dimensions.$margin-small dimensions.$margin-medium dimensions.$margin-msmall;
+
+    .dependency {
+        padding: 0 dimensions.$margin-mlarge;
+        display: flex;
+        align-items: center;
+        gap: dimensions.$margin-msmall;
+        font-weight: 100;
+
+        mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            color: var(--mat-sys-error)
+        }
+    }
+}

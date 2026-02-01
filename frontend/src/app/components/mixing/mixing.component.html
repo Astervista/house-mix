@@ -106,6 +106,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.INPUTS"
                     (click)="selectedPhase = MixGraphPhase.INPUTS; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Inputs from the system"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/mixing/system.svg">
                     </house-mix-dynamic-svg>
                 </div>
@@ -159,6 +162,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.SENSORS"
                     (click)="selectedPhase = MixGraphPhase.SENSORS; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Mixed sensors"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/devices/sensors/sensor.svg">
                     </house-mix-dynamic-svg>
                 </div>
@@ -220,6 +226,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.SENSOR_GROUPS"
                     (click)="selectedPhase = MixGraphPhase.SENSOR_GROUPS; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Groups mixed on the sensor side"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/mixing/group.svg">
                     </house-mix-dynamic-svg>
                 </div>
@@ -283,6 +292,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.CENTER"
                     (click)="selectedPhase = MixGraphPhase.CENTER; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Mixing at the center"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/mixing/center.svg">
                     </house-mix-dynamic-svg>
                 </div>
@@ -344,6 +356,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.ACTUATOR_GROUPS"
                     (click)="selectedPhase = MixGraphPhase.ACTUATOR_GROUPS; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Groups mixed on the actuator side"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/mixing/group.svg">
                     </house-mix-dynamic-svg>
                 </div>
@@ -407,6 +422,9 @@
                     [class.selected]="selectedPhase == MixGraphPhase.ACTUATORS"
                     (click)="selectedPhase = MixGraphPhase.ACTUATORS; $event.stopPropagation()">
                     <house-mix-dynamic-svg
+                        matTooltip="Mixed actuators"
+                        matTooltipPosition="above"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                         src="/devices/actuators/actuator.svg">
                     </house-mix-dynamic-svg>
                 </div>

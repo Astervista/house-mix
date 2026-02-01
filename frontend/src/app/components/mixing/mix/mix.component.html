@@ -38,7 +38,8 @@
             (onResize)="uiManager.viewSize = $event"
             (wheel)="uiManager.wheel($event)"
             (mousemove)="uiManager.svgElement = canvas; uiManager.mouseMove($event)"
-            (mouseup)="uiManager.mouseUp()">
+            (mouseup)="uiManager.mouseUp()"
+            (mouseleave)="uiManager.mouseUp()">
             <rect
                 height="100%"
                 width="100%"

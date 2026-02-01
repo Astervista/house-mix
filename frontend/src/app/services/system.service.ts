@@ -1,9 +1,10 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BasePath, Delete, Get, Post} from '../utils/networking/decorators';
+import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import { SystemParameter } from "@common/system/parameter/system-parameter";
 import { SystemTimer } from "@common/system/timer/system-timer";
 import { EntityPathParams } from "@common/utils/rest-classes";
+import { SetParameterBody } from "@common/system/parameter/rest-classes";
 
 @Injectable({
                 providedIn: 'root'
@@ -25,6 +26,11 @@ export class SystemService {
         '/parameters/:name/'
     )
     public deleteParameter!: (params: EntityPathParams) => Promise<void>;
+
+    @Patch<SetParameterBody, null>(
+        '/parameters/:name/value'
+    )
+    public setParameterValue!: (value: SetParameterBody, params: EntityPathParams) => Promise<void>;
 
     @Get("/timers/", { result: SystemTimer, resultIsArray: true })
     public getTimers!: () => Promise<SystemTimer[]>;

@@ -18,7 +18,7 @@ export class MixingService {
     public getGraph!: () => Promise<MixingGraph>;
 
     @Get('/mixes/:id/', {result: Mix, resultIsArray: false})
-    public getMix!: (pathParams: { id: number }) => Promise<Mix>
+    public getMix!: (pathParams: { id: number }) => Promise<Mix>;
 
     @Patch<MixJSON, null>('/mixes/:id/', {result: null})
     public editMix!: (body: Mix, pathParams: { id: number }) => Promise<void>;
@@ -38,12 +38,15 @@ export class MixingService {
             result:        ExportedDatum,
             resultIsArray: true,
             queryParams:   {
-                target:       true,
-                phase:        true,
-                actuatorName: false,
-                groupName:    false,
-                sensorName:   false,
-                mixName:      false,
+                target:         true,
+                phase:          true,
+                actuatorName:   false,
+                actuatorDisplayName: false,
+                groupName:      false,
+                groupDisplayName: false,
+                sensorName:     false,
+                sensorDisplayName: false,
+                mixName:        false,
                 mixDisplayName: false
             }
         }
@@ -52,13 +55,16 @@ export class MixingService {
         phase: string
         target: string
         actuatorName?: string
+        actuatorDisplayName?: string
         groupName?: string
+        groupDisplayName?: string
         sensorName?: string
+        sensorDisplayName?: string
         mixName?: string,
         mixDisplayName?: string
     }) => Promise<ExportedDatum[]>;
 
-    @Get("/center-mixes-names", {result: String, resultIsArray: true})
+    @Get('/center-mixes-names', {result: String, resultIsArray: true})
     public getCenterMixNames!: () => Promise<string[]>;
 
     public async getMixPositionInfo(pathParams: { id: number }): Promise<MixPositionInfo> {
@@ -75,24 +81,27 @@ export class MixingService {
 
     public async getAvailableImports(mixPositionInfoJSON: MixPositionInfoJSON): Promise<ExportedDatum[]> {
         return this.getAvailableImportsRest({
-                                                phase:        mixPositionInfoJSON.phase,
-                                                target:       mixPositionInfoJSON.target,
-                                                actuatorName: mixPositionInfoJSON.actuatorName,
-                                                groupName:    mixPositionInfoJSON.groupName,
-                                                sensorName:   mixPositionInfoJSON.sensorName,
-                                                mixName:      mixPositionInfoJSON.mixName,
-                                                mixDisplayName: mixPositionInfoJSON.mixDisplayName
+                                                phase:               mixPositionInfoJSON.phase,
+                                                target:              mixPositionInfoJSON.target,
+                                                actuatorName:        mixPositionInfoJSON.actuatorName,
+                                                actuatorDisplayName: mixPositionInfoJSON.actuatorDisplayName,
+                                                groupName:           mixPositionInfoJSON.groupName,
+                                                groupDisplayName:    mixPositionInfoJSON.groupDisplayName,
+                                                sensorName:          mixPositionInfoJSON.sensorName,
+                                                sensorDisplayName:   mixPositionInfoJSON.sensorDisplayName,
+                                                mixName:             mixPositionInfoJSON.mixName,
+                                                mixDisplayName:      mixPositionInfoJSON.mixDisplayName
                                             });
     }
 
     public async updateMix(mix: Mix, position: MixPositionInfo): Promise<number> {
-        if (mix.id == "NEW") {
+        if (mix.id == 'NEW') {
             return (await this.putMixRest({
                                               position: MixPositionInfoJSON.toJSON(position),
                                               mix:      mix.toJSON()
                                           })).id;
         } else {
-            await this.editMix(mix, { id: mix.id });
+            await this.editMix(mix, {id: mix.id});
             return mix.id;
         }
     }

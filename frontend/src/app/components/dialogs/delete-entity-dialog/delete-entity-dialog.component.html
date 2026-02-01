@@ -1,0 +1,228 @@
+<h2 mat-dialog-title>Delete group</h2>
+<mat-dialog-content>
+    @if (this.deleteLocksLoadingStatus != LoadingStatus.LOADED) {
+        <house-mix-loading-scrim
+            [loadingStatus]="deleteLocksLoadingStatus"
+            errorText="There has been an error loading. Please retry"
+            (reload)="loadDeleteLocks()">
+        </house-mix-loading-scrim>
+    } @else {
+        @if (this.deleteLocks != null && this.deleteLocks.length > 0) {
+            <div class="dependency-error">
+                <div class="message">The element cannot be deleted, because these mixes depend on it:</div>
+                @for (dependency of this.deleteLocks; track $index) {
+                    <div class="dependency">
+                        <mat-icon>close</mat-icon>
+                        @switch (dependency.phase) {
+                            @case (MixPhase.SENSORS) {
+                                @if (dependency.target == MixTarget.DEVICE) {
+                                    Mix for sensor <i>{{ dependency.sensorDisplayName }}</i>
+                                } @else {
+                                    Sensor-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                }
+                            }
+                            @case (MixPhase.CENTER) {
+                                Central mix <i>{{ dependency.mixDisplayName }}</i>
+                            }
+                            @case (MixPhase.ACTUATORS) {
+                                @if (dependency.target == MixTarget.DEVICE) {
+                                    Mix for actuator <i>{{ dependency.actuatorDisplayName }}</i>
+                                } @else {
+                                    Actuator-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                }
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        } @else {
+            @switch (data.entityType) {
+                @case (EntityType.SENSOR) {
+                    <p>Are you sure you want to delete the sensor <i>{{ data.sensorToDelete.displayName }}</i>?</p>
+                    @if (this.selfLocks != null && this.selfLocks.length > 0) {
+                        <div class="dependency-error">
+                            <div class="message">This sensor is linked to a mix. Deleting it will also permanently delete the mix</div>
+                        </div>
+                    }
+                }
+                @case (EntityType.ACTUATOR) {
+                    <p>Are you sure you want to delete the actuator <i>{{ data.actuatorToDelete.displayName }}</i>?</p>
+                    @if (this.selfLocks != null && this.selfLocks.length > 0) {
+                        <div class="dependency-error">
+                            <div class="message">This actuator is linked to a mix. Deleting it will also permanently delete the mix</div>
+                        </div>
+                    }
+                }
+                @case (EntityType.GROUP) {
+                    <p>Are you sure you want to delete the group <i>{{ data.groupToDelete.displayName }}</i>?</p>
+                    @if (this.selfLocks != null && this.selfLocks.length > 0) {
+                        <div class="dependency-error">
+                            <div class="message">
+                                @if (this.selfLocks.length > 1) {
+                                    This group is linked to the following mixes. Deleting it will also permanently delete the mixes
+                                } @else {
+                                    This group is linked to the following mix. Deleting it will also permanently delete the mix
+                                }
+                            </div>
+                            @for (dependency of this.selfLocks; track $index) {
+                                <div class="dependency">
+                                    <mat-icon>close</mat-icon>
+                                    @switch (dependency.phase) {
+                                        @case (MixPhase.SENSORS) {
+                                            @if (dependency.target == MixTarget.DEVICE) {
+                                                Mix for sensor <i>{{ dependency.sensorDisplayName }}</i>
+                                            } @else {
+                                                Sensor-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                            }
+                                        }
+                                        @case (MixPhase.CENTER) {
+                                            Central mix <i>{{ dependency.mixDisplayName }}</i>
+                                        }
+                                        @case (MixPhase.ACTUATORS) {
+                                            @if (dependency.target == MixTarget.DEVICE) {
+                                                Mix for actuator <i>{{ dependency.actuatorDisplayName }}</i>
+                                            } @else {
+                                                Actuator-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                            }
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    @if (this.data.groupToDelete.hasChildren) {
+                        <p>The group also contains children. Select where to move its children to.</p>
+                        @if (formGroup.hasError('sonOfNoGroup')) {
+                            <mat-error>Either choose a parent or choose another option</mat-error>
+                        }
+                        <mat-radio-group
+                            class="children-radio-button"
+                            [formControl]="orphanFateFormControl">
+                            <div class="radio-button-list">
+                                <mat-radio-button [value]="DeleteGroupChildFate.CURRENT_LEVEL">In the group containing the deleted group</mat-radio-button>
+                                <mat-radio-button [value]="DeleteGroupChildFate.ROOT_LEVEL">At the root level</mat-radio-button>
+                                @if (this.orphanFateFormControl.value == DeleteGroupChildFate.ROOT_LEVEL && this.unavailableParents?.names?.includes(null)) {
+                                    <ng-container *ngTemplateOutlet="errorTemplate"></ng-container>
+                                }
+                                <mat-radio-button [value]="DeleteGroupChildFate.CHOOSE_WHERE">In another group</mat-radio-button>
+                            </div>
+                        </mat-radio-group>
+                        @if (this.orphanFateFormControl.value == DeleteGroupChildFate.CHOOSE_WHERE) {
+                            <mat-form-field>
+                                <mat-label>Parent group</mat-label>
+                                <mat-select
+                                    [formControl]="parentGroupFormControl">
+                                        <mat-select-trigger>
+                                            @let value = this.parentGroupFormControl.value;
+                                            @if (value != null) {
+                                                <div class="option-content"
+                                                     [class.problem]="selectedUnavailable">
+                                                    <span>{{ getDisplayName(value) }}</span>
+                                                </div>
+                                            }
+                                        </mat-select-trigger>
+                                    @for (otherGroup of groups; track otherGroup.name) {
+                                        <mat-option
+                                            class="free"
+                                            [value]="otherGroup.name">
+                                            <div class="option-content"
+                                                 [class.problem]="unavailableParents?.names?.includes(otherGroup.name)">
+                                                <span>{{ otherGroup.displayName }}</span>
+                                                <mat-icon>warning</mat-icon>
+                                            </div>
+                                        </mat-option>
+                                    }
+                                </mat-select>
+                            </mat-form-field>
+                            @if (parentGroupFormControl.value != null && this.unavailableParents?.names?.includes(parentGroupFormControl.value)) {
+                                <ng-container *ngTemplateOutlet="errorTemplate"></ng-container>
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    @if (this.deleteLocksLoadingStatus != LoadingStatus.LOADED) {
+        <button mat-button
+                (click)="closeDialog()">
+            Cancel
+        </button>
+    } @else {
+        <button mat-button
+                (click)="closeDialog()">
+            {{ canDelete ? 'Cancel' : 'Ok' }}
+        </button>
+        @if (canDelete) {
+            <button
+                mat-button
+                class="confirm"
+                [disabled]="confirmDisabled"
+                (click)="closeDialog(result)">
+                Delete
+            </button>
+        }
+    }
+</mat-dialog-actions>
+<ng-template #errorTemplate>
+
+    <div class="move-error">
+        <div class="message">
+            Cannot move the children to {{ this.orphanFateFormControl.value == DeleteGroupChildFate.ROOT_LEVEL ? "the root" : "the selected group"}}, one them depends on another mix that would become unreachable, or a mix depends on one of them and would not reach anymore.
+            The blocking mix is:
+        </div>
+        @let dependingOn = this.unavailableParents?.depending;
+        @let unreachable = this.unavailableParents?.unreachable;
+        <div class="dependency">
+            <mat-icon>close</mat-icon>
+            <span>
+                @if (unreachable != null) {
+                    @switch (unreachable.phase) {
+                        @case (MixPhase.SENSORS) {
+                            @if (unreachable.target == MixTarget.DEVICE) {
+                                Mix for sensor <i>{{ unreachable.sensorDisplayName }}</i>
+                            } @else {
+                                Sensor-side mix for group <i>{{ unreachable.groupDisplayName }}</i>
+                            }
+                        }
+                        @case (MixPhase.CENTER) {
+                            Central mix <i>{{ unreachable.mixDisplayName }}</i>
+                        }
+                        @case (MixPhase.ACTUATORS) {
+                            @if (unreachable.target == MixTarget.DEVICE) {
+                                Mix for actuator <i>{{ unreachable.actuatorDisplayName }}</i>
+                            } @else {
+                                Actuator-side mix for group <i>{{ unreachable.groupDisplayName }}</i>
+                            }
+                        }
+                    }
+                }
+                @if (dependingOn != null) {
+                    is referenced by
+                    @switch (dependingOn.phase) {
+                        @case (MixPhase.SENSORS) {
+                            @if (dependingOn.target == MixTarget.DEVICE) {
+                                mix for sensor <i>{{ dependingOn.sensorDisplayName }}</i>
+                            } @else {
+                                sensor-side mix for group <i>{{ dependingOn.groupDisplayName }}</i>
+                            }
+                        }
+                        @case (MixPhase.CENTER) {
+                            central mix <i>{{ dependingOn.mixDisplayName }}</i>
+                        }
+                        @case (MixPhase.ACTUATORS) {
+                            @if (dependingOn.target == MixTarget.DEVICE) {
+                                mix for actuator <i>{{ dependingOn.actuatorDisplayName }}</i>
+                            } @else {
+                                actuator-side mix for group <i>{{ dependingOn.groupDisplayName }}</i>
+                            }
+                        }
+                    }
+                }
+            </span>
+        </div>
+    </div>
+</ng-template>

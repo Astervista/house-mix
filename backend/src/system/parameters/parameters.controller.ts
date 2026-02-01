@@ -1,6 +1,7 @@
-import {Body, Controller, Delete, Get, Param, Post, Put} from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from "@nestjs/common";
 import {ParametersService} from "./parameters.service";
 import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
+import {SetParameterBody} from "@common/system/parameter/rest-classes";
 
 @Controller("/system/parameters/")
 export class ParametersController {
@@ -34,6 +35,16 @@ export class ParametersController {
         await this.parametersService.deleteParameter(name);
     }
     
+    @Patch("/:name/value")
+    public async set(
+        @Param("name")
+        name: string,
+        @Body()
+        body: SetParameterBody
+    ): Promise<void> {
+        await this.parametersService.setValue(name, body.value);
+    }
+    
     @Get("/:name/value")
     public async getValue(
         @Param("name")
@@ -42,16 +53,6 @@ export class ParametersController {
         return {
             value: await this.parametersService.getValue(name)
         };
-    }
-    
-    @Put("/:name/value")
-    public async setValue(
-        @Param("name")
-        name: string,
-        @Body()
-        data: { value: unknown }
-    ): Promise<void> {
-        await this.parametersService.setValue(name, data.value);
     }
     
 }

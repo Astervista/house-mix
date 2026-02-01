@@ -543,7 +543,6 @@ export class MixUiManager {
     }
 
     public getNodeConnectorPosition(node: ElaborationNode, connector: Datum, rightFacing: boolean): Point {
-        // TODO: Think of caching the data to avoid calculation
         if (rightFacing) {
             const from = this.getNodePosition(node);
 

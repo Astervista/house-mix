@@ -7,7 +7,8 @@ import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
 import {Datum, DatumChangeType, DatumOrigin} from "@common/mixing/mix/datum";
 import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
-import {GetDevicesOptions} from "@common/devices/rest-classes";
+import {GetDevicesOptions, LockedExposes} from "@common/devices/rest-classes";
+import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 
 const SAVE_FILE = "devices/sensor.json";
 
@@ -167,6 +168,30 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         }
         sensor.mix = null;
         this.saveData();
+    }
+    
+    public async getLockedExposes(name: string): Promise<LockedExposes[]> {
+        const sensor = await this.getSensorByName(name);
+        if (sensor == null) {
+            throw new NotFoundException(`Cannot find sensor "${name}"`);
+        }
+        const result: LockedExposes[] = [];
+        for (const exposes of sensor.exposes) {
+            const depending = await this.mixService.getDependingMixes(DatumOrigin.SENSOR_DATA, sensor.name, exposes.name);
+            if (depending.length > 0) {
+                const positions: MixPositionInfo[] = [];
+                for (const mix of depending) {
+                    if (mix.id != "NEW") {
+                        positions.push(await this.mixService.getMixPosition(mix.id));
+                    }
+                }
+                result.push({
+                                name:         exposes.name,
+                                dependencies: positions
+                            })
+            }
+        }
+        return result;
     }
     
 }

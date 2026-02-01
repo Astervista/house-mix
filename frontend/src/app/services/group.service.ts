@@ -2,8 +2,10 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {Group} from '@common/devices/group/group';
-import {ChangeParentChange, GroupCreateOptions, GroupEditChanges, DeleteGroupOptions, GetGroupsOptions} from '@common/devices/group/rest-classes';
+import {ChangeParentChange, DeleteGroupOptions, GetGroupsOptions, GroupCreateOptions, GroupEditChanges} from '@common/devices/group/rest-classes';
 import {EntityPathParams} from '@common/utils/rest-classes';
+import {UnavailableParents} from '@common/devices/rest-classes';
+import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 
 
 @Injectable({
@@ -19,8 +21,8 @@ export class GroupService {
         {
             result:        Group,
             resultIsArray: true,
-            queryParams: {
-                sensorMix: false,
+            queryParams:   {
+                sensorMix:   false,
                 actuatorMix: false
             }
         }
@@ -50,9 +52,34 @@ export class GroupService {
     )
     public deleteGroup!: (options: DeleteGroupOptions, params: EntityPathParams) => Promise<void>;
 
+    @Get<MixPositionInfoJSON>(
+        '/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
+
     @Patch<ChangeParentChange, null>(
         '/:name/parent'
     )
     public changeParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
+
+    @Get<UnavailableParents>(
+        '/:name/unavailable-parents',
+        {
+            result: UnavailableParents
+        }
+    )
+    public getUnavailableParents!: (params: EntityPathParams) => Promise<UnavailableParents>;
 
 }

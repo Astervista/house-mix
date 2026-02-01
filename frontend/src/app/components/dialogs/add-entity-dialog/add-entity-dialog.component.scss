@@ -56,6 +56,8 @@ house-mix-entity-location-input {
     overflow-y: auto;
     max-height: 200px;
     padding: dimensions.$margin-medium;
+    position: relative;
+    min-height: 50px;
 
     .no-data {
         text-align: center;
@@ -76,6 +78,44 @@ house-mix-entity-location-input {
             font-size: 16px;
             width: 16px;
             height: 16px;
+        }
+    }
+}
+
+.delete-button-warning {
+    color: var(--mat-sys-error);
+    position: absolute;
+    font-size: 16px;
+    right: 2px;
+    top: 2px;
+    width: 16px;
+    height: 16px;
+}
+
+.delete-button-holed {
+    mask: url(#round-mask);
+    color: var(--house-mix-text-color-30);
+}
+
+.datum-error {
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-msmall;
+    align-items: stretch;
+    padding: dimensions.$margin-small dimensions.$indent-mlarge dimensions.$margin-msmall;
+
+    .dependency {
+        padding: 0 dimensions.$margin-mlarge;
+        display: flex;
+        align-items: center;
+        gap: dimensions.$margin-msmall;
+        font-weight: 100;
+
+        mat-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            color: var(--mat-sys-error)
         }
     }
 }

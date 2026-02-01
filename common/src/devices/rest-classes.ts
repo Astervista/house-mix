@@ -1,6 +1,8 @@
 import {IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, Matches, Transform, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {DatumJSON} from "../mixing/mix/datum";
 import {UNIQUE_NAME_PATTERN} from "../utils/constants";
+import {MixingGraphDependency} from "../mixing/mixing-graph";
+import {MixPositionInfo} from "../mixing/mix/rest-classes";
 
 export class DeviceEditChanges {
     
@@ -43,4 +45,26 @@ export class GetDevicesOptions {
     @IsOptional()
     public anyMixed?: boolean;
     
+}
+
+export class LockedExposes {
+
+    constructor(
+        public name: string,
+        public dependencies: MixPositionInfo[]
+    ) {
+    
+    }
+    
+}
+
+export class UnavailableParents {
+    
+    constructor(
+        public names: (string | null)[],
+        public displayNames: (string | null)[],
+        public unreachable: MixPositionInfo | null,
+        public depending: MixPositionInfo | null
+    ) {}
+
 }

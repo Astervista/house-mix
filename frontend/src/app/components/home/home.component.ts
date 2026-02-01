@@ -14,7 +14,7 @@ import {MatSnackBar} from '@angular/material/snack-bar';
 import {SNACKBAR_TIMEOUT} from '../../utils/constants';
 import {GroupComponent} from '../entities/devices/group/group.component';
 import {ChangeGroupDialogComponent} from '../dialogs/change-group-dialog/change-group-dialog.component';
-import {DeleteGroupDialogComponent} from '../dialogs/delete-group-dialog/delete-group-dialog.component';
+import {DeleteEntityDialogComponent} from '../dialogs/delete-entity-dialog/delete-entity-dialog.component';
 import {DeleteGroupChildFate} from '@common/devices/group/rest-classes';
 import {DeviceService} from '../../services/device.service';
 import {DeviceComponent} from '../entities/devices/device/device.component';
@@ -339,18 +339,19 @@ export class HomeComponent {
                         const descendants     = selectedObject.getAllDescendants(this.allGroups);
                         const availableGroups = this.allGroups.filter(group => !descendants.includes(group.name));
                         this.matDialog.open(
-                            DeleteGroupDialogComponent,
+                            DeleteEntityDialogComponent,
                             {
                                 data: {
                                     groupNames:    availableGroups.map(group => group.name),
                                     groupDisplays: availableGroups.map(group => group.displayName),
-                                    toDelete:      selectedObject
+                                    entityType:    EntityType.GROUP,
+                                    groupToDelete:      selectedObject
                                 }
                             }
                         )
                             .afterClosed()
                             .subscribe(result => {
-                                if (result != null) {
+                                if (result != null && result != false && result != true) {
                                     this.selectedObject = null;
                                     this
                                         .groupService
@@ -420,7 +421,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while deleting the group',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -432,19 +433,17 @@ export class HomeComponent {
                     } else if (selectedObject instanceof Actuator) {
 
                         this.matDialog.open(
-                            ConfirmDialogComponent,
+                            DeleteEntityDialogComponent,
                             {
                                 data: {
-                                    title:       'Delete actuator',
-                                    message:     `Are you sure you want to delete the actuator "${selectedObject.displayName}"?`,
-                                    confirmText: 'Delete',
-                                    warn:        true
+                                    entityType: EntityType.ACTUATOR,
+                                    actuatorToDelete: selectedObject
                                 }
                             }
                         )
                             .afterClosed()
                             .subscribe(result => {
-                                if (result != null) {
+                                if (result == true) {
                                     this.selectedObject = null;
                                     this
                                         .deviceService
@@ -468,7 +467,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while deleting the actuator',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -480,19 +479,17 @@ export class HomeComponent {
                     } else if (selectedObject instanceof Sensor) {
 
                         this.matDialog.open(
-                            ConfirmDialogComponent,
+                            DeleteEntityDialogComponent,
                             {
                                 data: {
-                                    title:       'Delete sensor',
-                                    message:     `Are you sure you want to delete the sensor "${selectedObject.displayName}"?`,
-                                    confirmText: 'Delete',
-                                    warn:        true
+                                    entityType: EntityType.SENSOR,
+                                    sensorToDelete: selectedObject
                                 }
                             }
                         )
                             .afterClosed()
                             .subscribe(result => {
-                                if (result != null) {
+                                if (result == true) {
                                     this.selectedObject = null;
                                     this
                                         .deviceService
@@ -516,7 +513,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while deleting the sensor',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -692,7 +689,7 @@ export class HomeComponent {
                                         name:          selectedObject.name,
                                         zigbeeAddress: selectedObject.zigbeeAddress,
                                         sensorType:    selectedObject.type,
-                                        exposes:       selectedObject.exposes
+                                        exposes:       selectedObject.exposes.slice()
                                     }
                                 }
                             }
@@ -764,22 +761,30 @@ export class HomeComponent {
                 const selectedObject = this.selectedObject;
                 if (selectedObject != null) {
                     let availableGroups: readonly Group[];
+                    let sonOfGroup: string | null;
                     if (selectedObject instanceof Group) {
                         const descendants = selectedObject.getAllDescendants(this.allGroups);
                         availableGroups   = this.allGroups.filter(group => !descendants.includes(group.name));
+                        sonOfGroup = this.allGroups.find(group => group.containsGroup(selectedObject.name))?.name ?? null;
+                    } else if (selectedObject instanceof Actuator) {
+                        availableGroups = this.allGroups;
+                        sonOfGroup = this.allGroups.find(group => group.containsActuator(selectedObject.name))?.name ?? null;
                     } else {
                         availableGroups = this.allGroups;
+                        sonOfGroup = this.allGroups.find(group => group.containsSensor(selectedObject.name))?.name ?? null;
                     }
                     this.matDialog.open(
                         ChangeGroupDialogComponent,
                         {
                             data: {
-                                sonOfGroup:    this.allGroups.find(group => group.containsGroup(selectedObject.name))?.name ?? null,
+                                sonOfGroup,
                                 groupNames:    availableGroups.map(group => group.name),
                                 groupDisplays: availableGroups.map(group => group.displayName),
-                                self:          selectedObject.name
+                                toMove: selectedObject.name,
+                                movingEntityType: selectedObject instanceof Group ? EntityType.GROUP : (selectedObject instanceof Actuator ? EntityType.ACTUATOR : EntityType.SENSOR)
                             }
                         }
+
                     )
                         .afterClosed()
                         .subscribe(result => {
@@ -820,7 +825,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while moving the group',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -857,7 +862,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while moving the actuator',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -894,7 +899,7 @@ export class HomeComponent {
                                         })
                                         .catch(() => {
                                             this.snackbar.open(
-                                                'There has been an error while creating the group',
+                                                'There has been an error while moving the sensor',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT

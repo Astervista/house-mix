@@ -105,12 +105,13 @@ export class ToolbarComponent implements AfterViewInit {
     protected readonly TOOLTIP_TIMEOUT    = TOOLTIP_TIMEOUT;
 }
 
-export type ToolbarElement = ToolbarButton | ToolbarDivider | ToolbarSpacer;
+export type ToolbarElement = ToolbarButton | ToolbarDivider | ToolbarSpacer | ToolbarTitle;
 
 export enum ToolBarElementType {
     BUTTON  = 'BUTTON',
     DIVIDER = 'DIVIDER',
-    SPACER  = 'SPACER'
+    SPACER  = 'SPACER',
+    TITLE = 'TITLE',
 }
 
 export interface ToolbarButton {
@@ -132,4 +133,11 @@ export interface ToolbarSpacer {
     type: ToolBarElementType.SPACER;
     order: number;
     id: string;
+}
+
+export interface ToolbarTitle {
+    type: ToolBarElementType.TITLE;
+    order: number;
+    id: string;
+    text: string | (() => string);
 }

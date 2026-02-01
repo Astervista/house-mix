@@ -6,8 +6,9 @@ import { ActuatorCreateOptions, ActuatorEditChanges } from '@common/devices/actu
 import { SensorCreateOptions, SensorEditChanges } from '@common/devices/sensor/rest-classes';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {ChangeParentChange} from '@common/devices/group/rest-classes';
-import { GetDevicesOptions } from "@common/devices/rest-classes";
+import { GetDevicesOptions, LockedExposes, UnavailableParents } from "@common/devices/rest-classes";
 import { EntityPathParams } from "@common/utils/rest-classes";
+import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 
 @Injectable({
     providedIn: 'root'
@@ -56,10 +57,34 @@ export class DeviceService {
     )
     public deleteActuator!: (params: EntityPathParams) => Promise<void>;
 
+    @Get<MixPositionInfoJSON>(
+        'actuators/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getActuatorDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getActuatorDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getActuatorDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
+
     @Patch<ChangeParentChange, null>(
         '/actuators/:name/parent'
     )
     public changeActuatorParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
+
+    @Get("/actuators/:name/unavailable-parents",
+         {
+             result: UnavailableParents,
+             resultIsArray: true
+         })
+    public getActuatorUnavailableParents!: (params: EntityPathParams) => Promise<UnavailableParents>;
 
     @Get("/sensors/",
         {
@@ -91,10 +116,40 @@ export class DeviceService {
     )
     public deleteSensor!: (params: EntityPathParams) => Promise<void>;
 
+    @Get<MixPositionInfoJSON>(
+        'sensors/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getSensorDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getSensorDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getSensorDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
+
     @Patch<ChangeParentChange, null>(
         '/sensors/:name/parent'
     )
     public changeSensorParent!: (change: ChangeParentChange, params: EntityPathParams) => Promise<void>;
 
+    @Get("/sensors/:name/unavailable-parents",
+        {
+            result: UnavailableParents,
+        })
+    public getSensorUnavailableParents!: (params: EntityPathParams) => Promise<UnavailableParents>;
+
+
+    @Get("/sensors/:name/locked-exposes",
+         {
+             result: LockedExposes,
+             resultIsArray: true,
+         })
+    public getLockedSensorExposes!: (params: EntityPathParams) => Promise<LockedExposes[]>;
 }
 

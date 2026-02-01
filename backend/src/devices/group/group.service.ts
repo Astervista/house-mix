@@ -9,6 +9,8 @@ import {SensorService} from "../sensor/sensor.service";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {MixPhase} from "@common/mixing/mix/rest-classes";
 import MixService from "../../mixing/mix/mix.service";
+import {UnavailableParents} from "@common/devices/rest-classes";
+import {Mix} from "@common/mixing/mix/mix";
 
 
 const SAVE_FILE = "devices/group.json";
@@ -127,7 +129,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
             throw new NotFoundException();
         }
         let destinationGroup: Group | null = null;
-        const mixes: number[] = [];
+        const mixes: number[]              = [];
         if (groupToDelete.sensorMix != null) {
             mixes.push(groupToDelete.sensorMix);
         }
@@ -192,7 +194,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     }
     
     public async changeParent(entityToMove: string, newParentName: string | null, entityType: EntityType): Promise<void> {
-        const data = await this.data;
+        const data                  = await this.data;
         let elementToMove: Group | Device | null;
         let newParent: Group | null = null;
         if (newParentName != null) {
@@ -274,6 +276,84 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
         this.saveData();
     }
+    
+    public async getUnavailableParents(name: string, entityType: EntityType): Promise<UnavailableParents> {
+        const data = await this.data;
+        const result: UnavailableParents = {
+            names: [],
+            displayNames: [],
+            unreachable: null,
+            depending: null
+        };
+
+        let availableGroups: {
+            available: (Group | null)[],
+            blocking: Group | null,
+            unreachableMix: Mix | null,
+            dependingMix: Mix | null
+        };
+
+        switch (entityType) {
+            case EntityType.SENSOR:
+                availableGroups = await this.mixService.sensorMixAvailableGroups(EntityType.SENSOR, name);
+                break;
+            case EntityType.ACTUATOR:
+                availableGroups = await this.mixService.actuatorMixAvailableGroups(EntityType.ACTUATOR, name);
+                break;
+            case EntityType.GROUP: {
+                const sensorSide = await this.mixService.sensorMixAvailableGroups(EntityType.GROUP, name);
+                const actuatorSide = await this.mixService.actuatorMixAvailableGroups(EntityType.GROUP, name);
+                
+                // Intersection of available groups
+                const available = sensorSide.available.filter(g => actuatorSide.available.includes(g));
+                
+                // Blocking is the nearest parent of the two
+                let blocking = sensorSide.blocking;
+                let unreachableMix = sensorSide.unreachableMix;
+                let dependingMix = sensorSide.dependingMix;
+                
+                if (actuatorSide.blocking != null) {
+                    const sensorAncestors = sensorSide.blocking ? (await this.getAncestorGroups(sensorSide.blocking.name)).map(g => g.name) : [];
+                    if (blocking == null || sensorAncestors.includes(actuatorSide.blocking.name)) {
+                        blocking = actuatorSide.blocking;
+                        unreachableMix = actuatorSide.unreachableMix;
+                        dependingMix = actuatorSide.dependingMix;
+                    }
+                }
+
+                availableGroups = {
+                    available,
+                    blocking,
+                    unreachableMix,
+                    dependingMix
+                };
+                break;
+            }
+            default:
+                throw new InternalServerErrorException("Unknown entity type");
+        }
+
+        for (const group of data.groups) {
+            if (!availableGroups.available.includes(group)) {
+                result.names.push(group.name);
+                result.displayNames.push(group.displayName);
+            }
+        }
+        if (!availableGroups.available.includes(null)) {
+            result.names.push(null);
+            result.displayNames.push(null);
+        }
+
+        if ((availableGroups.unreachableMix != null) && (availableGroups.unreachableMix.id != "NEW")) {
+            result.unreachable = await this.mixService.getMixPosition(availableGroups.unreachableMix.id);
+        }
+        if ((availableGroups.dependingMix != null) && (availableGroups.dependingMix.id != "NEW")) {
+            result.depending = await this.mixService.getMixPosition(availableGroups.dependingMix.id);
+        }
+
+        return result;
+    }
+    
     
     private async testActuatorMoveTo(actuatorToMoveName: string, newParentName: string | null): Promise<void> {
         const availableGroups = await this.mixService.actuatorMixAvailableGroups(EntityType.ACTUATOR, actuatorToMoveName);
@@ -389,13 +469,13 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
             await this.actuatorService.deleteActuator(name);
         } else { // EntityType.SENSOR
             if (!await this.mixService.canDelete(entityType, name, elementToRemove.mix != null ? [elementToRemove.mix] : [])) {
-                throw new ConflictException(`Cannot delete device "${name}" it contains a mix that is referenced in a mix downstream`)
+                throw new ConflictException(`Cannot delete device "${name}" it contains a mix that is referenced in a mix downstream`);
             }
             if (elementToRemove.mix != null) {
                 await this
                     .mixService
                     .deleteMix(elementToRemove.mix, true)
-                    .catch((err: unknown) => {console.error(err)});
+                    .catch((err: unknown) => {console.error(err);});
             }
             const containingGroup = data.groups.find(otherGroup => otherGroup.containsSensor(name));
             if (containingGroup != null) {
@@ -492,7 +572,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     public async getParentChain(entityType: EntityType, name: string): Promise<Group[]> {
         switch (entityType) {
             case EntityType.GROUP:
-                return this.getAncestorGroups(name)
+                return this.getAncestorGroups(name);
             case EntityType.ACTUATOR: {
                 const group = await this.getActuatorGroup(name);
                 if (group == null) {
@@ -500,7 +580,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
                 }
                 return [group, ...await this.getAncestorGroups(group.name)];
             }
-            case EntityType.SENSOR:{
+            case EntityType.SENSOR: {
                 const group = await this.getSensorGroup(name);
                 if (group == null) {
                     return [];

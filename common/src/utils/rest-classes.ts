@@ -1,4 +1,3 @@
-// TODO: should be moved
 import {IsNotEmpty, Matches} from "rest-decorators";
 import {UNIQUE_NAME_PATTERN} from "./constants";
 

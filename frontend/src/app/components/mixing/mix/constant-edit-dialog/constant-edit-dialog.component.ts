@@ -1,6 +1,6 @@
 import {Component, Inject} from '@angular/core';
 import {MatButton} from '@angular/material/button';
-import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {Datum, DatumType} from '@common/mixing/mix/datum';
 import {MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
@@ -11,24 +11,25 @@ import {MatIcon} from '@angular/material/icon';
 import {provideLuxonDateAdapter} from '@angular/material-luxon-adapter';
 import {DateTime} from 'luxon';
 import {MatDialogComponent} from '../../../../utils/better-mat-dialog';
+import {MatCheckbox} from '@angular/material/checkbox';
 
 export const DATE_FORMAT = {
-    parse: {
+    parse:   {
         dateInput: 'yyyy-MM-dd',
-        timeInput: 'HH:mm:ss',
+        timeInput: 'HH:mm:ss'
     },
     display: {
-        dateInput: 'yyyy-MM-dd',
-        monthYearLabel: 'MMM yyyy',
-        dateA11yLabel: 'yyyy-MM-dd',
+        dateInput:          'yyyy-MM-dd',
+        monthYearLabel:     'MMM yyyy',
+        dateA11yLabel:      'yyyy-MM-dd',
         monthYearA11yLabel: 'MMMM yyyy',
-        timeOptionLabel: 'HH:mm:ss',
-        timeInput: 'HH:mm:ss',
-    },
+        timeOptionLabel:    'HH:mm:ss',
+        timeInput:          'HH:mm:ss'
+    }
 };
 
 @Component({
-  selector: 'house-mix-constant-edit-dialog',
+               selector:    'house-mix-constant-edit-dialog',
                imports: [
                    MatButton,
                    MatDialogActions,
@@ -45,18 +46,19 @@ export const DATE_FORMAT = {
                    MatDatepickerModule,
                    MatNativeDateModule,
                    MatHint,
-                   MatIcon
+                   MatIcon,
+                   MatCheckbox
                ],
-               providers: [
+               providers:   [
                    // Luxon can be provided globally to your app by adding `provideLuxonDateAdapter`
                    // to your app config. We provide it at the component level here, due to limitations
                    // of our example generation script.
-                   provideLuxonDateAdapter(DATE_FORMAT),
+                   provideLuxonDateAdapter(DATE_FORMAT)
                ],
-  templateUrl: './constant-edit-dialog.component.html',
-  styleUrl: './constant-edit-dialog.component.scss'
-})
-export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEditDialogData, ConstantEditDialogResponse>{
+               templateUrl: './constant-edit-dialog.component.html',
+               styleUrl:    './constant-edit-dialog.component.scss'
+           })
+export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEditDialogData, ConstantEditDialogResponse> {
 
     constructor(
         @Inject(MAT_DIALOG_DATA) data: ConstantEditDialogData,
@@ -65,35 +67,43 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
         super(data, matDialogRef);
         switch (data.type) {
             case DatumType.NUMBER: {
-                const number = (data.value as number | null) ?? Datum.getDefaultForType(data.type) as number;
+                const number       = (data.value as number | null) ?? Datum.getDefaultForType(data.type) as number;
                 this.selectedValue = number;
                 this.numberFormControl.setValue(number);
                 this.numberFormControl.valueChanges.subscribe(value => {
                     this.selectedValue = value;
-                })
+                });
                 break;
             }
-            case DatumType.BOOLEAN: { throw new Error('Boolean is not implemented') }
+            case DatumType.BOOLEAN: {
+                const boolean      = (data.value as boolean | null) ?? Datum.getDefaultForType(data.type) as boolean;
+                this.selectedValue = boolean;
+                this.booleanFormControl.setValue(boolean);
+                this.booleanFormControl.valueChanges.subscribe(value => {
+                    this.selectedValue = value;
+                });
+                break;
+            }
             case DatumType.TIME: {
-                const date =data.value == null ? new Date() : new Date(data.value as Date);
+                const date         = data.value == null ? new Date() : new Date(data.value as Date);
                 this.selectedValue = date;
                 this.timeFormControl.setValue(DateTime.fromJSDate(date));
                 this.timeFormControl.valueChanges.subscribe(value => {
                     this.selectedValue = value?.toJSDate();
-                })
+                });
                 break;
             }
             case DatumType.DATE: {
-                const date =data.value == null ? new Date() : new Date(data.value as Date);
+                const date         = data.value == null ? new Date() : new Date(data.value as Date);
                 this.selectedValue = date;
-                this.dateFormControl.setValue( DateTime.fromJSDate(date));
+                this.dateFormControl.setValue(DateTime.fromJSDate(date));
                 this.dateFormControl.valueChanges.subscribe((value: DateTime | null) => {
                     if (value == null) {
                         this.selectedValue = null;
                         return;
                     }
                     this.selectedValue = value.toJSDate();
-                })
+                });
                 break;
             }
             case DatumType.DATE_TIME: {
@@ -101,14 +111,14 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 this.dateTimeTempDate = data.value == null ? new Date() : new Date(data.value as Date);
                 this.dateTimeTempTime = data.value == null ? new Date() : new Date(data.value as Date);
 
-                this.selectedValue =  new Date(
+                this.selectedValue = new Date(
                     this.dateTimeTempDate.getFullYear(),
                     this.dateTimeTempDate.getMonth(),
                     this.dateTimeTempDate.getDate(),
                     this.dateTimeTempTime.getHours(),
                     this.dateTimeTempTime.getMinutes(),
                     this.dateTimeTempTime.getSeconds()
-                )
+                );
 
                 this.timeFormControl.setValue(DateTime.fromJSDate((data.value as Date | null) ?? Datum.getDefaultForType(data.type) as Date));
                 this.timeFormControl.valueChanges.subscribe(valueLux => {
@@ -126,7 +136,7 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                         );
                     }
                     this.dateTimeTempTime = value;
-                })
+                });
 
                 this.dateFormControl.setValue(DateTime.fromJSDate(data.value as Date));
                 this.dateFormControl.valueChanges.subscribe((valueLux: DateTime | null) => {
@@ -144,7 +154,7 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                         );
                     }
                     this.dateTimeTempDate = value;
-                })
+                });
                 break;
             }
         }
@@ -152,6 +162,7 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
 
     protected selectedValue: unknown = null;
 
+    protected booleanFormControl: FormControl<boolean | null> = new FormControl<boolean>(false);
     protected numberFormControl: FormControl<number | null> = new FormControl<number>(0);
     protected timeFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
     protected dateFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
@@ -184,7 +195,9 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
 
 export interface ConstantEditDialogData {
     type: DatumType,
-    value: unknown
+    value: unknown,
+    datumName?: string,
+    canClear?: boolean
 }
 
 export interface ConstantEditDialogResponse {

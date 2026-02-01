@@ -1,14 +1,14 @@
 <h2 mat-dialog-title>{{ title }}</h2>
 <mat-dialog-content>
     <house-mix-entity-names-inputs
-        [horizontal]="this.data.entityType != EntityType.GROUP"
-        [originalName]="this.data.edit?.name ?? null"
-        [originalDisplayName]="this.data.edit?.displayName ?? null"
-        [forbiddenNames]="this.data.forbiddenNames"
+        [horizontal]="data.entityType != EntityType.GROUP"
+        [originalName]="data.edit?.name ?? null"
+        [originalDisplayName]="data.edit?.displayName ?? null"
+        [forbiddenNames]="data.forbiddenNames"
         [nameHint]="nameInputHint"
         [displayNameHint]="displayNameInputHint">
     </house-mix-entity-names-inputs>
-    @if (this.data.entityType != EntityType.GROUP) {
+    @if (data.entityType != EntityType.GROUP) {
         <div class="device-info-container">
             <mat-form-field>
                 <mat-label>Zigbee IEEE address</mat-label>
@@ -22,7 +22,7 @@
                     <mat-error>The address is a 64-bit hex</mat-error>
                 }
             </mat-form-field>
-            @if (this.data.entityType == EntityType.ACTUATOR) {
+            @if (data.entityType == EntityType.ACTUATOR) {
                 <mat-form-field>
                     <mat-label>Actuator type</mat-label>
                     <mat-select
@@ -41,7 +41,7 @@
                         }
                         @for (type of Object.values(ActuatorType); track type) {
                             @if (type != ActuatorType.UNKNOWN) {
-                            <mat-option [value]="type">
+                                <mat-option [value]="type">
                                     <div class="device-type-container">
                                         <house-mix-dynamic-svg
                                             class="device-type-icon"
@@ -61,7 +61,7 @@
                     }
                 </mat-form-field>
             }
-            @if (this.data.entityType == EntityType.SENSOR) {
+            @if (data.entityType == EntityType.SENSOR) {
                 <mat-form-field>
                     <mat-label>Sensor type</mat-label>
                     <mat-select
@@ -103,7 +103,7 @@
             }
         </div>
         <div class="exposes-properties-header">
-            <p>{{ this.data.entityType == EntityType.ACTUATOR ? 'Actuator properties' : 'Sensor properties' }}</p>
+            <p>{{ data.entityType == EntityType.ACTUATOR ? 'Actuator properties' : 'Sensor properties' }}</p>
             <button
                 mat-icon-button
                 (click)="addExposes()">
@@ -111,33 +111,83 @@
             </button>
             <button
                 mat-icon-button
-                [matMenuTriggerFor]="this.data.entityType == EntityType.ACTUATOR ? actuatorDataLibrary : sensorDataLibrary">
+                [matMenuTriggerFor]="data.entityType == EntityType.ACTUATOR ? actuatorDataLibrary : sensorDataLibrary">
                 <mat-icon>newsstand</mat-icon>
             </button>
         </div>
         <div class="exposes-properties">
-            @if (this.deviceExposes.length == 0) {
-                <span class="no-data">No property has been defined</span>
-            } @else {
-                @for (datum of deviceExposes; track datum.name) {
-                    <div class="datum">
-                        <mat-icon class="datum-null-icon">{{ datum.nullable ? 'question_mark' : '' }}</mat-icon>
-                        <span class="datum-name">{{ datum.name }}</span>
-                        <span class="datum-type">{{ DATUM_TIME_DISPLAY[datum.type] }}</span>
-                        <button
-                            mat-icon-button
-                            (click)="removeDeviceExposes(datum)">
-                            <mat-icon>delete</mat-icon>
-                        </button>
+            @if (data.edit == null || data.entityType == EntityType.ACTUATOR || lockedExposedLoadingStatus == LoadingStatus.LOADED) {
+                @if (deviceExposes.length == 0) {
+                    <span class="no-data">No property has been defined</span>
+                } @else {
+                    @for (datum of deviceExposes; track datum.name) {
+                        <div class="datum">
+                            <mat-icon class="datum-null-icon">{{ datum.nullable ? 'question_mark' : '' }}</mat-icon>
+                            <span class="datum-name">{{ datum.name }}</span>
+                            <span class="datum-type">{{ DATUM_TIME_DISPLAY[datum.type] }}</span>
+                            <svg width="0" height="0">
+                                <defs>
+                                    <mask id="round-mask">
+                                        <rect x="0" y="0" width="24" height="24" fill="white"/>
+                                        <circle cx="22" cy="2" r="11" fill="black"/>
+                                    </mask>
+                                </defs>
+                            </svg>
 
-                    </div>
+                            <button
+                                mat-icon-button
+                                (click)="removeDeviceExposes(datum)">
+                                @if (exposeHasError(datum)) {
+                                    <mat-icon class="delete-button-holed">delete</mat-icon>
+                                    <mat-icon class="delete-button-warning">warning</mat-icon>
+                                } @else {
+                                    <mat-icon>delete</mat-icon>
+                                }
+                            </button>
+                        </div>
+                        @if (errorDatum == datum) {
+                            <div class="datum-error">
+                                <div class="message">Cannot remove the property. These mixes depend on it:</div>
+                                @for (dependency of errorDatumDependencies; track $index) {
+                                    <div class="dependency">
+                                        <mat-icon>close</mat-icon>
+                                        @switch (dependency.phase) {
+                                            @case (MixPhase.SENSORS) {
+                                                @if (dependency.target == MixTarget.DEVICE) {
+                                                    Mix for sensor <i>{{ dependency.sensorDisplayName }}</i>
+                                                } @else {
+                                                    Sensor-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                                }
+                                            }
+                                            @case (MixPhase.CENTER) {
+                                                Central mix <i>{{ dependency.mixDisplayName }}</i>
+                                            }
+                                            @case (MixPhase.ACTUATORS) {
+                                                @if (dependency.target == MixTarget.DEVICE) {
+                                                    Mix for actuator <i>{{ dependency.actuatorDisplayName }}</i>
+                                                } @else {
+                                                    Actuator-side mix for group <i>{{ dependency.groupDisplayName }}</i>
+                                                }
+                                            }
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
 
+                    }
                 }
+            } @else {
+                <house-mix-loading-scrim
+                    [loadingStatus]="lockedExposedLoadingStatus"
+                    errorText="Cannot retrieve exposed properties">
+
+                </house-mix-loading-scrim>
             }
         </div>
     }
-    @if (this.data.edit == null) {
-        @switch (this.data.entityType) {
+    @if (data.edit == null) {
+        @switch (data.entityType) {
             @case (EntityType.GROUP) {
                 <p>Select a location in which to put the new group</p>
             }
@@ -149,8 +199,8 @@
             }
         }
         <house-mix-entity-location-input
-            [defaultGroup]="this.data.sonOfGroup"
-            [groups]="this.groups">
+            [defaultGroup]="data.sonOfGroup"
+            [groups]="groups">
 
         </house-mix-entity-location-input>
     }
@@ -158,14 +208,14 @@
 </mat-dialog-content>
 <mat-dialog-actions>
     <button mat-button
-        (click)="closeDialog()">
+            (click)="closeDialog()">
         Cancel
     </button>
     <button
         mat-button
         (click)="closeDialog(result)"
         [disabled]="confirmDisabled">
-        {{ this.data.edit == null ? 'Create' : 'Edit' }}
+        {{ data.edit == null ? 'Create' : 'Edit' }}
     </button>
 </mat-dialog-actions>
 <mat-menu

@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { DeleteGroupDialogComponent } from './delete-group-dialog.component';
+import { DeleteEntityDialogComponent } from './delete-entity-dialog.component';
 
 describe('DeleteGroupDialogComponent', () => {
-  let component: DeleteGroupDialogComponent;
-  let fixture: ComponentFixture<DeleteGroupDialogComponent>;
+  let component: DeleteEntityDialogComponent;
+  let fixture: ComponentFixture<DeleteEntityDialogComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DeleteGroupDialogComponent]
+      imports: [DeleteEntityDialogComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(DeleteGroupDialogComponent);
+    fixture = TestBed.createComponent(DeleteEntityDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

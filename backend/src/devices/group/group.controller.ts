@@ -4,11 +4,17 @@ import {GroupService} from "./group.service";
 import {ChangeParentChange, DeleteGroupChildFate, DeleteGroupOptions, GetGroupsOptions, GroupCreateOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 import {UNIQUE_NAME_PATTERN} from "@common/utils/constants";
+import {UnavailableParents} from "@common/devices/rest-classes";
+import MixService from "../../mixing/mix/mix.service";
+import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 
 @Controller('groups')
 export class GroupController {
     
-    constructor(private readonly groupService: GroupService) {}
+    constructor(
+        private readonly groupService: GroupService,
+        private readonly mixService: MixService
+    ) {}
     
     @Get("/")
     public async getAll(
@@ -85,6 +91,14 @@ export class GroupController {
         await this.groupService.deleteGroup(name, cleanOptions);
     }
     
+    @Get("/:name/delete-locks")
+    public async canDelete(
+        @Param('name')
+        name: string
+    ): Promise<MixPositionInfo[]> {
+        return await this.mixService.deleteLocks(EntityType.GROUP, name);
+    }
+    
     @Patch("/:name/parent")
     public async changeParent(
         @Param('name')
@@ -93,6 +107,14 @@ export class GroupController {
         data: ChangeParentChange
     ): Promise<void> {
         await this.groupService.changeParent(name, data.parent, EntityType.GROUP);
+    }
+    
+    @Get("/:name/unavailable-parents")
+    public async getUnavailableParents(
+        @Param('name')
+        name: string
+    ): Promise<UnavailableParents> {
+        return this.groupService.getUnavailableParents(name, EntityType.GROUP);
     }
 
 }

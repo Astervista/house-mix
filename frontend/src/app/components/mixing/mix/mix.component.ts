@@ -19,7 +19,7 @@ import {createMixInfo, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget
 import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
 import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
 import {HttpErrorResponse} from '@angular/common/http';
-import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../../auxiliary/toolbar/toolbar.component';
+import {ToolbarComponent, ToolbarElement, ToolBarElementType, ToolbarTitle} from '../../auxiliary/toolbar/toolbar.component';
 import {DeviceService} from '../../../services/device.service';
 import {ResizeEventDirective} from '../../../directives/resize-event/resize-event.directive';
 import {getDateDisplayFormat} from '../../../utils/constants';
@@ -64,6 +64,7 @@ export class MixComponent implements AfterViewInit {
         private matDialog: BetterMatDialog,
         protected location: Location
     ) {
+        TOOLBAR_TITLE.text = '';
         let id: number | 'NEW' = 'NEW';
         firstValueFrom(this.route.params)
             .then(
@@ -125,6 +126,7 @@ export class MixComponent implements AfterViewInit {
                 })
             .then(
                 async (mixPosition): Promise<Datum[] | null> => {
+                    this.updateTitle(mixPosition, id);
                     this.mixPosition = mixPosition;
                     if ((mixPosition?.phase == MixPhase.ACTUATORS) && (mixPosition.target == MixTarget.DEVICE)) {
                         const actuator = await this.deviceService.getActuatorByName({name: mixPosition.actuatorName});
@@ -172,6 +174,54 @@ export class MixComponent implements AfterViewInit {
                     }
                     this.errorType = 'INTERNAL';
                 });
+    }
+
+    private updateTitle(mixPosition: MixPositionInfo | undefined, id: number | 'NEW'): void {
+        if (mixPosition != null) {
+            if (id == 'NEW') {
+                switch (mixPosition.target) {
+                    case MixTarget.DEVICE:
+                        if (mixPosition.phase == MixPhase.SENSORS) {
+                            TOOLBAR_TITLE.text = `New mix for sensor — ${mixPosition.sensorDisplayName}`;
+                        } else {
+                            TOOLBAR_TITLE.text = `New mix for actuator — ${mixPosition.actuatorDisplayName}`;
+                        }
+                        break;
+                    case MixTarget.GROUP:
+                        if (mixPosition.phase == MixPhase.SENSORS) {
+                            TOOLBAR_TITLE.text = `New sensor mix for group — ${mixPosition.groupDisplayName}`;
+                        } else {
+                            TOOLBAR_TITLE.text = `New actuator mix for group — ${mixPosition.groupDisplayName}`;
+                        }
+                        break;
+                    case MixTarget.CENTER:
+                        TOOLBAR_TITLE.text = `New central mix — ${mixPosition.mixDisplayName}`;
+                        break;
+                }
+            } else {
+                switch (mixPosition.target) {
+                    case MixTarget.DEVICE:
+                        if (mixPosition.phase == MixPhase.SENSORS) {
+                            TOOLBAR_TITLE.text = `Edit mix for sensor — ${mixPosition.sensorDisplayName}`;
+                        } else {
+                            TOOLBAR_TITLE.text = `Edit mix for actuator — ${mixPosition.actuatorDisplayName}`;
+                        }
+                        break;
+                    case MixTarget.GROUP:
+                        if (mixPosition.phase == MixPhase.SENSORS) {
+                            TOOLBAR_TITLE.text = `Edit sensor mix for group — ${mixPosition.groupDisplayName}`;
+                        } else {
+                            TOOLBAR_TITLE.text = `Edit actuator mix for group — ${mixPosition.groupDisplayName}`;
+                        }
+                        break;
+                    case MixTarget.CENTER:
+                        TOOLBAR_TITLE.text = `Edit central mix — ${mixPosition.mixDisplayName}`;
+                        break;
+                }
+            }
+        } else {
+            TOOLBAR_TITLE.text = "";
+        }
     }
 
     public ngAfterViewInit(): void {
@@ -408,7 +458,8 @@ export class MixComponent implements AfterViewInit {
                               {
                                   data: {
                                       type:  connector.datum.type,
-                                      value: constantConnection?.sourceValue ?? Datum.getDefaultForType(connector.datum.type)
+                                      value: constantConnection?.sourceValue ?? Datum.getDefaultForType(connector.datum.type),
+                                      datumName: connector.datum.name
                                   }
                               }
                           );
@@ -661,6 +712,12 @@ enum ToolbarAction {
 }
 
 
+const TOOLBAR_TITLE: ToolbarTitle                                       = {
+    type:  ToolBarElementType.TITLE,
+    id:    'title',
+    text:  '',
+    order: 1
+};
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
@@ -669,42 +726,43 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         hint:  'Go back',
         order: 0
     },
+    TOOLBAR_TITLE,
     {
         type:  ToolBarElementType.SPACER,
         id:    'space',
-        order: 1
+        order: 2
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'delete',
         id:    ToolbarAction.DELETE,
         hint:  'Delete',
-        order: 2
+        order: 3
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'add',
         id:    ToolbarAction.ADD,
         hint:  'Add node',
-        order: 2
+        order: 3
     },
     {
         type:  ToolBarElementType.DIVIDER,
         id:    'divider-1',
-        order: 3
+        order: 4
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'graph_1',
         id:    ToolbarAction.REARRANGE,
         hint:  'Rearrange nodes in order',
-        order: 4
+        order: 5
     },
     {
         type:  ToolBarElementType.BUTTON,
         icon:  'save',
         id:    ToolbarAction.SAVE,
         hint:  'Save mix',
-        order: 4
+        order: 5
     }
 ];

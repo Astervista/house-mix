@@ -41,5 +41,8 @@
         @case (ToolBarElementType.SPACER) {
             <div class="spacer"></div>
         }
+        @case (ToolBarElementType.TITLE) {
+            <div class="title">{{ typeof element.text == 'function' ? element.text() : element.text }}</div>
+        }
     }
 }
