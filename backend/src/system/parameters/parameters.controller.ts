@@ -1,4 +1,4 @@
-import {Body, Controller, Delete, Get, Param, Patch, Post, Put} from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post} from "@nestjs/common";
 import {ParametersService} from "./parameters.service";
 import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
 import {SetParameterBody} from "@common/system/parameter/rest-classes";

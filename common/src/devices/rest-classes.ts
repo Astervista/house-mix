@@ -1,7 +1,6 @@
 import {IsArray, IsBoolean, IsInt, IsNotEmpty, IsOptional, Matches, Transform, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {DatumJSON} from "../mixing/mix/datum";
 import {UNIQUE_NAME_PATTERN} from "../utils/constants";
-import {MixingGraphDependency} from "../mixing/mixing-graph";
 import {MixPositionInfo} from "../mixing/mix/rest-classes";
 
 export class DeviceEditChanges {
@@ -31,9 +30,13 @@ export class DeviceEditChanges {
 
 export class GetDevicesOptions {
     
-    @Transform(({ value }) => {
-        if (value === undefined) return undefined; // param not provided
-        if (value === 'null') return null;         // explicit null
+    @Transform(({value}) => {
+        if (value === undefined) {
+            return undefined;
+        } // param not provided
+        if (value === "null") {
+            return null;
+        }         // explicit null
         return Number(value);                      // number
     })
     @ValidateIf((_, value) => value !== null)    // skip validation if null
@@ -48,7 +51,7 @@ export class GetDevicesOptions {
 }
 
 export class LockedExposes {
-
+    
     constructor(
         public name: string,
         public dependencies: MixPositionInfo[]
@@ -66,5 +69,5 @@ export class UnavailableParents {
         public unreachable: MixPositionInfo | null,
         public depending: MixPositionInfo | null
     ) {}
-
+    
 }

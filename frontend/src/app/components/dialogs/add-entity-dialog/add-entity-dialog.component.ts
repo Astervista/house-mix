@@ -35,11 +35,10 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {DeviceService} from '../../../services/device.service';
 import {LockedExposes} from '@common/devices/rest-classes';
 import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
-import {JsonPipe} from '@angular/common';
 
 @Component({
                selector:    'house-mix-add-entity-dialog',
-               imports: [
+               imports:     [
                    MatDialogContent,
                    MatDialogActions,
 
@@ -99,9 +98,9 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
 
     private _exposesDirty: boolean = false;
 
-    protected lockedExposedLoadingStatus: LoadingStatus                                = LoadingStatus.LOADING;
-    protected lockedExposed: LockedExposes[] = [];
-    protected errorDatum: Datum | null = null;
+    protected lockedExposedLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
+    protected lockedExposed: LockedExposes[]            = [];
+    protected errorDatum: Datum | null                  = null;
     protected errorDatumDependencies: MixPositionInfo[] = [];
 
     constructor(
@@ -124,14 +123,14 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
         if (data.edit != null && data.entityType != EntityType.ACTUATOR && this.lockedExposedLoadingStatus != LoadingStatus.LOADED) {
             deviceService
-                .getLockedSensorExposes({ name: data.edit.name})
+                .getLockedSensorExposes({name: data.edit.name})
                 .then((result) => {
-                    this.lockedExposed = result;
+                    this.lockedExposed              = result;
                     this.lockedExposedLoadingStatus = LoadingStatus.LOADED;
                 })
                 .catch(() => {
                     this.lockedExposedLoadingStatus = LoadingStatus.ERROR;
-                })
+                });
         }
     }
 
@@ -491,7 +490,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected removeDeviceExposes(datum: Datum): void {
         const errorDatum = this.lockedExposed.find(lockedDatum => lockedDatum.name == datum.name);
         if (errorDatum) {
-            this.errorDatum = datum;
+            this.errorDatum             = datum;
             this.errorDatumDependencies = errorDatum.dependencies;
             return;
         }
@@ -541,9 +540,9 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected readonly SENSOR_TYPE_ICON          = SENSOR_TYPE_ICON;
     protected readonly SENSOR_TYPE_DISPLAY       = SENSOR_TYPE_DISPLAY;
     protected readonly SENSOR_PROPERTIES_LIBRARY = SENSOR_PROPERTIES_LIBRARY;
-    protected readonly LoadingStatus = LoadingStatus;
-    protected readonly MixPhase  = MixPhase;
-    protected readonly MixTarget = MixTarget;
+    protected readonly LoadingStatus             = LoadingStatus;
+    protected readonly MixPhase                  = MixPhase;
+    protected readonly MixTarget                 = MixTarget;
 
 }
 
