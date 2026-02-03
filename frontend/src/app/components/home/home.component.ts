@@ -20,15 +20,22 @@ import {DeviceService} from '../../services/device.service';
 import {DeviceComponent} from '../entities/devices/device/device.component';
 import {MatIcon} from '@angular/material/icon';
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
+import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.component';
+import {LoadingStatus} from '../../utils/enums';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MatButton} from '@angular/material/button';
 
 
 @Component({
                selector:    'house-mix-home',
-               imports:     [
+               imports: [
                    ToolbarComponent,
                    GroupComponent,
                    DeviceComponent,
-                   MatIcon
+                   MatIcon,
+                   DynamicSvgComponent,
+                   MatProgressSpinner,
+                   MatButton
                ],
                templateUrl: './home.component.html',
                styleUrl:    './home.component.scss'
@@ -46,6 +53,8 @@ export class HomeComponent {
 
     protected selectedObject: Group | Device | null = null;
 
+    protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
+
     constructor(
         private router: Router,
         private matDialog: BetterMatDialog,
@@ -53,6 +62,20 @@ export class HomeComponent {
         private deviceService: DeviceService,
         private snackBar: MatSnackBar
     ) {
+        this.reload();
+    }
+
+    protected reload(): void {
+        const groupService = this.groupService;
+        const deviceService = this.deviceService;
+        this.loadingStatus = LoadingStatus.LOADING;
+        this.rootGroups.splice(0, Infinity);
+        this.allGroups.splice(0, Infinity);
+        this.rootActuators.splice(0, Infinity);
+        this.allActuators.splice(0, Infinity);
+        this.rootSensors.splice(0, Infinity);
+        this.allSensors.splice(0, Infinity);
+        this.selectedObject = null;
         Promise
             .all([
                      groupService
@@ -98,11 +121,11 @@ export class HomeComponent {
                         }
                     }
                 }
+                this.loadingStatus = LoadingStatus.LOADED;
             })
             .catch(() => {
-                // TODO: Check
+                this.loadingStatus = LoadingStatus.ERROR;
             });
-
     }
 
     protected get toolbarElements(): ToolbarElement[] {
@@ -916,6 +939,9 @@ export class HomeComponent {
 
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
+    protected readonly ToolbarAction = ToolbarAction;
+    protected readonly LoadingStatus = LoadingStatus;
+    protected readonly Math          = Math;
 }
 
 enum ToolbarAction {

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <defs>
+        <style>
+            .st0 {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .st0, .st1 {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .st1 {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <path class="st0" d="M59.624,6.748c19.839,4.395,34.676,22.091,34.676,43.252,0,24.466-19.834,44.3-44.3,44.3S5.7,74.466,5.7,50,25.534,5.7,50,5.7v44.3l16.17,16.17"/>
+    <line class="st1 stroke-color-animation" x1="11.8" y1="50" x2="21.8" y2="50"/>
+    <line class="st1 stroke-color-animation" x1="50" y1="88.2" x2="50" y2="78.2"/>
+    <line class="st1 stroke-color-animation" x1="88.2" y1="50" x2="78.2" y2="50"/>
+</svg>

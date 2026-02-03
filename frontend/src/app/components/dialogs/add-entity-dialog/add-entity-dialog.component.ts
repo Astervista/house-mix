@@ -121,7 +121,7 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             this.sensorTypeFormControl.setValue(this.data.edit.sensorType);
             this.deviceExposes = this.data.edit.exposes;
         }
-        if (data.edit != null && data.entityType != EntityType.ACTUATOR && this.lockedExposedLoadingStatus != LoadingStatus.LOADED) {
+        if (data.edit != null && data.entityType == EntityType.SENSOR && this.lockedExposedLoadingStatus != LoadingStatus.LOADED) {
             deviceService
                 .getLockedSensorExposes({name: data.edit.name})
                 .then((result) => {

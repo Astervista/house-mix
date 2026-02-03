@@ -1,5 +1,6 @@
 @use "dimensions";
 @use "colors";
+@use "full-page";
 
 :host {
     display: flex;
@@ -44,3 +45,5 @@
         align-self: center;
     }
 }
+
+

@@ -1,6 +1,8 @@
 @use "../entities/entity";
 @use "dimensions";
 @use "colors";
+@use "full-page";
+@use "@angular/material" as mat;
 
 :host {
     flex-grow: 1;
@@ -76,6 +78,17 @@
     overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
+    min-height: 120px;
+
+    >button {
+        background: var(--house-mix-body-background);
+
+        @include mat.button-overrides((
+            text-label-text-color: var(--house-mix-text-color),
+            text-ripple-color: var(--house-mix-text-color-10),
+            text-state-layer-color: white
+        ))
+    }
 
     &::-webkit-scrollbar {
         display: none;
@@ -212,4 +225,10 @@
     &.selected {
         r: 7.5px;
     }
+}
+
+.mix-link {
+    font-weight: 400;
+    color: var(--house-mix-text-color-90);
+    cursor:pointer
 }

@@ -9,7 +9,7 @@ import {DatumOrigin} from '@common/mixing/mix/datum';
 import {DATUM_ORIGIN_DISPLAY, graphConnectionSmoothPath, Line, MEASURES} from './constants';
 import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.component';
 import {ACTUATOR_TYPE_ICON, SENSOR_TYPE_ICON} from '../entities/devices/device/constants';
-import {MatIconButton} from '@angular/material/button';
+import {MatButton, MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
 import {Subscription} from 'rxjs';
 import {Point} from '@angular/cdk/drag-drop';
@@ -18,6 +18,9 @@ import {ConfirmDialogComponent} from '../dialogs/confirm-dialog/confirm-dialog.c
 import {SNACKBAR_TIMEOUT, TOOLTIP_TIMEOUT} from '../../utils/constants';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {MatTooltip} from '@angular/material/tooltip';
+import {MixPhase, MixTarget} from '@common/mixing/mix/rest-classes';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {LoadingStatus} from '../../utils/enums';
 
 @Directive({
                selector: '[origin-element]'
@@ -121,7 +124,9 @@ export class CenterElementDirective {
                    CenterElementDirective,
                    ActuatorElementDirective,
                    ResizeEventDirective,
-                   MatTooltip
+                   MatTooltip,
+                   MatButton,
+                   MatProgressSpinner
                ],
                templateUrl: './mixing.component.html',
                styleUrl:    './mixing.component.scss'
@@ -162,6 +167,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     private subscriptions: Subscription[] = [];
 
+    protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
+    protected showMeaning: boolean = false;
+
     constructor(
         private router: Router,
         private matDialog: BetterMatDialog,
@@ -169,6 +177,20 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         private snackBar: MatSnackBar
     ) {
         this.graphReady = this.reloadGraph();
+    }
+
+    protected reload(): void {
+        this.ngOnDestroy();
+        this.links = [];
+        this.elementFootprints = [];
+        this.sensorGroupsLevels = [];
+        this.actuatorGroupsLevels = [];
+        this._selectedPhase = null;
+        this._selectedElement = null;
+        this.loadingStatus = LoadingStatus.LOADING;
+        this.graph = null;
+        this.graphReady = this.reloadGraph();
+        this.ngAfterViewInit();
     }
 
     private reloadGraph(): Promise<MixingGraph> {
@@ -179,10 +201,6 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 this.graph = graph;
                 this.createLevels(graph);
                 return graph;
-            });
-        this.graphReady
-            .catch(() => {
-
             });
         return this.graphReady;
     }
@@ -236,13 +254,17 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                             }
                         ));
             })
+            .then(() => {
+                this.loadingStatus = LoadingStatus.LOADED;
+            })
             .catch(() => {
-
+                this.loadingStatus = LoadingStatus.ERROR;
             });
     }
 
     public ngOnDestroy(): void {
         this.subscriptions.forEach(sub => {sub.unsubscribe();});
+        this.subscriptions = [];
     }
 
     public get selectedElement(): MixGraphElement | null {
@@ -271,6 +293,18 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 this.recalculateConnections(this.graph);
             }
         }, 0);
+    }
+
+    public get isGraphEmpty(): boolean {
+        return this.graph != null
+               && (
+                   this.graph.origins.length
+                   + this.graph.sensors.length
+                   + this.graph.sensorGroups.length
+                   + this.graph.centers.length
+                   + this.graph.actuatorGroups.length
+                   + this.graph.actuators.length
+               ) == 0;
     }
 
     public isElementInPhase(element: MixGraphElement, phase: MixGraphPhase | null): boolean {
@@ -979,6 +1013,19 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
+            case ToolbarAction.EDIT:
+                if (
+                    this.selectedElement != null
+                    && (
+                        this.selectedElement instanceof MixingGraphSensor
+                        || this.selectedElement instanceof MixingGraphActuator
+                        || this.selectedElement instanceof MixingGraphGroup
+                        || this.selectedElement instanceof MixingGraphCenter
+                    )
+                ) {
+                    this.openMix(this.selectedElement.mix);
+                }
+                break;
             case ToolbarAction.DELETE: {
                 const selectedElement = this.selectedElement;
                 if (selectedElement == null) {
@@ -1024,12 +1071,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                                     }
                                 )
                                 .then(() => {
-                                    void this
-                                        .reloadGraph()
-                                        .then(() => {
-                                            this.ngOnDestroy();
-                                            this.ngAfterViewInit();
-                                        });
+                                    this.reload();
                                 })
                                 .catch(() => {
                                     this.snackBar.open(
@@ -1045,21 +1087,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 break;
             }
             case ToolbarAction.ADD: {
-                this
-                    .matDialog
-                    .open(
-                        AddMixDialogComponent,
-                        {}
-                    )
-                    .afterClosed()
-                    .subscribe(result => {
-                        if (result != null) {
-                            // Navigate to /mixing/exit/new/ with the result as query param
-                            void this.router.navigate(['/mixing/edit/new/'], {
-                                queryParams: result
-                            });
-                        }
-                    });
+                this.addMix();
                 break;
             }
             case ToolbarAction.DEVICES: {
@@ -1076,6 +1104,55 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    protected addMix(graphPhase?: MixGraphPhase): void {
+        let phase: MixPhase;
+        let target: MixTarget;
+        graphPhase = graphPhase ?? this.selectedPhase ?? MixGraphPhase.SENSORS;
+        switch (graphPhase) {
+            case MixGraphPhase.INPUTS:
+            case MixGraphPhase.SENSORS:
+                phase = MixPhase.SENSORS;
+                target = MixTarget.DEVICE;
+                break;
+            case MixGraphPhase.SENSOR_GROUPS:
+                phase = MixPhase.SENSORS;
+                target = MixTarget.GROUP;
+                break;
+            case MixGraphPhase.CENTER:
+                phase = MixPhase.CENTER;
+                target = MixTarget.CENTER;
+                break;
+            case MixGraphPhase.ACTUATOR_GROUPS:
+                phase = MixPhase.ACTUATORS;
+                target = MixTarget.GROUP;
+                break;
+            case MixGraphPhase.ACTUATORS:
+                phase = MixPhase.ACTUATORS;
+                target = MixTarget.DEVICE;
+                break;
+        }
+        this
+            .matDialog
+            .open(
+                AddMixDialogComponent,
+                {
+                    data: {
+                        phase,
+                        target
+                    }
+                }
+            )
+            .afterClosed()
+            .subscribe(result => {
+                if (result != null) {
+                    // Navigate to /mixing/exit/new/ with the result as query param
+                    void this.router.navigate(['/mixing/edit/new/'], {
+                        queryParams: result
+                    });
+                }
+            });
+    }
+
     private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
         if (!Object.values<string>(ToolbarAction).includes(toolbarElement.id)) {
             return true;
@@ -1085,6 +1162,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 return this.selectedElement != null
                        && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
                        && !this.hasDependencies(this.selectedElement);
+            case ToolbarAction.EDIT:
+                return this.selectedElement != null
+                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
             case ToolbarAction.ADD:
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
@@ -1166,6 +1246,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly MEASURES        = MEASURES;
     protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
 
+    protected readonly ToolbarAction = ToolbarAction;
+    protected readonly LoadingStatus = LoadingStatus;
+    protected readonly Math          = Math;
 }
 
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA;
@@ -1188,7 +1271,8 @@ enum ToolbarAction {
     MIXING  = 'mixing',
     SYSTEM  = 'system',
     DELETE  = 'delete',
-    ADD     = 'add'
+    ADD     = 'add',
+    EDIT     = 'edit'
 }
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
@@ -1217,6 +1301,13 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.SPACER,
         id:    'spacer-1',
         order: 1
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'edit',
+        id:    ToolbarAction.EDIT,
+        hint:  'Edit mix',
+        order: 2
     },
     {
         type:  ToolBarElementType.BUTTON,

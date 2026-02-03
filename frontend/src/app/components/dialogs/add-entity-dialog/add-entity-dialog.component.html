@@ -187,22 +187,24 @@
         </div>
     }
     @if (data.edit == null) {
-        @switch (data.entityType) {
-            @case (EntityType.GROUP) {
-                <p>Select a location in which to put the new group</p>
+        @if (data.groupNames.length > 0) {
+            @switch (data.entityType) {
+                @case (EntityType.GROUP) {
+                    <p>Select a location in which to put the new group</p>
+                }
+                @case (EntityType.ACTUATOR) {
+                    <p>Select a location in which to put the new actuator</p>
+                }
+                @case (EntityType.SENSOR) {
+                    <p>Select a location in which to put the new sensor</p>
+                }
             }
-            @case (EntityType.ACTUATOR) {
-                <p>Select a location in which to put the new actuator</p>
-            }
-            @case (EntityType.SENSOR) {
-                <p>Select a location in which to put the new sensor</p>
-            }
-        }
-        <house-mix-entity-location-input
-            [defaultGroup]="data.sonOfGroup"
-            [groups]="groups">
+            <house-mix-entity-location-input
+                [defaultGroup]="data.sonOfGroup"
+                [groups]="groups">
 
-        </house-mix-entity-location-input>
+            </house-mix-entity-location-input>
+        }
     }
 
 </mat-dialog-content>

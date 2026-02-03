@@ -70,8 +70,23 @@ export class MixComponent implements AfterViewInit {
         protected location: Location,
         private snackBar: MatSnackBar
     ) {
+        this.reload();
+    }
+
+    protected reload(): void {
         TOOLBAR_TITLE.text     = '';
         let id: number | 'NEW' = 'NEW';
+        this.mix = null;
+        this.availableImports  = [];
+        this.errorImports      = [];
+        this.savedOutputs      = [];
+        this.restoredOutputs   = [];
+        this.uiManager         = new MixUiManager();
+        this.mixPosition       = undefined;
+        this.loadingStatus     = LoadingStatus.LOADING;
+        this.errorType         = 'NOT_FOUND';
+        this.selectedElements  = [];
+        this.exposes           = null;
         firstValueFrom(this.route.params)
             .then(
                 params => {
@@ -107,7 +122,7 @@ export class MixComponent implements AfterViewInit {
                         this.mixPosition = mixInfo;
                         return new Mix('NEW');
                     } else {
-                        return mixService.getMix({id});
+                        return this.mixService.getMix({id});
                     }
                 })
             .then(
@@ -124,11 +139,11 @@ export class MixComponent implements AfterViewInit {
                      );*/
                     this.mix           = mix;
                     this.uiManager.mix = mix;
-                    this.savedOutputs = mix.outputs.slice();
+                    this.savedOutputs  = mix.outputs.slice();
                     if (id == 'NEW') {
                         return this.mixPosition;
                     } else {
-                        return mixService.getMixPositionInfo({id});
+                        return this.mixService.getMixPositionInfo({id});
                     }
                 })
             .then(
@@ -248,6 +263,9 @@ export class MixComponent implements AfterViewInit {
                           .availableImports
                           .filter(
                               exp => !mix.imports.some(imp => imp.sameIdentification(exp)));
+            if (unusedExports.length == 0) {
+                return;
+            }
             const dialogRef     = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
             dialogRef
                 .afterClosed()
@@ -259,6 +277,19 @@ export class MixComponent implements AfterViewInit {
                     this.uiManager.updateEdgeConnections(true);
                 });
         }
+    }
+
+    protected get inputsAvailable(): boolean {
+        const mix = this.mix;
+        if (mix != null) {
+            const unusedExports =
+                      this
+                          .availableImports
+                          .filter(
+                              exp => !mix.imports.some(imp => imp.sameIdentification(exp)));
+            return unusedExports.length > 0;
+        }
+        return false
     }
 
     protected addNode(): void {

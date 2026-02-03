@@ -3,54 +3,130 @@
     (elementSelected)="toolbarClick(asToolbarAction($event))">
 
 </house-mix-toolbar>
-<div
-    class="main-content"
-    (click)="selectedObject = null">
-    <div
-        class="groups-container">
-        @for (group of rootGroups; track group.name) {
-            <house-mix-group
-                [group]="group"
-                [otherGroups]="allGroups"
-                [actuators]="allActuators"
-                [sensors]="allSensors"
-                [selected]="this.selectedObject"
-                (onSelect)="this.selectedObject = $event">
-            </house-mix-group>
-        }
-    </div>
-</div>
+@switch (loadingStatus) {
+    @case (LoadingStatus.LOADING) {
+        <div
+            class="welcome-content"
+            (click)="selectedObject = null">
+            <house-mix-dynamic-svg
+                class="icon"
+                [src]="Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg'">
+            </house-mix-dynamic-svg>
+            <h2>Loading...</h2>
+            <h3>Your groups and devices are loading, please wait</h3>
+            <mat-spinner
+                strokeWidth="4"
+                diameter="70"></mat-spinner>
+        </div>
+    }
+    @case (LoadingStatus.ERROR) {
+        <div class="error-container">
+            <house-mix-dynamic-svg
+                class="icon"
+                src="broken.svg">
+            </house-mix-dynamic-svg>
+            <h2>There's a problem...</h2>
+            <h3>
+                Sorry, there has been an error loading this mix.
+                <span class="break"></span>
+                Please try again later or go back.
+            </h3>
+            <button
+                class="error-button"
+                mat-button
+                (click)="reload()">
+                Try again
+            </button>
+        </div>
+    }
+    @case (LoadingStatus.LOADED) {
+        @if (rootGroups.length > 0) {
+            <div
+                class="main-content"
+                (click)="selectedObject = null">
+                <div
+                    class="groups-container">
+                    @for (group of rootGroups; track group.name) {
+                        <house-mix-group
+                            [group]="group"
+                            [otherGroups]="allGroups"
+                            [actuators]="allActuators"
+                            [sensors]="allSensors"
+                            [selected]="this.selectedObject"
+                            (onSelect)="this.selectedObject = $event">
+                        </house-mix-group>
+                    }
+                </div>
+            </div>
+        } @else {
+            <div
+                class="welcome-content"
+                (click)="selectedObject = null">
+                <h2>Welcome!</h2>
+                <h3>Here you'll find all your groups and devices
+                    <span class="break"></span>
+                    At the moment, there is nothing here.</h3>
+                <p>If you want to add something new, choose what you want to add:</p>
+                <div class="welcome-choices">
+                    <div
+                        (click)="this.toolbarClick(ToolbarAction.ADD_SENSOR)">
+                        <house-mix-dynamic-svg
+                            src="/devices/sensors/sensor.svg">
 
-@if (rootActuators.length + rootSensors.length > 0) {
-    <div
-        class="device-container"
-        (click)="selectedObject = null">
+                        </house-mix-dynamic-svg>
+                        <h2>Sensor</h2>
+                    </div>
+                    <div
+                        (click)="this.toolbarClick(ToolbarAction.ADD_GROUP)">
+                        <house-mix-dynamic-svg
+                            src="/mixing/group.svg">
+                        </house-mix-dynamic-svg>
+                        <h2>Group</h2>
+                    </div>
+                    <div
+                        (click)="this.toolbarClick(ToolbarAction.ADD_ACTUATOR)">
+                        <house-mix-dynamic-svg
+                            src="/devices/actuators/actuator.svg">
+                        </house-mix-dynamic-svg>
+                        <h2>Actuator</h2>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (rootActuators.length + rootSensors.length > 0) {
+            <div
+                class="device-container"
+                (click)="selectedObject = null">
         <span
             class="device-title">
             Devices without a group
         </span>
-        <div
-            class="device-list">
-            @if (rootActuators.length > 0) {
-                <mat-icon>lightbulb</mat-icon>
-                @for (actuator of rootActuators; track actuator.name) {
-                    <house-mix-device
-                        [device]="actuator"
-                        [selected]="selectedObject == actuator"
-                        (onSelect)="this.selectedObject = $event">
-                    </house-mix-device>
-                }
-            }
-            @if (rootSensors.length > 0) {
-                <mat-icon>detector</mat-icon>
-                @for (sensor of rootSensors; track sensor.name) {
-                    <house-mix-device
-                        [device]="sensor"
-                        [selected]="selectedObject == sensor"
-                        (onSelect)="this.selectedObject = $event">
-                    </house-mix-device>
-                }
-            }
-        </div>
-    </div>
+                <div
+                    class="device-list">
+                    @if (rootActuators.length > 0) {
+                        <mat-icon>lightbulb</mat-icon>
+                        @for (actuator of rootActuators; track actuator.name) {
+                            <house-mix-device
+                                [device]="actuator"
+                                [selected]="selectedObject == actuator"
+                                (onSelect)="this.selectedObject = $event">
+                            </house-mix-device>
+                        }
+                    }
+                    @if (rootSensors.length > 0) {
+                        <mat-icon>detector</mat-icon>
+                        @for (sensor of rootSensors; track sensor.name) {
+                            <house-mix-device
+                                [device]="sensor"
+                                [selected]="selectedObject == sensor"
+                                (onSelect)="this.selectedObject = $event">
+                            </house-mix-device>
+                        }
+                    }
+                </div>
+            </div>
+        }
+
+    }
 }

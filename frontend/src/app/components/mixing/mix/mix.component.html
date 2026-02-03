@@ -12,14 +12,26 @@
                 class="icon"
                 [src]="errorType == 'NOT_FOUND' ? 'mixing/unknown.svg' : 'broken.svg'">
             </house-mix-dynamic-svg>
-            <span class="text">
-                @if (errorType == "NOT_FOUND") {
-                    Sorry, this mix does not exist.<br>It may have been moved or deleted
-                } @else {
-                    Sorry, this address is not correct, or there has been an error loading this mix.<br>Please try again later or go back.
-                }
-            </span>
+            <h2>There's a problem...</h2>
+            @if (errorType == "NOT_FOUND") {
+                <h3>
+                    Sorry, this mix does not exist.
+                    <span class="break"></span>
+                    It may have been deleted
+                </h3>
+            } @else {
+                <h3>
+                    Sorry, this address is not correct, or there has been an error loading this mix.
+                    <span class="break"></span>Please try again later or go back.
+                </h3>
+                <button
+                    mat-button
+                    (click)="reload()">
+                    Try again
+                </button>
+            }
             <button
+                class="error-button"
                 mat-button
                 (click)="location.back()">Go back
             </button>
@@ -29,7 +41,6 @@
         <house-mix-toolbar
             [elements]="toolbarElements"
             (elementSelected)="toolbarClick(asToolbarAction($event))">
-
         </house-mix-toolbar>
         <svg
             #canvas
@@ -180,22 +191,28 @@
                         </g>
                     }
                     <g
-                        class="input-group add-input"
+                        class="input-group"
+                        [class.add-input]="inputsAvailable"
                         [attr.transform]="`translate(${-MEASURES.INPUT_WIDTH - MEASURES.SECTIONS_SEPARATOR / 2}, ${-uiManager.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * mix.imports.length})`"
                         (click)="addInput()">
 
                         <rect
-                            [attr.width]="MEASURES.INPUT_WIDTH"
-                            [attr.height]="MEASURES.ADD_INPUT_HEIGHT"
                             rx="10px"
                             ry="10px"
-                            class="input-container">
+                            class="input-container"
+                            [attr.width]="MEASURES.INPUT_WIDTH"
+                            [attr.height]="MEASURES.ADD_INPUT_HEIGHT"
+                            [style.cursor]="inputsAvailable ? 'pointer' : 'default'">
                         </rect>
                         <text
                             class="add-input-text"
                             [attr.x]="MEASURES.INPUT_WIDTH - 20"
                             [attr.y]="MEASURES.ADD_INPUT_HEIGHT / 2">
-                            Add an input
+                            @if (inputsAvailable) {
+                                Add an input
+                            } @else {
+                                No more inputs
+                            }
                         </text>
                     </g>
 

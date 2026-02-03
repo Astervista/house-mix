@@ -20,6 +20,11 @@ import {MixingService} from '../../mixing/mixing.service';
 import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/entity-names-inputs.component';
 
 
+interface AddMixDialogDefaults {
+    phase: MixPhase;
+    target: MixTarget;
+}
+
 @Component({
                selector:    'house-mix-add-mix-dialog',
                imports:     [
@@ -36,7 +41,7 @@ import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/en
                templateUrl: './add-mix-dialog.component.html',
                styleUrl:    './add-mix-dialog.component.scss'
            })
-export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | null, MixPositionInfo> {
+export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaults | null, MixPositionInfo> {
 
     private _selectedPhase: MixPhase   = MixPhase.SENSORS;
     private _selectedTarget: MixTarget = MixTarget.DEVICE;
@@ -62,13 +67,21 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
     protected mixNamesComponent?: EntityNamesInputsComponent;
 
     constructor(
-        @Inject(MAT_DIALOG_DATA) data: MixPositionInfo,
+        @Inject(MAT_DIALOG_DATA) data: AddMixDialogDefaults | null,
         dialogRef: MatDialogRef<AddMixDialogComponent, MixPositionInfo>,
         private deviceService: DeviceService,
         private groupService: GroupService,
         private mixService: MixingService
     ) {
         super(data, dialogRef);
+        if (
+            (data?.phase == MixPhase.SENSORS && data.target != MixTarget.CENTER)
+            || (data?.phase == MixPhase.CENTER && data.target == MixTarget.CENTER)
+            || (data?.phase == MixPhase.ACTUATORS && data.target != MixTarget.CENTER)
+        ) {
+            this._selectedPhase  = data.phase;
+            this._selectedTarget = data.target;
+        }
     }
 
     public get selectedPhase(): MixPhase {
@@ -250,9 +263,9 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
             if (this.selectedPhase == MixPhase.ACTUATORS) {
                 if (this.selectedElement instanceof Actuator) {
                     return {
-                        phase:        this.selectedPhase,
-                        target:       this.selectedTarget,
-                        actuatorName: this.selectedElement.name,
+                        phase:               this.selectedPhase,
+                        target:              this.selectedTarget,
+                        actuatorName:        this.selectedElement.name,
                         actuatorDisplayName: this.selectedElement.displayName
                     };
                 } else {
@@ -261,9 +274,9 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
             } else { //  MixPhase.SENSORS
                 if (this.selectedElement instanceof Sensor) {
                     return {
-                        phase:      this.selectedPhase,
-                        target:     this.selectedTarget,
-                        sensorName: this.selectedElement.name,
+                        phase:             this.selectedPhase,
+                        target:            this.selectedTarget,
+                        sensorName:        this.selectedElement.name,
                         sensorDisplayName: this.selectedElement.displayName
                     };
                 } else {
@@ -274,9 +287,9 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
             if (this.selectedPhase == MixPhase.ACTUATORS) {
                 if (this.selectedElement instanceof Group && this.selectedElement.actuatorMix == null) {
                     return {
-                        phase:     this.selectedPhase,
-                        target:    this.selectedTarget,
-                        groupName: this.selectedElement.name,
+                        phase:            this.selectedPhase,
+                        target:           this.selectedTarget,
+                        groupName:        this.selectedElement.name,
                         groupDisplayName: this.selectedElement.displayName
                     };
                 } else {
@@ -285,9 +298,9 @@ export class AddMixDialogComponent extends MatDialogComponent<MixPositionInfo | 
             } else { //  MixPhase.SENSORS
                 if (this.selectedElement instanceof Group && this.selectedElement.sensorMix == null) {
                     return {
-                        phase:     this.selectedPhase,
-                        target:    this.selectedTarget,
-                        groupName: this.selectedElement.name,
+                        phase:            this.selectedPhase,
+                        target:           this.selectedTarget,
+                        groupName:        this.selectedElement.name,
                         groupDisplayName: this.selectedElement.displayName
                     };
                 } else {

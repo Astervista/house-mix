@@ -175,7 +175,7 @@ export function graphConnectionSmoothPath(from: Point, to: Point, horizontal: bo
 }
 
 export const MEASURES = {
-    INPUT_WIDTH:                      200,
+    INPUT_WIDTH:                      250,
     INPUT_HEIGHT:                     90,
     ADD_INPUT_HEIGHT:                 50,
     INPUT_SPACING:                    10,

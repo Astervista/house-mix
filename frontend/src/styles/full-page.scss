@@ -1,0 +1,89 @@
+@use "dimensions";
+@use "colors";
+@use "@angular/material" as mat;
+
+.error-container,
+.welcome-content {
+    flex-grow: 1;
+    flex-basis: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    padding: 10px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+
+    .icon {
+        width: min(200px, 75vw);
+        height: min(200px, 75vw);
+        --highlight-color: var(--mat-sys-primary);
+    }
+
+    h2 {
+        font-size: 30px;
+    }
+
+    h3 {
+        font-size: 22px;
+        font-weight: 100;
+
+        .break {
+            display: block;
+            height: 15px;
+        }
+    }
+
+    p {
+        font-weight: 100;
+        font-size: 18px;
+    }
+
+    button {
+        text-transform: uppercase;
+        font-size: 22px;
+
+
+        @include mat.button-overrides((
+            filled-container-height: 55px,
+            text-container-height: 55px
+        ))
+    }
+
+    mat-spinner {
+        margin: 20px 20px;
+    }
+
+    .welcome-choices {
+        display: flex;
+        gap: min(10vw, 100px);
+
+        >div {
+            display: flex;
+            flex-direction: column;
+            gap: dimensions.$margin-xlarge;
+
+            h2 {
+                font-size: 25px;
+            }
+        }
+
+        house-mix-dynamic-svg {
+            --highlight-color: var(--mat-sys-primary);
+            cursor: pointer;
+            width: min(20vw, 100px);
+            height: min(20vw, 100px);
+        }
+    }
+}
+
+.error-container {
+
+    .icon {
+        --highlight-color: var(--mat-sys-error);
+    }
+
+    button.error-button {
+        @include colors.error-button;
+    }
+}
