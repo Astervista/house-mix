@@ -1,8 +1,8 @@
 import {AfterViewInit, Component, ElementRef} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
-import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
-import {connectable, firstValueFrom} from 'rxjs';
+import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
+import {firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
 import {Datum, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
@@ -15,26 +15,28 @@ import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-
 import {NodeLibraryDialogComponent} from './node-library-dialog/node-library-dialog.component';
 import {DatumDefineDialogComponent} from '../../dialogs/datum-define-dialog/datum-define-dialog.component';
 import {BetterMatDialog} from '../../../utils/better-mat-dialog';
-import {createMixInfo, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget, PutMixShowableError, PutMixShowableErrorObject} from '@common/mixing/mix/rest-classes';
-import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim.component';
+import {createMixInfo, mixInfoFromJSON, MixPhase, MixPositionInfo, MixPositionInfoJSON, MixTarget, PutMixShowableError, PutMixShowableErrorObject} from '@common/mixing/mix/rest-classes';
 import {DynamicSvgComponent} from '../../auxiliary/dynamic-svg/dynamic-svg.component';
 import {HttpErrorResponse} from '@angular/common/http';
-import {ToolbarComponent, ToolbarElement, ToolBarElementType, ToolbarTitle} from '../../auxiliary/toolbar/toolbar.component';
+import {ToolbarButton, ToolbarComponent, ToolbarElement, ToolBarElementType, ToolbarTitle} from '../../auxiliary/toolbar/toolbar.component';
 import {DeviceService} from '../../../services/device.service';
 import {ResizeEventDirective} from '../../../directives/resize-event/resize-event.directive';
 import {getDateDisplayFormat, SNACKBAR_TIMEOUT} from '../../../utils/constants';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {ConfirmDialogComponent} from '../../dialogs/confirm-dialog/confirm-dialog.component';
+import {LocalStorageObject, LocalStorageService} from '../../../services/local-storage.service';
+import {BackupDialogComponent} from './backup-dialog/backup-dialog.component';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
 
 @Component({
                selector:    'house-mix-mix',
-               imports:     [
+               imports: [
                    DatePipe,
-                   LoadingScrimComponent,
                    DynamicSvgComponent,
                    MatButton,
                    ToolbarComponent,
-                   ResizeEventDirective
+                   ResizeEventDirective,
+                   MatProgressSpinner
                ],
                templateUrl: './mix.component.html',
                styleUrl:    './mix.component.scss'
@@ -45,12 +47,13 @@ export class MixComponent implements AfterViewInit {
 
     protected availableImports: ExportedDatum[] = [];
     protected errorImports: string[]            = [];
-    protected savedOutputs: Datum[]            = [];
-    protected restoredOutputs: string[] = [];
+    protected savedOutputs: Datum[]             = [];
+    protected restoredOutputs: string[]         = [];
 
     protected uiManager: MixUiManager = new MixUiManager();
 
     protected mixPosition?: MixPositionInfo;
+    protected mixBackups: MixBackups | null = null;
 
     protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
@@ -60,6 +63,8 @@ export class MixComponent implements AfterViewInit {
 
     protected exposes: Datum[] | null = null;
 
+    protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
@@ -68,28 +73,35 @@ export class MixComponent implements AfterViewInit {
         private elementRef: ElementRef<HTMLElement>,
         private matDialog: BetterMatDialog,
         protected location: Location,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        private localStorageService: LocalStorageService
     ) {
         this.reload();
     }
 
-    protected reload(): void {
+    protected reload(backup?: MixBackup): void {
         TOOLBAR_TITLE.text     = '';
         let id: number | 'NEW' = 'NEW';
-        this.mix = null;
+        this.mix               = null;
         this.availableImports  = [];
         this.errorImports      = [];
-        this.savedOutputs      = [];
-        this.restoredOutputs   = [];
-        this.uiManager         = new MixUiManager();
-        this.mixPosition       = undefined;
-        this.loadingStatus     = LoadingStatus.LOADING;
-        this.errorType         = 'NOT_FOUND';
-        this.selectedElements  = [];
-        this.exposes           = null;
+        if (backup == null) {
+            this.savedOutputs = [];
+        }
+        this.restoredOutputs = [];
+        this.uiManager       = new MixUiManager();
+        this.uiManager.addChangeCallback(this.doBackup.bind(this));
+        this.mixPosition      = undefined;
+        this.loadingStatus    = LoadingStatus.LOADING;
+        this.errorType        = 'NOT_FOUND';
+        this.selectedElements = [];
+        this.exposes          = null;
         firstValueFrom(this.route.params)
             .then(
                 params => {
+                    if (backup != null) {
+                        return;
+                    }
                     const idParam: string | null = typeof params['mixId'] == 'string' ? params['mixId'] : null;
                     if (idParam == null) {
                         const error = new Error('Missing id parameter');
@@ -112,7 +124,32 @@ export class MixComponent implements AfterViewInit {
             )
             .then(
                 async (params: Record<string, string>) => {
+                    if (backup != null) {
+                        this.mixPosition = backup.position;
+                        return backup.mix;
+                    }
+                    this.mixBackups = this
+                        .localStorageService
+                        .getItem(
+                            new LocalStorageObject<MixBackups | null>(`mix-save.${id}`, null),
+                            MixBackups.fromJSON
+                        );
                     if (id == 'NEW') {
+                        if (Object.keys(params).length == 0) {
+                            // Somebody came back to the new page without passing through a new setup, we get the location from the backups
+                            const latestBackup = this.mixBackups?.latestBackup;
+                            if (latestBackup != null) {
+                                this.mixPosition = latestBackup.position;
+                                if (this.mixBackups != null) {
+                                    this.mixBackups.editingBackup = latestBackup;
+                                }
+                                return latestBackup.mix;
+                            } else {
+                                const error = new Error('Wrong mix position info');
+                                error.cause = 'WRONG_MIX_POSITION';
+                                throw error;
+                            }
+                        }
                         const mixInfo = createMixInfo(params);
                         if (mixInfo == null) {
                             const error = new Error('Wrong mix position info');
@@ -120,26 +157,39 @@ export class MixComponent implements AfterViewInit {
                             throw error;
                         }
                         this.mixPosition = mixInfo;
-                        return new Mix('NEW');
+                        const newMix     = new Mix('NEW');
+                        if (this.mixBackups != null) {
+                            this.mixBackups.addBackup(newMix, mixInfo, true);
+                        } else {
+                            this.mixBackups = new MixBackups(id);
+                            this.mixBackups.addBackup(newMix, mixInfo, true);
+                        }
+                        this.localStorageService.setItem<MixBackups | null>(
+                            new LocalStorageObject<MixBackups | null>(`mix-save.${id}`, null),
+                            this.mixBackups,
+                            MixBackups.toJSON
+                        );
+                        return newMix;
                     } else {
                         return this.mixService.getMix({id});
                     }
                 })
             .then(
                 async (mix) => {
-                    // TODO: put this back after creating save states
-
-                    /*                    await this.router.navigate(
-                     [],
-                     {
-                     relativeTo:          this.route,
-                     queryParams:         {},
-                     queryParamsHandling: 'replace'
-                     }
-                     );*/
+                    await this.router.navigate(
+                        [],
+                        {
+                            relativeTo:          this.route,
+                            queryParams:         {},
+                            queryParamsHandling: 'replace'
+                        }
+                    );
                     this.mix           = mix;
                     this.uiManager.mix = mix;
-                    this.savedOutputs  = mix.outputs.slice();
+                    if (backup != null) {
+                        return backup.position;
+                    }
+                    this.savedOutputs = mix.outputs.slice();
                     if (id == 'NEW') {
                         return this.mixPosition;
                     } else {
@@ -266,7 +316,7 @@ export class MixComponent implements AfterViewInit {
             if (unusedExports.length == 0) {
                 return;
             }
-            const dialogRef     = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
+            const dialogRef = this.matDialog.open(InputLibraryDialogComponent, {data: unusedExports});
             dialogRef
                 .afterClosed()
                 .subscribe(selectedDatum => {
@@ -274,6 +324,7 @@ export class MixComponent implements AfterViewInit {
                         return;
                     }
                     mix.addImport(selectedDatum);
+                    this.doBackup();
                     this.uiManager.updateEdgeConnections(true);
                 });
         }
@@ -289,7 +340,7 @@ export class MixComponent implements AfterViewInit {
                               exp => !mix.imports.some(imp => imp.sameIdentification(exp)));
             return unusedExports.length > 0;
         }
-        return false
+        return false;
     }
 
     protected addNode(): void {
@@ -304,6 +355,7 @@ export class MixComponent implements AfterViewInit {
                         newNode = new ElaborationNodeNullGuard(this.mix.nodes.length, {dataType: result.datumType});
                     }
                     this.mix.addNode(newNode);
+                    this.doBackup();
                     this.uiManager.addNode(newNode);
                 }
             });
@@ -334,6 +386,7 @@ export class MixComponent implements AfterViewInit {
                         return;
                     }
                     mix.addOutput(selectedDatum);
+                    this.doBackup();
                     this.uiManager.updateEdgeConnections(false);
                 });
         }
@@ -427,6 +480,7 @@ export class MixComponent implements AfterViewInit {
                                   ) as (ConnectionSourceFromConstant & ConnectionDrainToNode) | undefined;
                     if (constantConnection != null) {
                         constantConnection.sourceValue = !(constantConnection.sourceValue as boolean);
+                        this.doBackup();
                     } else {
                         this.mix.addConnection(
                             {
@@ -438,6 +492,7 @@ export class MixComponent implements AfterViewInit {
                                 drainNodeInputName: connector.datum.name
                             }
                         );
+                        this.doBackup();
                     }
                 } else {
                     const constantConnection: (ConnectionSourceFromConstant & ConnectionDrainToOutput) | undefined =
@@ -451,6 +506,7 @@ export class MixComponent implements AfterViewInit {
                                   ) as (ConnectionSourceFromConstant & ConnectionDrainToOutput) | undefined;
                     if (constantConnection != null) {
                         constantConnection.sourceValue = !(constantConnection.sourceValue as boolean);
+                        this.doBackup();
                     } else {
                         this.mix.addConnection(
                             {
@@ -461,6 +517,7 @@ export class MixComponent implements AfterViewInit {
                                 outputName:      connector.datum.name
                             }
                         );
+                        this.doBackup();
                     }
                 }
                 break;
@@ -508,6 +565,7 @@ export class MixComponent implements AfterViewInit {
                             if (value?.successful == true) {
                                 if (constantConnection != null) {
                                     constantConnection.sourceValue = value.value;
+                                    this.doBackup();
                                 } else {
                                     if (!connector.external) {
                                         this.mix?.addConnection(
@@ -520,6 +578,7 @@ export class MixComponent implements AfterViewInit {
                                                 drainNodeInputName: connector.datum.name
                                             }
                                         );
+                                        this.doBackup();
                                     } else {
                                         this.mix?.addConnection(
                                             {
@@ -530,6 +589,7 @@ export class MixComponent implements AfterViewInit {
                                                 outputName:      connector.datum.name
                                             }
                                         );
+                                        this.doBackup();
                                     }
                                 }
                             }
@@ -571,6 +631,7 @@ export class MixComponent implements AfterViewInit {
             }
             if (constantConnection != null) {
                 this.mix.removeConnection(constantConnection);
+                this.doBackup();
             }
         }
     }
@@ -626,16 +687,20 @@ export class MixComponent implements AfterViewInit {
 
 
     private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
-        switch (toolbarElement.id) {
-            case ToolbarAction.BACK as string:
+        if (this.loadingStatus !== LoadingStatus.LOADED) {
+            return (toolbarElement.id as ToolbarAction) == ToolbarAction.BACK;
+        }
+        switch (toolbarElement.id as ToolbarAction) {
+            case ToolbarAction.BACKUPS:
+                return this.mixBackups?.hasUnopenedBackups ?? false;
+            case ToolbarAction.BACK:
                 return true;
-            case ToolbarAction.SAVE as string:
-            case ToolbarAction.ADD as string:
-            case ToolbarAction.REARRANGE as string:
+            case ToolbarAction.SAVE:
+            case ToolbarAction.ADD:
+            case ToolbarAction.REARRANGE:
             default:
-                // TODO: if a new status is created, use it here too
-                return this.loadingStatus == LoadingStatus.LOADED;
-            case ToolbarAction.DELETE as string:
+                return true;
+            case ToolbarAction.DELETE:
                 return this.selectedElements.length > 0
                        && (
                            this
@@ -648,6 +713,26 @@ export class MixComponent implements AfterViewInit {
 
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
+            case ToolbarAction.BACKUPS:
+                if (this.mixBackups == null) {
+                    return;
+                }
+                this.matDialog.open(BackupDialogComponent, {
+                    data: this.mixBackups
+                })
+                    .afterClosed()
+                    .subscribe(result => {
+                        if (result != null) {
+                            if (this.mixBackups) {
+                                if (this.mixBackups.editingBackup != null) {
+                                    this.doBackup();
+                                }
+                                this.mixBackups.editingBackup = result;
+                            }
+                            this.reload(result);
+                        }
+                    });
+                break;
             case ToolbarAction.BACK:
                 void this.router.navigate(['mixing']);
                 break;
@@ -656,11 +741,13 @@ export class MixComponent implements AfterViewInit {
                     switch (selectedElement.type) {
                         case SelectedElementType.INPUT:
                             this.mix?.removeImport(selectedElement.exportedDatum);
+                            this.doBackup();
                             this.uiManager.refreshMix();
                             this.errorImports = this.errorImports.filter(imp => imp != selectedElement.exportedDatum.uniqueName);
                             break;
                         case SelectedElementType.NODE:
                             this.mix?.removeNode(selectedElement.node);
+                            this.doBackup();
                             this.uiManager.refreshMix();
                             break;
                         case SelectedElementType.OUTPUT:
@@ -668,10 +755,12 @@ export class MixComponent implements AfterViewInit {
                                 return;
                             }
                             this.mix?.removeOutput(selectedElement.datum);
+                            this.doBackup();
                             this.uiManager.refreshMix();
                             break;
                         case SelectedElementType.CONNECTION:
                             this.mix?.removeConnection(selectedElement.connection);
+                            this.doBackup();
                             this.uiManager.removeConnection(selectedElement.connection);
                             break;
                     }
@@ -682,21 +771,37 @@ export class MixComponent implements AfterViewInit {
                 this.uiManager.rearrangeNodes();
                 break;
             case ToolbarAction.SAVE: {
-                // TODO: Block view and leave loading without removing the svg
-                const mix      = this.mix;
-                const position = this.mixPosition;
+                const mix                             = this.mix;
+                const position                        = this.mixPosition;
+                let toBeSavedBackup: MixBackup | null = null;
+                if (this.mixBackups != null) {
+                    toBeSavedBackup               = this.mixBackups.editingBackup;
+                    this.mixBackups.editingBackup = null;
+                    SAVE_BUTTON.badge = false;
+                }
+                SAVE_BUTTON.loading = true;
                 if (mix != null && position != null) {
                     this
                         .mixService
                         .updateMix(mix, position)
                         .then((newId: number) => {
+                            SAVE_BUTTON.loading = false;
+                            if (this.mixBackups != null) {
+                                this.mixBackups.removeBackup(toBeSavedBackup);
+                                this.saveBackups();
+                            }
                             void this.router.navigate(['mixing', 'edit', newId]);
-                            this.savedOutputs = mix.outputs.slice();
-                            this.errorImports = [];
+                            this.savedOutputs    = mix.outputs.slice();
+                            this.errorImports    = [];
                             this.restoredOutputs = [];
-                            mix.id = newId;
+                            mix.id               = newId;
                         })
                         .catch((error: unknown) => {
+                            SAVE_BUTTON.loading = false;
+                            SAVE_BUTTON.badge = true;
+                            if (this.mixBackups != null) {
+                                this.saveBackups();
+                            }
                             if (error instanceof HttpErrorResponse) {
                                 const showableError: PutMixShowableErrorObject = error.error as PutMixShowableErrorObject;
                                 if (showableError.showable == true) {
@@ -749,12 +854,13 @@ export class MixComponent implements AfterViewInit {
                                             });
                                             showableError.dependingOutputs.forEach(outputName => {
                                                 const output = this.savedOutputs.find(otherOutput => otherOutput.name == outputName);
-                                                this.restoredOutputs.push(outputName)
+                                                this.restoredOutputs.push(outputName);
                                                 if (output != null) {
                                                     mix.addOutput(output);
+                                                    this.doBackup();
                                                     this.uiManager.updateEdgeConnections(false);
                                                 }
-                                            })
+                                            });
                                             return;
                                         }
                                         case PutMixShowableError.INPUTS_WITHOUT_IMPORT:
@@ -783,6 +889,34 @@ export class MixComponent implements AfterViewInit {
         }
     }
 
+    protected doBackup(): void {
+        if (this.mix != null && this.mixPosition != null) {
+            this.mixBackups ??= new MixBackups(this.mix.id);
+            if (this.mixBackups.editingBackup == null) {
+                this.mixBackups.addBackup(this.mix, this.mixPosition, true);
+            }
+            SAVE_BUTTON.badge = true;
+            this.saveBackups();
+        }
+    }
+
+    protected saveBackups(): void {
+        if (this.mixBackups != null && this.mix != null && this.mixPosition != null) {
+            if (!this.mixBackups.hasBackups) {
+                this.localStorageService.removeItem(`mix-save.${this.mix.id}`);
+            } else {
+                this.localStorageService.setItem(
+                    new LocalStorageObject<MixBackups | null>(
+                        `mix-save.${this.mix.id}`,
+                        this.mixBackups
+                    ),
+                    this.mixBackups,
+                    MixBackups.toJSON
+                );
+            }
+        }
+    }
+
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
     protected readonly MEASURES: typeof MEASURES                           = MEASURES;
@@ -796,7 +930,6 @@ export class MixComponent implements AfterViewInit {
     protected readonly DATUM_ORIGIN_DISPLAY                                = DATUM_ORIGIN_DISPLAY;
     protected readonly getExternalDatumOriginNameDisplay                   = getExternalDatumOriginNameDisplay;
     protected readonly SelectedElementType                                 = SelectedElementType;
-    protected readonly connectable                                         = connectable;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
 }
@@ -826,18 +959,38 @@ enum SelectedElementType {
 enum ToolbarAction {
     BACK      = 'back',
     SAVE      = 'save',
+    BACKUPS   = 'backups',
     ADD       = 'add',
     DELETE    = 'delete',
     REARRANGE = 'rearrange'
 }
 
 
-const TOOLBAR_TITLE: ToolbarTitle            = {
+const TOOLBAR_TITLE: ToolbarTitle = {
     type:  ToolBarElementType.TITLE,
     id:    'title',
     text:  '',
     order: 1
 };
+
+
+const BACKUP_BUTTON: ToolbarButton           = {
+    type:  ToolBarElementType.BUTTON,
+    icon:  'history',
+    id:    ToolbarAction.BACKUPS,
+    hint:  'Auto-saved versions',
+    order: 5
+};
+
+const SAVE_BUTTON: ToolbarButton             = {
+    type:  ToolBarElementType.BUTTON,
+    icon:  'save',
+    id:    ToolbarAction.SAVE,
+    hint:  'Save mix',
+    order: 5,
+    badge: false
+};
+
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
@@ -867,22 +1020,146 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         order: 3
     },
     {
-        type:  ToolBarElementType.DIVIDER,
-        id:    'divider-1',
-        order: 4
-    },
-    {
         type:  ToolBarElementType.BUTTON,
         icon:  'graph_1',
         id:    ToolbarAction.REARRANGE,
         hint:  'Rearrange nodes in order',
-        order: 5
+        order: 3
     },
     {
-        type:  ToolBarElementType.BUTTON,
-        icon:  'save',
-        id:    ToolbarAction.SAVE,
-        hint:  'Save mix',
-        order: 5
-    }
+        type:  ToolBarElementType.DIVIDER,
+        id:    'divider-1',
+        order: 4
+    },
+    BACKUP_BUTTON,
+    SAVE_BUTTON
 ];
+
+
+export class MixBackups {
+
+    private _backups: MixBackup[] = [];
+
+    private _editingBackup: MixBackup | null = null;
+
+    constructor(
+        public mixId: number | 'NEW'
+    ) {
+
+    }
+
+    public get backups(): MixBackup[] {
+        return this._backups.slice();
+    }
+
+    public get latestBackup(): MixBackup | null {
+        return this._backups[this._backups.length - 1] ?? null;
+    }
+
+    public get editingBackup(): MixBackup | null {
+        return this._editingBackup;
+    }
+
+    public set editingBackup(editingBackup: MixBackup | null) {
+        this._editingBackup = editingBackup;
+        if (editingBackup != null) {
+            if (!this._backups.includes(editingBackup)) {
+                this.addBackup(editingBackup.mix, editingBackup.position);
+            }
+        }
+    }
+
+    public get hasBackups(): boolean {
+        return this._backups.length > 0;
+    }
+
+    public get hasUnopenedBackups(): boolean {
+        if (!this.hasBackups) {
+            return false;
+        }
+        return this._backups.some(backup => backup != this._editingBackup);
+    }
+
+    private sortBackups(): void {
+        this._backups.sort((a, b) => a.date.getTime() - b.date.getTime());
+    }
+
+    public addBackup(newMix: Mix, mixInfo: MixPositionInfo, setEditing: boolean = false): MixBackup {
+        const backup = {
+            date:     new Date(),
+            mix:      newMix,
+            position: mixInfo
+        };
+        this._backups.push(backup);
+        this.sortBackups();
+        if (setEditing) {
+            this._editingBackup = backup;
+        }
+        return backup;
+    }
+
+    public removeBackup(backup: MixBackup | null): void {
+        if (backup == null) {
+            return;
+        }
+        this._backups = this._backups.filter(otherBackup => otherBackup != backup);
+        if (this._editingBackup == backup) {
+            this._editingBackup = null;
+        }
+    }
+
+    public static fromJSON(mixBackupsJSON: unknown): MixBackups | null {
+        if (mixBackupsJSON == null) {
+            return null;
+        }
+        const actualJSON    = mixBackupsJSON as MixBackupsJSON;
+        const mixBackups    = new MixBackups(actualJSON.mixId);
+        mixBackups._backups = actualJSON.backups.map(backup => {
+            const position = mixInfoFromJSON(backup.position);
+            if (position == null) {
+                throw new Error('Wrong position data');
+            }
+            return {
+                date:     new Date(backup.date),
+                mix:      Mix.fromJSON(backup.mix),
+                position: position
+            };
+        });
+        mixBackups.sortBackups();
+        return mixBackups;
+    }
+
+    public static toJSON(mixBackups: MixBackups | null): MixBackupsJSON | null {
+        if (mixBackups == null) {
+            return null;
+        }
+        return {
+            mixId:   mixBackups.mixId,
+            backups: mixBackups._backups
+                               .map(backup => {
+                                   return {
+                                       date:     backup.date.getTime(),
+                                       mix:      backup.mix.toJSON(),
+                                       position: MixPositionInfoJSON.toJSON(backup.position)
+                                   };
+                               })
+        };
+    }
+}
+
+export interface MixBackupsJSON {
+    mixId: number | 'NEW';
+    backups: MixBackupJSON[];
+}
+
+export interface MixBackup {
+    date: Date,
+    position: MixPositionInfo,
+    mix: Mix
+}
+
+export interface MixBackupJSON {
+    date: number,
+    position: MixPositionInfoJSON,
+    mix: MixJSON
+}

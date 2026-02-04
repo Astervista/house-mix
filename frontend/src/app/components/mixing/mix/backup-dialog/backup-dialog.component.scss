@@ -1,0 +1,59 @@
+@use "dimensions";
+
+.backup-list {
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-medium;
+
+    .backups-row {
+        display: flex;
+        flex-direction: row;
+        gap: dimensions.$margin-medium;
+        align-items: center;
+        padding: dimensions.$margin-mlarge;
+        cursor: pointer;
+        outline: 3px solid transparent;
+        outline-offset: -1.5px;
+        border-radius: 5px;
+        transition: outline-color .4s ease-in-out;
+        margin: 3px;
+
+        &.selected {
+            outline: 3px solid var(--mat-sys-primary);
+        }
+
+        &.current {
+            opacity: 0.8;
+            cursor: default;
+        }
+
+        >mat-icon {
+            margin: 0 dimensions.$margin-mlarge;
+        }
+
+        .backups-info {
+            display: flex;
+            flex-direction: column;
+            gap: dimensions.$margin-small;
+            flex-grow: 1;
+            flex-basis: 0;
+
+            >div {
+                display: flex;
+                flex-direction: row;
+                gap: dimensions.$margin-medium;
+
+                .location,
+                .date-text {
+                    font-weight:300;
+                }
+                .date-value {
+                    font-weight: 100;
+                }
+            }
+        }
+
+    }
+
+}

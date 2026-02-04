@@ -1,10 +1,22 @@
+<!--suppress HtmlUnknownAttribute, RequiredAttributes -->
+<house-mix-toolbar
+    [elements]="toolbarElements"
+    (elementSelected)="toolbarClick(asToolbarAction($event))">
+</house-mix-toolbar>
 @switch (this.loadingStatus) {
     @case (LoadingStatus.LOADING) {
-        <!--suppress HtmlUnknownAttribute, RequiredAttributes -->
-        <house-mix-loading-scrim
-            [loadingStatus]="LoadingStatus.LOADING">
-
-        </house-mix-loading-scrim>
+        <div
+            class="welcome-content">
+            <house-mix-dynamic-svg
+                class="icon"
+                [src]="randomIcon">
+            </house-mix-dynamic-svg>
+            <h2>Loading...</h2>
+            <h3>Your groups and devices are loading, please wait</h3>
+            <mat-spinner
+                strokeWidth="4"
+                diameter="70"></mat-spinner>
+        </div>
     }
     @case (LoadingStatus.ERROR) {
         <div class="error-container">
@@ -38,10 +50,6 @@
         </div>
     }
     @case (LoadingStatus.LOADED) {
-        <house-mix-toolbar
-            [elements]="toolbarElements"
-            (elementSelected)="toolbarClick(asToolbarAction($event))">
-        </house-mix-toolbar>
         <svg
             #canvas
             class="mix-canvas"

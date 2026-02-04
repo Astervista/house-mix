@@ -28,6 +28,8 @@ export class MixUiManager {
 
     private _viewSize: Point = { x: 0, y: 0};
 
+    private changeCallbacks: (() => void)[] = [];
+
     public set mix(mix: Mix) {
         this._mix = mix;
         this.refreshMix();
@@ -1182,12 +1184,14 @@ export class MixUiManager {
             if (deleteOld) {
                 if (this.currentDragging.replacingConnection != null) {
                     this._mix.removeConnection(this.currentDragging.replacingConnection);
+                    this.emitChanges();
                     this.removeConnection(this.currentDragging.replacingConnection);
                 }
             }
             if (createNew) {
                 if (this.currentDragging.candidatePartner != null && newConnection != null) {
                     this._mix.addConnection(newConnection);
+                    this.emitChanges();
                     this.addConnection(newConnection);
                 }
             }
@@ -1244,6 +1248,7 @@ export class MixUiManager {
 
                 if (newConnection) {
                     this._mix.addConnection(newConnection);
+                    this.emitChanges();
                     this.addConnection(newConnection);
                     if (this.currentDragging.replacingConnection?.sourceType == ConnectionSourceType.CONSTANT) {
                         this.removeConnection(this.currentDragging.replacingConnection);
@@ -1271,6 +1276,22 @@ export class MixUiManager {
         this.translation.y += (clientY - this.translation.y) * (1 - change);
         this.scale    = newScale;
     }
+
+
+    public addChangeCallback(callback: () => void): void {
+        this.changeCallbacks.push(callback);
+    }
+
+    public removeChangeCallback(callback: () => void): void {
+        this.changeCallbacks = this.changeCallbacks.filter(a => a != callback);
+    }
+
+    private emitChanges(): void {
+        this.changeCallbacks.forEach(callback => {
+            callback()
+        });
+    }
+
 }
 
 enum DraggingElementType {

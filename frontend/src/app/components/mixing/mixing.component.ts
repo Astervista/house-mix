@@ -113,7 +113,7 @@ export class CenterElementDirective {
 
 @Component({
                selector:    'house-mix-mixing',
-               imports: [
+               imports:     [
                    ToolbarComponent,
                    DynamicSvgComponent,
                    MatIconButton,
@@ -168,7 +168,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     private subscriptions: Subscription[] = [];
 
     protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
-    protected showMeaning: boolean = false;
+    protected showMeaning: boolean         = false;
+
+    protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
 
     constructor(
         private router: Router,
@@ -181,15 +183,15 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     protected reload(): void {
         this.ngOnDestroy();
-        this.links = [];
-        this.elementFootprints = [];
-        this.sensorGroupsLevels = [];
+        this.links                = [];
+        this.elementFootprints    = [];
+        this.sensorGroupsLevels   = [];
         this.actuatorGroupsLevels = [];
-        this._selectedPhase = null;
-        this._selectedElement = null;
-        this.loadingStatus = LoadingStatus.LOADING;
-        this.graph = null;
-        this.graphReady = this.reloadGraph();
+        this._selectedPhase       = null;
+        this._selectedElement     = null;
+        this.loadingStatus        = LoadingStatus.LOADING;
+        this.graph                = null;
+        this.graphReady           = this.reloadGraph();
         this.ngAfterViewInit();
     }
 
@@ -1111,23 +1113,23 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         switch (graphPhase) {
             case MixGraphPhase.INPUTS:
             case MixGraphPhase.SENSORS:
-                phase = MixPhase.SENSORS;
+                phase  = MixPhase.SENSORS;
                 target = MixTarget.DEVICE;
                 break;
             case MixGraphPhase.SENSOR_GROUPS:
-                phase = MixPhase.SENSORS;
+                phase  = MixPhase.SENSORS;
                 target = MixTarget.GROUP;
                 break;
             case MixGraphPhase.CENTER:
-                phase = MixPhase.CENTER;
+                phase  = MixPhase.CENTER;
                 target = MixTarget.CENTER;
                 break;
             case MixGraphPhase.ACTUATOR_GROUPS:
-                phase = MixPhase.ACTUATORS;
+                phase  = MixPhase.ACTUATORS;
                 target = MixTarget.GROUP;
                 break;
             case MixGraphPhase.ACTUATORS:
-                phase = MixPhase.ACTUATORS;
+                phase  = MixPhase.ACTUATORS;
                 target = MixTarget.DEVICE;
                 break;
         }
@@ -1157,6 +1159,14 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         if (!Object.values<string>(ToolbarAction).includes(toolbarElement.id)) {
             return true;
         }
+        if (this.loadingStatus != LoadingStatus.LOADED) {
+            return [
+                ToolbarAction.DEVICES,
+                ToolbarAction.MIXING,
+                ToolbarAction.SYSTEM
+            ]
+                .includes(toolbarElement.id as ToolbarAction);
+        }
         switch (toolbarElement.id as ToolbarAction) {
             case ToolbarAction.DELETE:
                 return this.selectedElement != null
@@ -1164,7 +1174,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                        && !this.hasDependencies(this.selectedElement);
             case ToolbarAction.EDIT:
                 return this.selectedElement != null
-                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
+                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin);
             case ToolbarAction.ADD:
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
@@ -1243,8 +1253,8 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
     protected readonly MixGraphPhase             = MixGraphPhase;
     protected readonly DatumOrigin               = DatumOrigin;
-    protected readonly MEASURES        = MEASURES;
-    protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
+    protected readonly MEASURES                  = MEASURES;
+    protected readonly TOOLTIP_TIMEOUT           = TOOLTIP_TIMEOUT;
 
     protected readonly ToolbarAction = ToolbarAction;
     protected readonly LoadingStatus = LoadingStatus;
@@ -1272,7 +1282,7 @@ enum ToolbarAction {
     SYSTEM  = 'system',
     DELETE  = 'delete',
     ADD     = 'add',
-    EDIT     = 'edit'
+    EDIT    = 'edit'
 }
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [

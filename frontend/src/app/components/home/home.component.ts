@@ -55,6 +55,8 @@ export class HomeComponent {
 
     protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
+
     constructor(
         private router: Router,
         private matDialog: BetterMatDialog,
@@ -156,12 +158,25 @@ export class HomeComponent {
     }
 
     private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
-        switch (toolbarElement.id) {
-            case ToolbarAction.DELETE as string:
-            case ToolbarAction.EDIT as string:
-            case ToolbarAction.MOVE as string:
+        if (this.loadingStatus != LoadingStatus.LOADED) {
+            return [
+                ToolbarAction.DEVICES,
+                ToolbarAction.MIXING,
+                ToolbarAction.SYSTEM
+            ]
+                .includes(toolbarElement.id as ToolbarAction);
+        }
+        switch (toolbarElement.id as ToolbarAction) {
+            case ToolbarAction.DELETE:
+            case ToolbarAction.EDIT:
+            case ToolbarAction.MOVE:
                 return this.selectedObject != null;
-            default:
+            case ToolbarAction.DEVICES:
+            case ToolbarAction.MIXING:
+            case ToolbarAction.SYSTEM:
+            case ToolbarAction.ADD_GROUP:
+            case ToolbarAction.ADD_ACTUATOR:
+            case ToolbarAction.ADD_SENSOR:
                 return true;
         }
     }

@@ -1,5 +1,6 @@
 @use "dimensions";
 @use "colors";
+@use "@angular/material" as mat;
 
 :host {
     height: 50px;
@@ -8,6 +9,10 @@
     padding: dimensions.$margin-mlarge dimensions.$margin-xlarge;
     gap: dimensions.$margin-mlarge;
     align-items: center;
+
+    @include mat.badge-overrides((
+        background-color: var(--mat-sys-primary)
+    ));
 }
 
 .divider {

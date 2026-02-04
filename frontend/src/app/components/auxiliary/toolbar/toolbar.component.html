@@ -25,15 +25,25 @@
 @for (element of _elements; track element.id) {
     @switch (element.type) {
         @case (ToolBarElementType.BUTTON) {
-            <button
-                mat-icon-button
-                matTooltipPosition="above"
-                [matTooltip]="element.hint"
-                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
-                [matMenuTriggerFor]="getMenu(element.id)"
-                (click)="onElementClick(element)">
-                <mat-icon>{{ element.icon }}</mat-icon>
-            </button>
+            @if (element.loading) {
+                <mat-spinner
+                    style="margin: 8px"
+                    [diameter]="24">
+
+                </mat-spinner>
+            } @else {
+                <button
+                    mat-icon-button
+                    matTooltipPosition="above"
+                    [matTooltip]="element.hint"
+                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                    [matMenuTriggerFor]="getMenu(element.id)"
+                    (click)="onElementClick(element)">
+                    <mat-icon
+                        [matBadge]="element.badge == false ? null : (element.badge == true ? 1 : element.badge)"
+                        [matBadgeSize]="element.badge == true ? 'small' : 'large'">{{ element.icon }}</mat-icon>
+                </button>
+            }
         }
         @case (ToolBarElementType.DIVIDER) {
             <div class="divider"></div>

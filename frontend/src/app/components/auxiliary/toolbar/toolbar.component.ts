@@ -5,6 +5,8 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatDivider} from '@angular/material/divider';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
+import {MatBadge} from '@angular/material/badge';
+import {MatProgressSpinner} from '@angular/material/progress-spinner';
 
 export class MenuRegistry {
 
@@ -44,7 +46,9 @@ export class MenuRegisterDirective {
                    MatMenuItem,
                    MenuRegisterDirective,
                    MatMenuTrigger,
-                   MatDivider
+                   MatDivider,
+                   MatBadge,
+                   MatProgressSpinner
                ],
                providers: [MenuRegistry],
                templateUrl: './toolbar.component.html',
@@ -121,6 +125,8 @@ export interface ToolbarButton {
     icon: string;
     order: number;
     submenu?: ToolbarElement[];
+    badge?: number | boolean;
+    loading?: boolean;
 }
 
 export interface ToolbarDivider {

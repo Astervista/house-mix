@@ -1,0 +1,70 @@
+<h2 mat-dialog-title>Browse auto-saves</h2>
+<mat-dialog-content>
+
+    @if (data.backups.length === 0) {
+        <p>There currently are no backups</p>
+    } @else {
+        @if (data.mixId === "NEW") {
+            <p>These are all the new mixes that have not been saved</p>
+        } @else {
+            <p>These are all the version of this mix that have not been saved</p>
+        }
+        <div class="backup-list">
+            @for (backup of data.backups; track backup.date) {
+                <div
+                    class="backups-row"
+                    [class.selected]="backup === selected"
+                    [class.current]="backup === data.editingBackup"
+                    (click)="selected = (backup != data.editingBackup ? backup : selected)">
+                    <mat-icon>history</mat-icon>
+                    <div class="backups-info">
+                        @if (backup === data.editingBackup) {
+                            <div class="location">
+                                <span class="date-text">This autosave is the one currently being edited</span>
+                            </div>
+                        }
+                        <div class="date">
+                            <span class="date-text">Last saved:</span>
+                            <span class="date-value">{{ backup.date | date:"yyyy-MM-dd HH:mm" }}</span>
+                        </div>
+                        @if (data.mixId === "NEW") {
+                            <div class="location">
+                                @switch (backup.position.phase) {
+                                    @case (MixPhase.SENSORS) {
+                                        @if (backup.position.target == MixTarget.DEVICE) {
+                                            Mix for sensor <i>{{ backup.position.sensorDisplayName }}</i>
+                                        } @else {
+                                            Sensor-side mix for group <i>{{ backup.position.groupDisplayName }}</i>
+                                        }
+                                    }
+                                    @case (MixPhase.CENTER) {
+                                        Central mix <i>{{ backup.position.mixDisplayName }}</i>
+                                    }
+                                    @case (MixPhase.ACTUATORS) {
+                                        @if (backup.position.target == MixTarget.DEVICE) {
+                                            Mix for actuator <i>{{ backup.position.actuatorDisplayName }}</i>
+                                        } @else {
+                                            Actuator-side mix for group <i>{{ backup.position.groupDisplayName }}</i>
+                                        }
+                                    }
+                                }
+                            </div>
+                        }
+                    </div>
+                    <button
+                        mat-icon-button
+                        (click)="deleteBackup(backup); $event.stopPropagation()">
+                        <mat-icon>delete</mat-icon>
+                    </button>
+                </div>
+            }
+        </div>
+        <p>Opening a saved version will create an autosave for the current version</p>
+    }
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button matButton (click)="closeDialog(null)">Back</button>
+    @if ((data.backups.length !== 0) && (data.editingBackup == null || data.backups.length !== 1)) {
+        <button matButton [disabled]="selected == null" (click)="closeDialog(selected)">Open</button>
+    }
+</mat-dialog-actions>
