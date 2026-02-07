@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        mask: url(#mask);
+      }
+
+      .cls-2, .cls-3, .cls-4, .cls-5, .cls-6 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .cls-2, .cls-5 {
+        stroke: #000;
+        stroke-width: 140px;
+      }
+
+      .cls-3 {
+        stroke-width: 64px;
+      }
+
+      .cls-3, .cls-4 {
+        stroke: #f46023;
+      }
+
+      .cls-3, .cls-4, .cls-5, .cls-6 {
+        fill: none;
+      }
+
+      .cls-4, .cls-6 {
+        stroke-width: 56px;
+      }
+
+      .cls-7 {
+        mask: url(#mask-2);
+      }
+
+      .cls-8 {
+        mask: url(#mask-3);
+      }
+
+      .cls-9 {
+        mask: url(#mask-4);
+      }
+
+      .cls-10 {
+        mask: url(#mask-5);
+      }
+
+      .cls-11 {
+        mask: url(#mask-7);
+      }
+
+      .cls-12 {
+        mask: url(#mask-6);
+      }
+
+      .cls-13 {
+        mask: url(#mask-1);
+      }
+
+      .cls-14 {
+        fill: #fff;
+      }
+
+      .cls-6 {
+        stroke: #303030;
+      }
+    </style>
+    <mask id="mask" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281"/>
+        <polygon class="cls-2" points="294.0022 906.7809 93.2191 906.7809 193.6106 806.3894 294.0022 906.7809"/>
+      </g>
+    </mask>
+    <mask id="mask-1" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281"/>
+        <rect class="cls-2" x="99.0121" y="90.3641" width="190.6722" height="816.4168"/>
+      </g>
+    </mask>
+    <mask id="mask-2" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281" transform="translate(1000.0001 1000.1719) rotate(-180)"/>
+        <polygon class="cls-2" points="705.9979 906.7809 906.781 906.7809 806.3894 806.3894 705.9979 906.7809"/>
+      </g>
+    </mask>
+    <mask id="mask-3" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281" transform="translate(1000.0001 1000.1719) rotate(-180)"/>
+        <rect class="cls-2" x="710.3157" y="90.3641" width="190.6722" height="816.4168" transform="translate(1611.3037 997.1451) rotate(-180)"/>
+      </g>
+    </mask>
+    <mask id="mask-4" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281" transform="translate(1000.0001 1000.1719) rotate(-180)"/>
+        <polyline class="cls-5" points="400.2727 192.5491 500.6643 92.1575 601.0558 192.5491"/>
+      </g>
+    </mask>
+    <mask id="mask-5" x=".086" y=".1719" width="999.8281" height="999.8281" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="cls-14" x=".086" y=".1719" width="999.8281" height="999.8281" transform="translate(1000.0001 1000.1719) rotate(-180)"/>
+        <polygon class="cls-2" points="400.2727 641.6617 400.2727 192.5491 500.6643 92.1575 601.0558 192.5491 601.0558 641.6617 400.2727 641.6617"/>
+      </g>
+    </mask>
+    <mask id="mask-6" x="353.7355" y="697.5054" width="292.5147" height="1128.9689" maskUnits="userSpaceOnUse"/>
+    <mask id="mask-7" x="353.7497" y="795.7183" width="292.5006" height="1030.756" maskUnits="userSpaceOnUse"/>
+  </defs>
+  <g id="Layer_3" data-name="Layer 3">
+    <g class="cls-1">
+      <line class="cls-6" x1="194.3482" y1="143.4155" x2="194.3482" y2="906.7809"/>
+    </g>
+    <g class="cls-13">
+      <line class="cls-4" x1="194.3482" y1="143.4155" x2="194.3482" y2="906.7809"/>
+    </g>
+    <g class="cls-7">
+      <line class="cls-6" x1="805.6519" y1="143.4155" x2="805.6519" y2="906.7809"/>
+    </g>
+    <g class="cls-8">
+      <line class="cls-4" x1="805.6519" y1="143.4155" x2="805.6519" y2="906.7809"/>
+    </g>
+    <g class="cls-9">
+      <line class="cls-6" x1="500" y1="143.4155" x2="500" y2="557.3936"/>
+    </g>
+    <g class="cls-10">
+      <line class="cls-4" x1="500" y1="143.4155" x2="500" y2="557.3936"/>
+    </g>
+    <path class="cls-6" d="M500,706.6085c-65.3078,0-118.2503,52.9424-118.2503,118.2503,0,32.6539,13.2356,62.2165,34.6347,83.6155"/>
+    <path class="cls-6" d="M500,706.6085c65.3078,0,118.2503,52.9424,118.2503,118.2503,0,32.6539-13.2356,62.2165-34.6347,83.6155"/>
+  </g>
+  <g id="Layer_2" data-name="Layer 2">
+    <polyline class="cls-3" points="294.0022 906.7809 93.2191 906.7809 193.6106 806.3894"/>
+    <polyline class="cls-3" points="705.9979 906.7809 906.781 906.7809 806.3894 806.3894"/>
+    <polyline class="cls-3" points="400.2727 193.6106 500.6643 93.2191 601.0558 193.6106"/>
+    <g class="cls-12">
+      <path class="cls-4" d="M435.8749,725.5054c-54.8713,35.4153-70.6436,108.6072-35.2282,163.4785,17.7077,27.4357,44.8594,45.0966,74.4432,51.4716"/>
+    </g>
+    <g class="cls-11">
+      <path class="cls-4" d="M417.1948,909.2769c46.6228,45.7321,121.4913,45.0099,167.2234-1.6129,22.866-23.3114,34.1185-53.6842,33.8266-83.9457"/>
+    </g>
+  </g>
+</svg>

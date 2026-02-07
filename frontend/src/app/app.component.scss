@@ -9,6 +9,22 @@
 .main-title {
     font-size: 30px;
     font-weight: 300;
-    text-align: center;
     margin: dimensions.$margin-xxlarge 0;
+    display: flex;
+    gap: dimensions.$indent-large;
+    align-items: center;
+    justify-content: center;
+
+    span {
+        flex-grow: 1;
+        flex-basis: 0;
+    }
+
+    house-mix-dynamic-svg {
+        --icon-accent-color: var(--mat-sys-primary);
+        --icon-ink-color: var(--mat-sys-on-surface);
+        width: 45px;
+        height: 45px;
+    }
+
 }

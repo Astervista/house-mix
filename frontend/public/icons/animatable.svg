@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .dynamic-stroke-main {
+        mask: url(#mask);
+      }
+
+      .accent, .st2, .st3, .st4, .st5, .st6 {
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .accent, .st4 {
+        stroke: #000;
+        stroke-width: 140px;
+      }
+
+      .st2 {
+        stroke-width: 64px;
+      }
+
+      .st2, .st3 {
+        stroke: #f46023;
+      }
+
+      .st2, .st3, .st4, .st5, .st6 {
+        fill: none;
+      }
+
+      .st3, .st5, .st6 {
+        stroke-width: 56px;
+      }
+
+      .st7 {
+        mask: url(#mask-2);
+      }
+
+      .st8 {
+        mask: url(#mask-3);
+      }
+
+      .st9 {
+        mask: url(#mask-4);
+      }
+
+      .st10 {
+        mask: url(#mask-5);
+      }
+
+      .st11 {
+        mask: url(#mask-7);
+      }
+
+      .st12 {
+        mask: url(#mask-6);
+      }
+
+      .st13 {
+        mask: url(#mask-1);
+      }
+
+      .st5 {
+        stroke: #fff;
+      }
+
+      .st14 {
+        fill: #fff;
+      }
+
+      .st6 {
+        stroke: #303030;
+      }
+    </style>
+    <mask id="mask" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828"/>
+        <polygon class="st1" points="294.002 906.781 93.219 906.781 193.611 806.389 294.002 906.781"/>
+      </g>
+    </mask>
+    <mask id="mask-1" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828"/>
+        <rect class="st1" x="99.012" y="90.364" width="190.672" height="816.417"/>
+      </g>
+    </mask>
+    <mask id="mask-2" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828" transform="translate(1000 1000.172) rotate(-180)"/>
+        <polygon class="st1" points="705.998 906.781 906.781 906.781 806.389 806.389 705.998 906.781"/>
+      </g>
+    </mask>
+    <mask id="mask-3" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828" transform="translate(1000 1000.172) rotate(-180)"/>
+        <rect class="st1" x="710.316" y="90.364" width="190.672" height="816.417" transform="translate(1611.304 997.145) rotate(-180)"/>
+      </g>
+    </mask>
+    <mask id="mask-4" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828" transform="translate(1000 1000.172) rotate(-180)"/>
+        <polyline class="st4" points="400.273 192.549 500.664 92.158 601.056 192.549"/>
+      </g>
+    </mask>
+    <mask id="mask-5" x=".086" y=".172" width="999.828" height="999.828" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="st14" x=".086" y=".172" width="999.828" height="999.828" transform="translate(1000 1000.172) rotate(-180)"/>
+        <polygon class="st1" points="400.273 641.662 400.273 192.549 500.664 92.158 601.056 192.549 601.056 641.662 400.273 641.662"/>
+      </g>
+    </mask>
+    <mask id="mask-6" x="353.736" y="678.609" width="292.515" height="289.847" maskUnits="userSpaceOnUse">
+      <path class="st5" d="M500,706.609c65.308,0,118.25,52.942,118.25,118.25,0,32.654-13.236,62.216-34.635,83.616"/>
+    </mask>
+    <mask id="mask-7" x="353.75" y="678.609" width="292.501" height="292.501" maskUnits="userSpaceOnUse">
+      <path class="st5" d="M500,706.609c-65.308,0-118.25,52.942-118.25,118.25,0,32.654,13.236,62.216,34.635,83.616"/>
+    </mask>
+  </defs>
+  <g id="Layer_3">
+    <g class="st0">
+      <line class="st6" x1="194.348" y1="143.415" x2="194.348" y2="906.781"/>
+    </g>
+    <g class="st13">
+      <line class="st3" x1="194.348" y1="143.415" x2="194.348" y2="906.781"/>
+    </g>
+    <g class="st7">
+      <line class="st6" x1="805.652" y1="143.415" x2="805.652" y2="906.781"/>
+    </g>
+    <g class="st8">
+      <line class="st3" x1="805.652" y1="143.415" x2="805.652" y2="906.781"/>
+    </g>
+    <g class="st9">
+      <line class="st6" x1="500" y1="143.415" x2="500" y2="557.394"/>
+    </g>
+    <g class="st10">
+      <line class="st3" x1="500" y1="143.415" x2="500" y2="557.394"/>
+    </g>
+    <path class="st6" d="M500,706.609c-65.308,0-118.25,52.942-118.25,118.25,0,32.654,13.236,62.216,34.635,83.616"/>
+    <path class="st6" d="M500,706.609c65.308,0,118.25,52.942,118.25,118.25,0,32.654-13.236,62.216-34.635,83.616"/>
+  </g>
+  <g id="Layer_2">
+    <polyline class="st2" points="294.002 906.781 93.219 906.781 193.611 806.389"/>
+    <polyline class="st2" points="705.998 906.781 906.781 906.781 806.389 806.389"/>
+    <polyline class="st2" points="400.273 193.611 500.664 93.219 601.056 193.611"/>
+    <g class="st12">
+      <path class="st3" d="M435.875,725.505c-54.871,35.415-70.644,108.607-35.228,163.479,17.708,27.436,44.859,45.097,74.443,51.472"/>
+    </g>
+    <g class="st11">
+      <path class="st3" d="M417.195,909.277c46.623,45.732,121.491,45.01,167.223-1.613,22.866-23.311,34.119-53.684,33.827-83.946"/>
+    </g>
+  </g>
+</svg>

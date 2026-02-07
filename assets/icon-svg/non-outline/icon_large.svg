@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .stroked-icon-large-masked {
+        mask: url(#stroked-icon-large-mask);
+      }
+      
+      .stroked-icon-accent {
+        stroke: var(--highlight-color, #f46023);
+      }
+      
+      .stroked-icon-stroke {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      
+      .stroked-icon-large-stroke-heavy {
+        stroke-width: 6.5px;
+      }
+      
+      .stroked-icon-large-stroke-medium {
+        stroke-width: 6px;
+      }
+      
+      .stroked-icon-large-stroke-light {
+        stroke-width: 5.5px;
+      }
+      
+      .stroked-icon-mask-stroke {
+        stroke: #000;
+      }
+      
+      .stroked-icon-large-mask-stroke, .stroked-icon-large-mask-correction {
+        stroke-width: 12.5px;
+      }
+      
+      .stroked-icon-mask-back {
+        fill: #fff;
+      }
+      
+      
+      .stroked-icon-accent-fill {
+        fill: var(--highlight-color, #f46023);
+      }
+      
+      .stroked-icon-ink {
+        stroke: var(--ink-color, #eeeeee);
+      }
+    </style>
+    <mask id="stroked-icon-large-mask" x="0" y="0" width="100" height="100" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="stroked-icon-mask-back" x="0" width="100" height="100"/>
+        <polyline class="stroked-icon-large-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="81 37.25 91 47.25 71 47.25"/>
+        <polyline class="stroked-icon-large-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="40.0664 16.1836 50 6.25 60.0664 16.3164"/>
+        <polyline class="stroked-icon-large-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="29 47.25 9 47.25 19 37.25"/>
+      </g>
+    </mask>
+  </defs>
+  <g class="stroked-icon-large-masked">
+    <g>
+      <line class="stroked-icon-large-stroke-light stroked-icon-stroke stroked-icon-accent" x1="19" y1="47.25" x2="19" y2="92"/>
+      <line class="stroked-icon-ink stroked-icon-large-stroke-light stroked-icon-stroke" x1="19" y1="11" x2="19" y2="47.25"/>
+      <line class="stroked-icon-ink stroked-icon-large-stroke-light stroked-icon-stroke" x1="50" y1="14.5" x2="50" y2="56.241"/>
+      <line class="stroked-icon-large-stroke-light stroked-icon-stroke stroked-icon-accent" x1="81" y1="47.25" x2="81" y2="92"/>
+      <line class="stroked-icon-ink stroked-icon-large-stroke-light stroked-icon-stroke" x1="81" y1="11" x2="81" y2="47.25"/>
+    </g>
+  </g>
+  <path class="stroked-icon-ink stroked-icon-large-stroke-medium stroked-icon-stroke" d="M59.3198,92c2.3852-2.3851,3.8604-5.6802,3.8604-9.3198,0-7.2792-5.901-13.1802-13.1802-13.1802s-13.1802,5.901-13.1802,13.1802c0,3.6396,1.4752,6.9347,3.8604,9.3198"/>
+  <circle class="stroked-icon-accent-fill" cx="40.6802" cy="92" r="3"/>
+  <polyline class="stroked-icon-large-stroke-heavy stroked-icon-stroke stroked-icon-accent" points="81 37.25 91 47.25 71 47.25"/>
+  <polyline class="stroked-icon-large-stroke-heavy stroked-icon-stroke stroked-icon-accent" points="40.0664 16.1836 50 6.25 60.0664 16.3164"/>
+  <polyline class="stroked-icon-large-stroke-heavy stroked-icon-stroke stroked-icon-accent" points="29 47.25 9 47.25 19 37.25"/>
+</svg>

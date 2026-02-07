@@ -3,24 +3,24 @@
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
     <defs>
         <style>
-            .st0 {
+            .dynamic-stroke-main {
                 stroke: var(--ink-color, #000);
                 stroke-width: 4.5px;
             }
 
-            .st0, .st1 {
+            .dynamic-stroke-main, .dynamic-stroke-accent {
                 fill: none;
                 stroke-linecap: round;
                 stroke-linejoin: round;
             }
 
-            .st1 {
+            .dynamic-stroke-accent {
                 stroke: var(--highlight-color, #000);
                 stroke-width: 2px;
             }
         </style>
     </defs>
-    <circle r="10" cx="50" cy="50" class="st0"></circle>
-    <circle r="27.5" cx="50" cy="50" class="st1 stroke-color-animation"></circle>
-    <circle r="45" cx="50" cy="50" class="st0"></circle>
+    <circle r="10" cx="50" cy="50" class="dynamic-stroke-main"></circle>
+    <circle r="27.5" cx="50" cy="50" class="dynamic-stroke-accent stroke-color-animation"></circle>
+    <circle r="45" cx="50" cy="50" class="dynamic-stroke-main"></circle>
 </svg>

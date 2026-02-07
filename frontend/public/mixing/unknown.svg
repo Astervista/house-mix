@@ -3,23 +3,23 @@
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
   <defs>
     <style>
-      .st0 {
+      .dynamic-stroke-main {
         stroke: var(--ink-color, #000);
         stroke-width: 4.5px;
       }
 
-      .st0, .st1 {
+      .dynamic-stroke-main, .dynamic-stroke-accent {
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
 
-      .st1 {
+      .dynamic-stroke-accent {
         stroke: var(--highlight-color, #000);
         stroke-width: 2px;
       }
     </style>
   </defs>
-  <path class="st0" d="M44.775,76.499l-2.339-5.847c-1.815-4.536.497-9.671,5.096-11.32l12.229-4.385v.002c9.665-3.466,16.578-12.708,16.578-23.565,0-13.822-11.205-25.027-25.027-25.027s-25.027,11.205-25.027,25.027c0,3.936.908,7.659,2.527,10.972"/>
-  <circle class="st1 stroke-color-animation" cx="50" cy="89.56" r="4.083"/>
+  <path class="dynamic-stroke-main" d="M44.775,76.499l-2.339-5.847c-1.815-4.536.497-9.671,5.096-11.32l12.229-4.385v.002c9.665-3.466,16.578-12.708,16.578-23.565,0-13.822-11.205-25.027-25.027-25.027s-25.027,11.205-25.027,25.027c0,3.936.908,7.659,2.527,10.972"/>
+  <circle class="dynamic-stroke-accent stroke-color-animation" cx="50" cy="89.56" r="4.083"/>
 </svg>

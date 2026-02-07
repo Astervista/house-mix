@@ -40,6 +40,7 @@
                     [matMenuTriggerFor]="getMenu(element.id)"
                     (click)="onElementClick(element)">
                     <mat-icon
+                        aria-hidden="false"
                         [matBadge]="element.badge == false ? null : (element.badge == true ? 1 : element.badge)"
                         [matBadgeSize]="element.badge == true ? 'small' : 'large'">{{ element.icon }}</mat-icon>
                 </button>

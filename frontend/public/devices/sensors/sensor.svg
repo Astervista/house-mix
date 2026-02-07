@@ -3,24 +3,24 @@
 <svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
   <defs>
     <style>
-      .st0 {
+      .dynamic-stroke-main {
         stroke: var(--ink-color, #000);
         stroke-width: 4.5px;
       }
 
-      .st0, .st1 {
+      .dynamic-stroke-main, .dynamic-stroke-accent {
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
       }
 
-      .st1 {
+      .dynamic-stroke-accent {
         stroke: var(--highlight-color, #000);
         stroke-width: 2px;
       }
     </style>
   </defs>
-  <path class="st0" d="M77.077,29.588c0,15.207-12.536,27.486-27.838,27.067-14.749-.404-26.316-12.876-26.316-27.63v-6.687h61.358c2.596,0,4.7-2.104,4.7-4.7V7.484s-77.962,0-77.962,0v10.154c0,2.596,2.104,4.7,4.7,4.7h0"/>
-  <path class="st1 stroke-color-animation" d="M83.43,79.66c-9.56,6.41-21.06,10.14-33.43,10.14s-23.87-3.73-33.43-10.14"/>
-  <path class="st1 stroke-color-animation" d="M24.87,67.23c7.18,4.81,15.83,7.61,25.13,7.61s17.95-2.8,25.13-7.61"/>
+  <path class="dynamic-stroke-main" d="M77.077,29.588c0,15.207-12.536,27.486-27.838,27.067-14.749-.404-26.316-12.876-26.316-27.63v-6.687h61.358c2.596,0,4.7-2.104,4.7-4.7V7.484s-77.962,0-77.962,0v10.154c0,2.596,2.104,4.7,4.7,4.7h0"/>
+  <path class="dynamic-stroke-accent stroke-color-animation" d="M83.43,79.66c-9.56,6.41-21.06,10.14-33.43,10.14s-23.87-3.73-33.43-10.14"/>
+  <path class="dynamic-stroke-accent stroke-color-animation" d="M24.87,67.23c7.18,4.81,15.83,7.61,25.13,7.61s17.95-2.8,25.13-7.61"/>
 </svg>

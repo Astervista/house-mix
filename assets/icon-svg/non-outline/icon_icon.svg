@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .stroked-icon-icon-masked {
+        mask: url(#stroked-icon-icon-mask);
+      }
+      
+      .stroked-icon-accent {
+        stroke: var(--highlight-color, #f46023);
+      }
+      
+      .stroked-icon-stroke {
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      
+      .stroked-icon-icon-stroke-heavy {
+        stroke-width: 12px;
+      }
+      
+      .stroked-icon-icon-stroke-light {
+        stroke-width: 11px;
+      }
+      
+      .stroked-icon-mask-stroke {
+        stroke: #000;
+      }
+      
+      .stroked-icon-icon-mask-stroke, .stroked-icon-icon-mask-correction {
+        stroke-width: 22px;
+      }
+      
+      .stroked-icon-mask-back {
+        fill: #fff;
+      }
+      
+      .stroked-icon-icon-mask-correction {
+        stroke: #fff;
+      }
+      
+      .stroked-icon-accent-fill {
+        fill: var(--highlight-color, #f46023);
+      }
+      
+      .stroked-icon-ink {
+        stroke: var(--ink-color, #eeeeee);
+      }
+    </style>
+    <mask id="stroked-icon-icon-mask" x="-2.5" y="-3.3072" width="105" height="103.3072" maskUnits="userSpaceOnUse">
+      <g>
+        <rect class="stroked-icon-mask-back" width="100" height="100"/>
+        <polyline class="stroked-icon-icon-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="36.5 22 50 8.5 63.5 22"/>
+        <rect class="stroked-icon-icon-mask-correction stroked-icon-stroke stroked-icon-mask-stroke" x="10.8975" y="7.6928" width="20.375" height="25.8749"/>
+        <rect class="stroked-icon-icon-mask-correction stroked-icon-stroke stroked-icon-mask-stroke" x="69.7724" y="7.6928" width="20.375" height="25.8749"/>
+        <polyline class="stroked-icon-icon-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="29.7725 50 8.5 50 22 36.5"/>
+        <polyline class="stroked-icon-icon-mask-stroke stroked-icon-stroke stroked-icon-mask-stroke" points="78 36.5 91.5 50 69.7724 50"/>
+      </g>
+    </mask>
+  </defs>
+  <g class="stroked-icon-icon-masked">
+    <g>
+      <line class="stroked-icon-icon-stroke-heavy stroked-icon-stroke stroked-icon-accent" x1="22" y1="50" x2="22" y2="89"/>
+      <line class="stroked-icon-ink stroked-icon-icon-stroke-heavy stroked-icon-stroke" x1="22" y1="11" x2="22" y2="50"/>
+      <line class="stroked-icon-ink stroked-icon-icon-stroke-heavy stroked-icon-stroke" x1="50" y1="14.5" x2="50" y2="56.241"/>
+      <line class="stroked-icon-icon-stroke-heavy stroked-icon-stroke stroked-icon-accent" x1="78" y1="50" x2="78" y2="89"/>
+      <line class="stroked-icon-ink stroked-icon-icon-stroke-heavy stroked-icon-stroke" x1="78" y1="11" x2="78" y2="50"/>
+    </g>
+  </g>
+  <path class="stroked-icon-ink stroked-icon-icon-stroke-light stroked-icon-stroke" d="M57.8896,89.5c2.0191-2.0191,3.268-4.8085,3.268-7.8896,0-6.1622-4.9954-11.1576-11.1576-11.1576s-11.1576,4.9954-11.1576,11.1576c0,3.0811,1.2489,5.8705,3.268,7.8896"/>
+  <circle class="stroked-icon-accent-fill" cx="42.1104" cy="89.5" r="5.5"/>
+  <polyline class="stroked-icon-icon-stroke-light stroked-icon-stroke stroked-icon-accent" points="35.5 50 8.5 50 22 36.5"/>
+  <polyline class="stroked-icon-icon-stroke-light stroked-icon-stroke stroked-icon-accent" points="78 36.5 91.5 50 64.5 50"/>
+  <polyline class="stroked-icon-icon-stroke-light stroked-icon-stroke stroked-icon-accent" points="36.5 22 50 8.5 63.5 22"/>
+</svg>
