@@ -300,12 +300,36 @@
                                         />
                                     } @else {
 
-                                        @if (output.type == DatumType.NUMBER) {
+                                        @if ((output.type == DatumType.NUMBER) || (output.type == DatumType.STRING)) {
                                             <text
                                                 class="node-external-output-name node-external-output-constant"
                                                 [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
                                                 [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
                                                 Value: {{ constantSource.sourceValue }}
+                                            </text>
+                                        } @else if (output.type == DatumType.COLOR) {
+                                            @let color = Datum.getValueFromUnknownAndType(constantSource.sourceValue, output.type);
+                                            <rect
+                                                [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.COLOR_INPUT_SQUARE_SIZE / 2"
+                                                [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25"
+                                                [attr.width]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                [attr.height]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                rx="5px"
+                                                ry="5px"
+                                                stroke="var(--mat-sys-on-background)"
+                                                stroke-width="2"
+                                                [style.fill]="color?.toHEX()"></rect>
+                                            <text
+                                                class="node-external-output-name node-external-output-constant"
+                                                [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.COLOR_INPUT_SQUARE_SIZE  + 7">
+                                                @if (color) {
+                                                    @if (color.base == DatumTypeColorBase.XY) {
+                                                        XY: {{ color.x }}, {{ color.y }}
+                                                    } @else {
+                                                        RGB: {{ color.r }}, {{ color.g }}, {{ color.b }}
+                                                    }
+                                                }
                                             </text>
                                         } @else if (output.type == DatumType.DATE || output.type == DatumType.TIME || output.type == DatumType.DATE_TIME) {
                                             @let format = getDateDisplayFormat(output.type);
@@ -521,12 +545,37 @@
                                                         d="M120-280v-80h80v80h-80Zm0-160v-80h80v80h-80Zm0-160v-80h80v80h-80Zm160 480v-80h80v80h-80Zm0-640v-80h80v80h-80Zm160 0v-80h80v80h-80Zm60 640-56-56 142-142-142-142 56-56 142 142 142-142 56 56-142 142 142 142-56 56-142-142-142 142Zm100-640v-80h80v80h-80Zm160 160v-80h80v80h-80ZM120-760v-80h80v80h-80Zm720 0h-80v-80h80v80ZM120-120v-80h80v80h-80Z"
                                                     />
                                                 } @else {
-                                                    @if (input.type == DatumType.NUMBER) {
+
+                                                    @if ((input.type == DatumType.NUMBER) || (input.type == DatumType.STRING)) {
                                                         <text
                                                             class="node-connection-name node-input-constant"
                                                             [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
                                                             [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
                                                             Value: {{ constantSource.sourceValue }}
+                                                        </text>
+                                                    } @else if (input.type == DatumType.COLOR) {
+                                                        @let color = Datum.getValueFromUnknownAndType(constantSource.sourceValue, input.type);
+                                                        <rect
+                                                            [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.COLOR_INPUT_SQUARE_SIZE / 2"
+                                                            [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25"
+                                                            [attr.width]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                            [attr.height]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                            rx="5px"
+                                                            ry="5px"
+                                                            stroke="var(--mat-sys-on-background)"
+                                                            stroke-width="2"
+                                                            [style.fill]="color?.toHEX()"></rect>
+                                                        <text
+                                                            class="node-connection-name node-input-constant"
+                                                            [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                            [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.COLOR_INPUT_SQUARE_SIZE  + 7">
+                                                            @if (color) {
+                                                                @if (color.base == DatumTypeColorBase.XY) {
+                                                                    XY: {{ color.x?.toFixed(3) }}, {{ color.y?.toFixed(3) }}
+                                                                } @else {
+                                                                    RGB: {{ color.r }}, {{ color.g }}, {{ color.b }}
+                                                                }
+                                                            }
                                                         </text>
                                                     } @else if (input.type == DatumType.DATE || input.type == DatumType.TIME || input.type == DatumType.DATE_TIME) {
                                                         @let format = input.type == DatumType.DATE ? "yyyy-MM-dd" : (input.type == DatumType.TIME ? "HH:mm:ss" : "yyyy-MM-dd HH:mm:ss");

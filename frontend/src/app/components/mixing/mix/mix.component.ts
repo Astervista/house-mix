@@ -4,7 +4,7 @@ import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
 import {firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
-import {Datum, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
+import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
 import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
@@ -30,7 +30,7 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
 
 @Component({
                selector:    'house-mix-mix',
-               imports: [
+               imports:     [
                    DatePipe,
                    DynamicSvgComponent,
                    MatButton,
@@ -523,6 +523,8 @@ export class MixComponent implements AfterViewInit {
                 break;
             }
             case DatumType.NUMBER:
+            case DatumType.STRING:
+            case DatumType.COLOR:
             case DatumType.TIME:
             case DatumType.DATE:
             case DatumType.DATE_TIME: {
@@ -777,7 +779,7 @@ export class MixComponent implements AfterViewInit {
                 if (this.mixBackups != null) {
                     toBeSavedBackup               = this.mixBackups.editingBackup;
                     this.mixBackups.editingBackup = null;
-                    SAVE_BUTTON.badge = false;
+                    SAVE_BUTTON.badge             = false;
                 }
                 SAVE_BUTTON.loading = true;
                 if (mix != null && position != null) {
@@ -798,7 +800,7 @@ export class MixComponent implements AfterViewInit {
                         })
                         .catch((error: unknown) => {
                             SAVE_BUTTON.loading = false;
-                            SAVE_BUTTON.badge = true;
+                            SAVE_BUTTON.badge   = true;
                             if (this.mixBackups != null) {
                                 this.saveBackups();
                             }
@@ -924,6 +926,7 @@ export class MixComponent implements AfterViewInit {
     protected readonly getColorVarNameForType: (type: DatumType) => string = getColorVarNameForType;
     protected readonly ConnectionSourceType: typeof ConnectionSourceType   = ConnectionSourceType;
     protected readonly DatumType: typeof DatumType                         = DatumType;
+    protected readonly DatumTypeColorBase: typeof DatumTypeColorBase       = DatumTypeColorBase;
     protected readonly Datum: typeof Datum                                 = Datum;
     protected readonly ELABORATION_NODE_DISPLAY_NAME                       = ELABORATION_NODE_DISPLAY_NAME;
     protected readonly LoadingStatus                                       = LoadingStatus;
@@ -974,7 +977,7 @@ const TOOLBAR_TITLE: ToolbarTitle = {
 };
 
 
-const BACKUP_BUTTON: ToolbarButton           = {
+const BACKUP_BUTTON: ToolbarButton = {
     type:  ToolBarElementType.BUTTON,
     icon:  'history',
     id:    ToolbarAction.BACKUPS,
@@ -982,7 +985,7 @@ const BACKUP_BUTTON: ToolbarButton           = {
     order: 5
 };
 
-const SAVE_BUTTON: ToolbarButton             = {
+const SAVE_BUTTON: ToolbarButton = {
     type:  ToolBarElementType.BUTTON,
     icon:  'save',
     id:    ToolbarAction.SAVE,

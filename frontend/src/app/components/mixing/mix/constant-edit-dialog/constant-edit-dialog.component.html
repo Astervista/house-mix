@@ -1,11 +1,23 @@
 <h2 mat-dialog-title>{{ getTitle() }}</h2>
 <mat-dialog-content>
-    <p>Change value{{ this.data.datumName == null ? '' : ` of "${this.data.datumName}"`}}</p>
+    <p>Change value{{ this.data.datumName == null ? '' : ` of "${this.data.datumName}"` }}</p>
     @if (this.data.type == DatumType.NUMBER) {
         <mat-form-field>
             <mat-label>Value</mat-label>
             <input matInput type="number" [formControl]="numberFormControl">
         </mat-form-field>
+    }
+    @if (this.data.type == DatumType.STRING) {
+        <mat-form-field>
+            <mat-label>Value</mat-label>
+            <input matInput [formControl]="stringFormControl">
+        </mat-form-field>
+    }
+    @if (this.data.type == DatumType.COLOR) {
+        <house-mix-color-picker
+            [formControl]="colorFormControl">
+
+        </house-mix-color-picker>
     }
     @if (this.data.type == DatumType.BOOLEAN) {
         <mat-checkbox

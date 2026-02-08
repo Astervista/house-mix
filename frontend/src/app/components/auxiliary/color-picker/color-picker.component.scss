@@ -1,0 +1,118 @@
+@use "dimensions";
+
+:host {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: dimensions.$margin-large;
+}
+
+.square-container,
+.square-container>svg,
+.square-canvas {
+    width: 200px;
+    height: 200px;
+}
+
+.vertical-container,
+.vertical-canvas {
+    width: 20px;
+    height: 200px;
+}
+
+.vertical-container,
+.square-container {
+    position: relative;
+}
+
+.square-container>svg,
+.vertical-canvas,
+.square-canvas {
+    position: absolute;
+    x: 0;
+    y: 0;
+    border-radius: 5px;
+    pointer-events: none;
+}
+
+.square-selector {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    border: solid 2px var(--mat-sys-on-background);
+    border-radius: 10px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: transform 0.25s ease-in-out, width 0.25s ease-in-out, height 0.25s ease-in-out;
+
+    &.dragging {
+        transform: translate(-50%, -120%);
+        width: 40px;
+        height: 40px;
+    }
+}
+
+.vertical-selector {
+    position: absolute;
+    width: 27px;
+    height: 8px;
+    border: solid 2px var(--mat-sys-on-background);
+    border-radius: 10px;
+    transform: translate(-50%, -50%);
+    left: 50%;
+    pointer-events: none;
+    transition: transform 0.25s ease-in-out, width 0.25s ease-in-out, height 0.25s ease-in-out;
+
+    &.dragging {
+        transform: translate(-50%, -120%);
+        width: 40px;
+        height: 40px;
+    }
+}
+
+.drag-scrim {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
+}
+
+
+.color-display {
+    display: block;
+    align-self: stretch;
+    height: 30px;
+    border-radius: 5px;
+    margin: 5px;
+
+    outline: solid 2px var(--house-mix-border-color);
+    outline-offset: 3px;
+}
+
+.canvas-container {
+    display: flex;
+    justify-content: space-around;
+    gap: dimensions.$margin-mlarge;
+    margin-bottom: 15px;
+}
+
+.inputs {
+    display: flex;
+    gap: dimensions.$margin-medium;
+    justify-content: space-around;
+
+    >* {
+        flex-grow: 1;
+        max-width: 80px;
+
+        &.wide {
+            max-width: initial;
+        }
+    }
+}
+
+mat-chip-listbox {
+    justify-content: center;
+}

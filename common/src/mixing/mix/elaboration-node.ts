@@ -126,11 +126,15 @@ export class ElaborationNodeAllTypesTest extends ElaborationNode {
     public readonly inputs: readonly Datum[]  = [
         new Datum("Boolean", DatumType.BOOLEAN, false),
         new Datum("Number", DatumType.NUMBER, false),
+        new Datum("String", DatumType.STRING, false),
+        new Datum("Color", DatumType.COLOR, false),
         new Datum("Time", DatumType.TIME, false),
         new Datum("Date", DatumType.DATE, false),
         new Datum("Date Time", DatumType.DATE_TIME, false),
         new Datum("Boolean?", DatumType.BOOLEAN, true),
         new Datum("Number?", DatumType.NUMBER, true),
+        new Datum("String?", DatumType.STRING, true),
+        new Datum("Color?", DatumType.COLOR, true),
         new Datum("Time?", DatumType.TIME, true),
         new Datum("Date?", DatumType.DATE, true),
         new Datum("Date Time?", DatumType.DATE_TIME, true)
@@ -138,11 +142,15 @@ export class ElaborationNodeAllTypesTest extends ElaborationNode {
     public readonly outputs: readonly Datum[] = [
         new Datum("Boolean", DatumType.BOOLEAN, false),
         new Datum("Number", DatumType.NUMBER, false),
+        new Datum("String", DatumType.STRING, false),
+        new Datum("Color", DatumType.COLOR, false),
         new Datum("Time", DatumType.TIME, false),
         new Datum("Date", DatumType.DATE, false),
         new Datum("Date Time", DatumType.DATE_TIME, false),
         new Datum("Boolean?", DatumType.BOOLEAN, true),
         new Datum("Number?", DatumType.NUMBER, true),
+        new Datum("String?", DatumType.STRING, true),
+        new Datum("Color?", DatumType.COLOR, true),
         new Datum("Time?", DatumType.TIME, true),
         new Datum("Date?", DatumType.DATE, true),
         new Datum("Date Time?", DatumType.DATE_TIME, true)

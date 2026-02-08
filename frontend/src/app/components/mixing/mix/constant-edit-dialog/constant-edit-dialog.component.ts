@@ -1,7 +1,7 @@
 import {Component, Inject} from '@angular/core';
 import {MatButton} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
-import {Datum, DatumType} from '@common/mixing/mix/datum';
+import {Datum, DatumType, DatumTypeColor, DatumTypeColorBase} from '@common/mixing/mix/datum';
 import {MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {MatTimepicker, MatTimepickerInput, MatTimepickerToggle} from '@angular/material/timepicker';
@@ -12,6 +12,7 @@ import {provideLuxonDateAdapter} from '@angular/material-luxon-adapter';
 import {DateTime} from 'luxon';
 import {MatDialogComponent} from '../../../../utils/better-mat-dialog';
 import {MatCheckbox} from '@angular/material/checkbox';
+import {ColorPickerComponent} from '../../../auxiliary/color-picker/color-picker.component';
 
 export const DATE_FORMAT = {
     parse:   {
@@ -35,7 +36,6 @@ export const DATE_FORMAT = {
                    MatDialogActions,
                    MatDialogContent,
                    MatDialogTitle,
-
                    MatLabel,
                    MatFormField,
                    MatInput,
@@ -47,7 +47,8 @@ export const DATE_FORMAT = {
                    MatNativeDateModule,
                    MatHint,
                    MatIcon,
-                   MatCheckbox
+                   MatCheckbox,
+                   ColorPickerComponent
                ],
                providers:   [
                    // Luxon can be provided globally to your app by adding `provideLuxonDateAdapter`
@@ -66,6 +67,25 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
     ) {
         super(data, matDialogRef);
         switch (data.type) {
+            case DatumType.STRING: {
+                const string       = (data.value as string | null) ?? Datum.getDefaultForType(data.type) as string;
+                this.selectedValue = string;
+                this.stringFormControl.setValue(string);
+                this.stringFormControl.valueChanges.subscribe(value => {
+                    this.selectedValue = value;
+                });
+                break;
+            }
+            case DatumType.COLOR: {
+                const color         = (data.value as DatumTypeColor | null) ?? Datum.getDefaultForType(data.type) as DatumTypeColor;
+                this.colorFormControl.setValue(color);
+                this.colorFormControl.valueChanges.subscribe(value => {
+                    if (value != null) {
+                        this.selectedValue = value;
+                    }
+                });
+                break;
+            }
             case DatumType.NUMBER: {
                 const number       = (data.value as number | null) ?? Datum.getDefaultForType(data.type) as number;
                 this.selectedValue = number;
@@ -164,6 +184,8 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
 
     protected booleanFormControl: FormControl<boolean | null> = new FormControl<boolean>(false);
     protected numberFormControl: FormControl<number | null> = new FormControl<number>(0);
+    protected stringFormControl: FormControl<string | null> = new FormControl<string>("");
+    protected colorFormControl: FormControl<DatumTypeColor | null> = new FormControl<DatumTypeColor>(new DatumTypeColor(DatumTypeColorBase.RGB, 255, 255, 255));
     protected timeFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
     protected dateFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
 
@@ -174,6 +196,12 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
 
     protected getTitle(): string {
         switch (this.data.type) {
+            case DatumType.STRING: {
+                return 'Set string value';
+            }
+            case DatumType.COLOR: {
+                return 'Set color';
+            }
             case DatumType.NUMBER: {
                 return 'Set numerical value';
             }
@@ -191,6 +219,16 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
             }
         }
     }
+
+    protected get selectedColor(): DatumTypeColor | null {
+        if (this.selectedValue instanceof DatumTypeColor) {
+            return this.selectedValue;
+        } else {
+            return null;
+        }
+    }
+
+    protected readonly DatumTypeColorBase = DatumTypeColorBase;
 }
 
 export interface ConstantEditDialogData {

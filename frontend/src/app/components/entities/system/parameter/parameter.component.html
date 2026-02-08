@@ -39,6 +39,20 @@
         } @else if (parameter.datum.type == DatumType.DATE || parameter.datum.type == DatumType.TIME ||parameter.datum.type == DatumType.DATE_TIME) {
             @let format = getDateDisplayFormat(parameter.datum.type);
             <span class="value">{{ Datum.getValueFromUnknownAndType(parameter.value, parameter.datum.type)  | date:format  }}</span>
+        } @else if (parameter.datum.type == DatumType.COLOR) {
+            @let color = Datum.getValueFromUnknownAndType(parameter.value, parameter.datum.type);
+            @if (color) {
+                <span
+                    [style.background-color]="color.toHEX()"
+                    class="color-swatch"></span>
+                @if (color.base == DatumTypeColorBase.XY) {
+                    <span class="value">XY: {{ color.x }}, {{ color.y }}</span>
+                } @else {
+                    <span class="value">RGB: {{ color.r }}, {{ color.g }}, {{ color.b }}</span>
+                }
+            } @else {
+                <span class="value">Null</span>
+            }
         } @else {
             <span class="value">{{ parameter.value }}</span>
         }

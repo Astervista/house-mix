@@ -1,0 +1,120 @@
+<div class="drag-scrim"
+     [style.display]="dragging == null ? 'none' : 'block'"
+     (mousemove)="scrimMouseMove($event); $event.stopPropagation();"
+     (mouseup)="scrimMouseUp($event); $event.stopPropagation();">
+
+</div>
+<span class="color-display"
+      [style.background-color]="this.selectedColor.toCSS()"></span>
+<mat-form-field>
+    <mat-label>Color space</mat-label>
+    <mat-select
+        [formControl]="colorSpaceFormControl">
+        <mat-option [value]="DatumTypeColorBase.XY">XY</mat-option>
+        <mat-option [value]="DatumTypeColorBase.RGB">RGB</mat-option>
+    </mat-select>
+</mat-form-field>
+<div class="canvas-container">
+    <div
+        class="square-container"
+        [style.pointer-events]="disabled ? 'none' : 'all'"
+        (mousedown)="squareMouseDown($event); $event.stopPropagation();">
+        <canvas #squareCanvas class="square-canvas"></canvas>
+        @if (this._base == DatumTypeColorBase.XY) {
+            <svg viewBox="0 0 100 100">
+                <defs>
+                    <style>
+                        .cls-1 {
+                            fill: rgba(255, 255, 255, 0.6);
+                        }
+                    </style>
+                </defs>
+                <path class="cls-1"
+                      d="M0,0v37.5668c0-13.2499,2.7753-18.5833,5.5669-20.2916,2.7917-1.7083,6.6667-3.1666,28.2916,15.6666,21.6249,18.8333,41.9166,40.3333,41.9166,40.3333l-57.6665,26.7249h81.8914V0H0Z"/>
+                <path class="cls-1" d="M0,37.5668v62.4332h18.1086C12.3586,98.8167,0,70.1501,0,37.5668Z"/>
+            </svg>
+        }
+        <span class="square-selector"
+              [class.dragging]="dragging == 'SQUARE'"
+              [style.background-color]="this.selectedColor.toCSS()"
+              [style.border-color]="this.selectedColor.bw().negative().toCSS()"
+              [style.left.%]="squareSelectorPosition.x * 100"
+              [style.top.%]="squareSelectorPosition.y * 100">
+        </span>
+    </div>
+    <div
+        class="vertical-container"
+        [style.position]="this._base == DatumTypeColorBase.RGB ? '' : 'absolute'"
+        [style.visibility]="this._base == DatumTypeColorBase.RGB ? 'visible' : 'hidden'"
+        [style.pointer-events]="this._base == DatumTypeColorBase.RGB && !disabled ? 'all' : 'none'"
+        (mousedown)="verticalMouseDown($event); $event.stopPropagation();">
+        <canvas #verticalCanvas
+                class="vertical-canvas">
+
+        </canvas>
+        <span class="vertical-selector"
+              [class.dragging]="dragging == 'VERT'"
+              [style.background-color]="`hsl(${this.h * 360}, 100%, 50%)`"
+              [style.border-color]="Color.hsl(this.h, 1, 0.5).bw().negative().toCSS()"
+              [style.top.%]="h * 100">
+        </span>
+    </div>
+</div>
+@if (this._base == DatumTypeColorBase.RGB) {
+    <mat-chip-listbox [formControl]="numberInputsFormControl">
+        <mat-chip-option [value]="NumberInput.RGB">RGB</mat-chip-option>
+        <mat-chip-option [value]="NumberInput.HEX">Hex</mat-chip-option>
+        <mat-chip-option [value]="NumberInput.HSB">HSV</mat-chip-option>
+        <mat-chip-option [value]="NumberInput.HSL">HSL</mat-chip-option>
+    </mat-chip-listbox>
+}
+<div class="inputs">
+    @if (firstInputLabel != null) {
+        <mat-form-field>
+            <mat-label>{{ firstInputLabel }}</mat-label>
+            <input
+                matInput
+                type="number"
+                min="0"
+                [step]="firstInputMax == 1 ? 0.01 : 1"
+                [max]="firstInputMax"
+                [formControl]="firstInputFormControl">
+            <mat-error>0&nbsp;~&nbsp;{{firstInputMax}}</mat-error>
+        </mat-form-field>
+    }
+    @if (secondInputLabel != null) {
+        <mat-form-field>
+            <mat-label>{{ secondInputLabel }}</mat-label>
+            <input
+                matInput
+                type="number"
+                min="0"
+                [max]="secondInputMax"
+                [step]="secondInputMax == 1 ? 0.01 : 1"
+                [formControl]="secondInputFormControl">
+            <mat-error>0&nbsp;~&nbsp;{{secondInputMax}}</mat-error>
+        </mat-form-field>
+    }
+    @if (thirdInputLabel != null) {
+        <mat-form-field>
+            <mat-label>{{ thirdInputLabel }}</mat-label>
+            <input
+                matInput
+                type="number"
+                min="0"
+                [max]="thirdInputMax"
+                [formControl]="thirdInputFormControl">
+            <mat-error>0&nbsp;~&nbsp;{{thirdInputMax}}</mat-error>
+        </mat-form-field>
+    }
+    @if (stringInputLabel != null) {
+        <mat-form-field class="wide">
+            <mat-label>{{ stringInputLabel }}</mat-label>
+            <span matTextPrefix>#&nbsp;</span>
+            <input
+                matInput
+                [formControl]="stringInputFormControl">
+            <mat-error>Must be a 6-digit hex color</mat-error>
+        </mat-form-field>
+    }
+</div>

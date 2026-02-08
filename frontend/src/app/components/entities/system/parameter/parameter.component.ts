@@ -3,7 +3,7 @@ import {getDateDisplayFormat, TOOLTIP_TIMEOUT} from '../../../../utils/constants
 import { SystemParameter } from "@common/system/parameter/system-parameter";
 import {MatTooltip} from '@angular/material/tooltip';
 import {DATUM_TYPE_DISPLAY, getColorVarNameForType, MEASURES} from '../../../mixing/constants';
-import {Datum, DatumType} from '@common/mixing/mix/datum';
+import {Datum, DatumType, DatumTypeColorBase} from '@common/mixing/mix/datum';
 import {DatePipe} from '@angular/common';
 
 @Component({
@@ -28,4 +28,5 @@ export class ParameterComponent {
     protected readonly DatumType = DatumType;
     protected readonly Datum    = Datum;
     protected readonly MEASURES = MEASURES;
+    protected readonly DatumTypeColorBase = DatumTypeColorBase;
 }

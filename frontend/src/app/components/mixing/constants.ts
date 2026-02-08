@@ -19,6 +19,8 @@ import {Point} from '@angular/cdk/drag-drop';
 export const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
     [DatumType.BOOLEAN]:   'Boolean',
     [DatumType.NUMBER]:    'Number',
+    [DatumType.STRING]:    'Text',
+    [DatumType.COLOR]:    'Color',
     [DatumType.TIME]:      'Time',
     [DatumType.DATE]:      'Date',
     [DatumType.DATE_TIME]: 'Date and Time'
@@ -127,6 +129,7 @@ if (isDevMode()) {
 export const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
     GROUP:       'Group mixes output',
     SENSOR_DATA: 'Raw data from sensors',
+    SENSOR_UPDATE: 'Sensor update status',
     SENSOR:      'Sensor mixes outputs',
     SYSTEM:      'System',
     CENTER:      'Center mixes outputs'
@@ -200,5 +203,6 @@ export const MEASURES = {
     OUTPUT_HEIGHT:                    70,
     ADD_OUTPUT_HEIGHT:                50,
     OUTPUT_SPACING:                   10,
-    UNDERPASS_BORDER_WIDTH: 7.5
+    UNDERPASS_BORDER_WIDTH: 7.5,
+    COLOR_INPUT_SQUARE_SIZE: 15
 };

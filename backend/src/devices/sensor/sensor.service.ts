@@ -108,6 +108,10 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
                         // Cannot delete/edit dependency, it's used somewhere
                         throw new ConflictException(`Cannot delete/edit export ${change.datum.name}, it's used in a mix`);
                     }
+                    if (await this.mixService.dependencyExists(DatumOrigin.SENSOR_UPDATE, sensorToEdit.name, change.datum.name)) {
+                        // Cannot delete/edit dependency, it's used somewhere
+                        throw new ConflictException(`Cannot delete/edit export ${change.datum.name}, it's used in a mix`);
+                    }
                 }
                 for (const change of exposeChanges.filter(deletion => deletion.change === DatumChangeType.DELETED)) {
                     const index = sensorToEdit.exposes.findIndex(otherExpose => otherExpose.name == change.datum.name);
@@ -177,7 +181,8 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         }
         const result: LockedExposes[] = [];
         for (const exposes of sensor.exposes) {
-            const depending = await this.mixService.getDependingMixes(DatumOrigin.SENSOR_DATA, sensor.name, exposes.name);
+            const depending = await this.mixService.getDependingMixes([DatumOrigin.SENSOR_DATA, DatumOrigin.SENSOR_UPDATE], sensor.name, exposes.name);
+            
             if (depending.length > 0) {
                 const positions: MixPositionInfo[] = [];
                 for (const mix of depending) {

@@ -1,5 +1,6 @@
-import {IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, Type, ValidateNested} from "rest-decorators";
+import {IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Type, ValidateNested} from "rest-decorators";
 import {ElaborationNode} from "./elaboration-node";
+import {Color, ColorSpace} from "../../utils/color-convert";
 
 export class Datum {
     
@@ -33,6 +34,10 @@ export class Datum {
     
     public static getDefaultForType(type: DatumType): unknown {
         switch (type) {
+            case DatumType.STRING:
+                return "";
+            case DatumType.COLOR:
+                return new DatumTypeColor(DatumTypeColorBase.RGB, 255, 255, 255);
             case DatumType.BOOLEAN: {
                 return true;
             }
@@ -50,12 +55,18 @@ export class Datum {
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.BOOLEAN): boolean | null;
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.NUMBER): number | null;
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.TIME | DatumType.DATE | DatumType.DATE_TIME): Date | null;
+    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.COLOR): DatumTypeColor | null;
+    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.STRING): string | null;
     
-    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType): number | boolean | Date | null {
+    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType): number | boolean | Date | string | DatumTypeColor | null {
         if (sourceValue == null) {
             return null;
         }
         switch (type) {
+            case DatumType.STRING:
+                return sourceValue as string;
+            case DatumType.COLOR:
+                return sourceValue as DatumTypeColor;
             case DatumType.BOOLEAN: {
                 return sourceValue as boolean;
             }
@@ -75,6 +86,10 @@ export class Datum {
             return nullable;
         }
         switch (type) {
+            case DatumType.STRING:
+                return typeof value === "string";
+            case DatumType.COLOR:
+                return DatumTypeColor.checkObject(value);
             case DatumType.BOOLEAN:
                 return typeof value === "boolean";
             case DatumType.NUMBER:
@@ -91,6 +106,10 @@ export class Datum {
             return nullable;
         }
         switch (type) {
+            case DatumType.STRING:
+                return typeof value === "string";
+            case DatumType.COLOR:
+                return DatumTypeColor.checkObject(value);
             case DatumType.BOOLEAN:
                 return typeof value === "boolean";
             case DatumType.NUMBER:
@@ -110,6 +129,10 @@ export class Datum {
             return null;
         }
         switch (type) {
+            case DatumType.STRING:
+                return value as string;
+            case DatumType.COLOR:
+                return DatumTypeColor.fromJSON(value as DatumTypeColorJSON);
             case DatumType.BOOLEAN: {
                 return value as boolean;
             }
@@ -132,6 +155,10 @@ export class Datum {
             return null;
         }
         switch (type) {
+            case DatumType.STRING:
+                return value as string;
+            case DatumType.COLOR:
+                return (value as DatumTypeColor).toJSON();
             case DatumType.BOOLEAN: {
                 return value as boolean;
             }
@@ -212,6 +239,8 @@ export class ExportedDatum extends Datum {
 export enum DatumType {
     BOOLEAN   = "BOOLEAN",
     NUMBER    = "NUMBER",
+    STRING    = "STRING",
+    COLOR     = "COLOR",
     TIME      = "TIME",
     DATE      = "DATE",
     DATE_TIME = "DATE_TIME"
@@ -237,11 +266,12 @@ export class DatumJSON {
 }
 
 export enum DatumOrigin {
-    GROUP  = "GROUP",
-    SENSOR = "SENSOR",
-    SENSOR_DATA = "SENSOR_DATA",
-    SYSTEM = "SYSTEM",
-    CENTER = "CENTER"
+    GROUP         = "GROUP",
+    SENSOR        = "SENSOR",
+    SENSOR_DATA   = "SENSOR_DATA",
+    SENSOR_UPDATE = "SENSOR_UPDATE",
+    SYSTEM        = "SYSTEM",
+    CENTER        = "CENTER"
 }
 
 export class ExportedDatumJSON extends DatumJSON {
@@ -316,5 +346,240 @@ export class DatumChangeJSON {
         this.change = change;
         this.datum  = datum;
     }
+    
+}
+
+export enum DatumTypeColorBase {
+    XY  = "XY",
+    RGB = "RGB"
+}
+
+export class DatumTypeColor {
+    
+    private _r?: number;
+    private _g?: number;
+    private _b?: number;
+    private _x?: number;
+    private _y?: number;
+    private _base: DatumTypeColorBase;
+    
+    constructor(base: DatumTypeColorBase.XY, x: number, y: number);
+    constructor(base: DatumTypeColorBase.RGB, r: number, g: number, b: number);
+    constructor(base: DatumTypeColorBase, valueA: number, valueB: number, valueC?: number) {
+        switch (base) {
+            case DatumTypeColorBase.XY:
+                this._x = valueA;
+                this._y = valueB;
+                break;
+            case DatumTypeColorBase.RGB:
+                this._r = valueA;
+                this._g = valueB;
+                this._b = valueC;
+                break;
+        }
+        this._base = base;
+    }
+    
+    public get base(): DatumTypeColorBase {
+        return this._base;
+    }
+    
+    public set base(newBase: DatumTypeColorBase) {
+        if (this._base != newBase) {
+            switch (newBase) {
+                case DatumTypeColorBase.XY: {
+                    if (this._r == undefined || this._g == undefined || this._b == undefined) {
+                        return;
+                    }
+                    const conversion = ColorSpace.sRGB.xyYFromColor(new Color(this._r, this._g, this._b, 1))
+                    this._x = conversion.x;
+                    this._y = conversion.y;
+                    this._r = undefined;
+                    this._g = undefined;
+                    this._b = undefined;
+                    break;
+                }
+                case DatumTypeColorBase.RGB: {
+                    if (this._x == undefined || this._y == undefined) {
+                        return;
+                    }
+                    const conversion = ColorSpace.sRGB.colorFromXY(this._x, this._y);
+                    this._r = conversion.r;
+                    this._g = conversion.g;
+                    this._b = conversion.b;
+                    this._x = undefined;
+                    this._y = undefined;
+                    break;
+                }
+            }
+        }
+    }
+    
+    public get r(): number | undefined {
+        return this._r;
+    }
+    
+    public get g(): number | undefined {
+        return this._g;
+    }
+    
+    public get b(): number | undefined {
+        return this._b;
+    }
+    
+    public get x(): number | undefined {
+        return this._x;
+    }
+    
+    public get y(): number | undefined {
+        return this._y;
+    }
+    
+    public setRGB(r: number, g: number, b: number): void {
+        this._base = DatumTypeColorBase.RGB;
+        this._r   = r;
+        this._g   = g;
+        this._b   = b;
+        this._x   = undefined;
+        this._y   = undefined;
+    }
+    
+    public setXY(x: number, y: number): void {
+        this._base = DatumTypeColorBase.XY;
+        this._x   = x;
+        this._y   = y;
+        this._r   = undefined;
+        this._g   = undefined;
+        this._b   = undefined;
+    }
+    
+    public toHEX(): string {
+        if (this.base == DatumTypeColorBase.RGB) {
+            const r = this.r ?? 255;
+            const g = this.g ?? 255;
+            const b = this.b ?? 255;
+            return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+        } else {
+            return ColorSpace.sRGB.colorFromXY(this.x ?? 0.33, this.y ?? 0.33).toHex();
+        }
+    }
+    
+    public toJSON(): DatumTypeColorJSON {
+        return {
+            r:    this._r,
+            g:    this._g,
+            b:    this._b,
+            x:    this._x,
+            y:    this._y,
+            base: this.base
+        };
+    }
+    
+    public static fromJSON(datumTypeColorJSON: DatumTypeColorJSON): DatumTypeColor {
+        switch (datumTypeColorJSON.base) {
+            case DatumTypeColorBase.XY:
+                if (
+                    datumTypeColorJSON.x == undefined
+                    || datumTypeColorJSON.y == undefined) {
+                    throw new Error("Wrong XY data for color");
+                }
+                return new DatumTypeColor(DatumTypeColorBase.XY, datumTypeColorJSON.x, datumTypeColorJSON.y);
+            case DatumTypeColorBase.RGB:
+                if (
+                    datumTypeColorJSON.r == undefined
+                    || datumTypeColorJSON.g == undefined
+                    || datumTypeColorJSON.b == undefined
+                ) {
+                    throw new Error("Wrong RGB data for color");
+                }
+                return new DatumTypeColor(DatumTypeColorBase.RGB, datumTypeColorJSON.r, datumTypeColorJSON.g, datumTypeColorJSON.b);
+        }
+    }
+    
+    public static checkObject(value: unknown): boolean {
+        if (typeof value === "object" && value != null) {
+            const objValue = value as {
+                r?: unknown;
+                g?: unknown;
+                b?: unknown;
+                x?: unknown;
+                y?: unknown;
+                base: unknown;
+            };
+            if (objValue.base == DatumTypeColorBase.RGB) {
+                if (
+                    objValue.r == undefined
+                    || objValue.g == undefined
+                    || objValue.b == undefined
+                ) {
+                    return false;
+                } else if (
+                    typeof objValue.r !== "number" || !isFinite(objValue.r)
+                    || typeof objValue.g !== "number" || !isFinite(objValue.g)
+                    || typeof objValue.b !== "number" || !isFinite(objValue.b)
+                ) {
+                    return false;
+                }
+                return true;
+            } else if (objValue.base == DatumTypeColorBase.XY) {
+                if (
+                    objValue.x == undefined
+                    || objValue.y == undefined
+                ) {
+                    return false;
+                } else if (
+                    typeof objValue.x !== "number" || !isFinite(objValue.x)
+                    || typeof objValue.y !== "number" || !isFinite(objValue.y)
+                ) {
+                    return false;
+                }
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+export class DatumTypeColorJSON {
+    
+    @IsNumber()
+    @IsOptional()
+    public r?: number;
+    
+    @IsNumber()
+    @IsOptional()
+    public g?: number;
+    
+    @IsNumber()
+    @IsOptional()
+    public b?: number;
+    
+    @IsNumber()
+    @IsOptional()
+    public x?: number;
+    
+    @IsNumber()
+    @IsOptional()
+    public y?: number;
+    
+    @IsEnum(DatumTypeColorBase)
+    public base: DatumTypeColorBase;
+    
+    constructor(
+        r: number,
+        g: number,
+        b: number,
+        x: number,
+        y: number,
+        base: DatumTypeColorBase
+    ) {
+        this.r    = r;
+        this.g    = g;
+        this.b    = b;
+        this.x    = x;
+        this.y    = y;
+        this.base = base;
+    }
+    
     
 }

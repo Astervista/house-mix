@@ -409,16 +409,27 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     ...timerData,
                     ...sensor
                         .exposes
-                        .map(exposed =>
-                                 new ExportedDatum(
-                                     exposed.name,
-                                     exposed.type,
-                                     exposed.nullable,
-                                     DatumOrigin.SENSOR_DATA,
-                                     sensor.name,
-                                     exposed.name,
-                                     sensor.displayName
-                                 ))
+                        .flatMap(exposed =>
+                                 [
+                                     new ExportedDatum(
+                                         exposed.name,
+                                         exposed.type,
+                                         exposed.nullable,
+                                         DatumOrigin.SENSOR_DATA,
+                                         sensor.name,
+                                         exposed.name,
+                                         sensor.displayName
+                                     ),
+                                     new ExportedDatum(
+                                         exposed.name,
+                                         DatumType.BOOLEAN,
+                                         false,
+                                         DatumOrigin.SENSOR_UPDATE,
+                                         sensor.name,
+                                         exposed.name,
+                                         sensor.displayName
+                                     ),
+                                 ])
                 ];
             } else { // MixTarget.GROUP
                 const group = await this.groupService.getGroupByName(position.groupName);
@@ -522,16 +533,28 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             results.push(
                 ...sensor
                     .exposes
-                    .map(exposed =>
-                             new ExportedDatum(
-                                 exposed.name,
-                                 exposed.type,
-                                 exposed.nullable,
-                                 DatumOrigin.SENSOR_DATA,
-                                 sensor.name,
-                                 exposed.name,
-                                 sensor.displayName
-                             )
+                    .flatMap(exposed =>
+                             [
+                                 new ExportedDatum(
+                                     exposed.name,
+                                     exposed.type,
+                                     exposed.nullable,
+                                     DatumOrigin.SENSOR_DATA,
+                                     sensor.name,
+                                     exposed.name,
+                                     sensor.displayName
+                                 ),
+                                 new ExportedDatum(
+                                     exposed.name,
+                                     DatumType.BOOLEAN,
+                                     false,
+                                     DatumOrigin.SENSOR_UPDATE,
+                                     sensor.name,
+                                     exposed.name,
+                                     sensor.displayName
+                                 )
+                             ]
+                                 
                     )
             );
             if (sensor.mix != null) {
@@ -727,20 +750,12 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SYSTEM));
                     break;
                 case DatumOrigin.CENTER:
-                    graph.addOrigin(DatumOrigin.CENTER);
-                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.CENTER, imp.originName));
-                    break;
-                case DatumOrigin.SENSOR_DATA:
-                    graph.addOrigin(DatumOrigin.SENSOR_DATA);
-                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR_DATA, imp.originName));
-                    break;
-                case DatumOrigin.GROUP:
-                    graph.addOrigin(DatumOrigin.GROUP);
-                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.GROUP, imp.originName));
-                    break;
                 case DatumOrigin.SENSOR:
-                    graph.addOrigin(DatumOrigin.SENSOR);
-                    dependencyObject.dependingOn.push(new MixingGraphDependency(DatumOrigin.SENSOR, imp.originName));
+                case DatumOrigin.SENSOR_DATA:
+                case DatumOrigin.SENSOR_UPDATE:
+                case DatumOrigin.GROUP:
+                    graph.addOrigin(imp.origin);
+                    dependencyObject.dependingOn.push(new MixingGraphDependency(imp.origin, imp.originName));
                     break;
             }
         }
@@ -773,15 +788,15 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     /**
      * Returns all the mixes that have an import depending on a specific external datum
      *
-     * @param {DatumOrigin} origin - The origin type of the dependency to check.
+     * @param {DatumOrigin} origins - The origin type of the dependency to check.
      * @param {string} originName - The name of the origin associated with the dependency.
      * @param {string} name - The single input name to check.
      * @return {Promise<Mix[]>} The depending mixes.
      */
-    public async getDependingMixes(origin: DatumOrigin, originName: string, name: string): Promise<Mix[]> {
+    public async getDependingMixes(origins: DatumOrigin[], originName: string, name: string): Promise<Mix[]> {
         const data = await this.data;
         return data.mixes.filter(mix =>
-                                     mix.imports.some(imp => imp.origin == origin && imp.originName == originName && imp.name == name)
+                                     mix.imports.some(imp => origins.includes(imp.origin) && imp.originName == originName && imp.name == name)
         );
     }
     
@@ -803,6 +818,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         for (const mix of data.mixes) {
             mix.renameImportOriginName(DatumOrigin.SENSOR, oldName, newName, newDisplayName);
             mix.renameImportOriginName(DatumOrigin.SENSOR_DATA, oldName, newName, newDisplayName);
+            mix.renameImportOriginName(DatumOrigin.SENSOR_UPDATE, oldName, newName, newDisplayName);
         }
         this.saveData();
     }
@@ -895,6 +911,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                        (
                            imp.origin == DatumOrigin.SENSOR_DATA
                            || imp.origin == DatumOrigin.SENSOR
+                           || imp.origin == DatumOrigin.SENSOR_UPDATE
                        )
                        && sensorNames.includes(imp.originName)
                    ) || (
@@ -906,6 +923,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                        (
                            imp.origin == DatumOrigin.SENSOR_DATA
                            || imp.origin == DatumOrigin.SENSOR
+                           || imp.origin == DatumOrigin.SENSOR_UPDATE
                        )
                        && sensorNames.includes(imp.originName)
                        && outputsToCheck.includes(imp.name)

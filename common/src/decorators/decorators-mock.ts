@@ -22,4 +22,5 @@ export const ValidateNested = makeFn();
 export const IsEnum = makeFn();
 export const IsBoolean = makeFn();
 export const IsString = makeFn();
+export const IsNumber = makeFn();
 export const Min = makeFn();

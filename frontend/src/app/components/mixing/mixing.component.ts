@@ -937,6 +937,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     ): SensorElementDirective | OriginElementDirective | GroupElementDirective | CenterElementDirective | null {
         switch (dependency.origin) {
             case DatumOrigin.SENSOR_DATA:
+            case DatumOrigin.SENSOR_UPDATE:
             case DatumOrigin.SYSTEM: {
                 return originElements.find(originElement => originElement.originElement == dependency.origin) ?? null;
             }
@@ -1183,8 +1184,8 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
-    private hasDependencies(selectedElement: MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA): boolean {
-        if (selectedElement == DatumOrigin.SYSTEM || selectedElement == DatumOrigin.SENSOR_DATA) {
+    private hasDependencies(selectedElement: MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE): boolean {
+        if (selectedElement == DatumOrigin.SYSTEM || selectedElement == DatumOrigin.SENSOR_DATA || selectedElement == DatumOrigin.SENSOR_UPDATE) {
             return true;
         } else if (selectedElement instanceof MixingGraphActuator) {
             return false;
@@ -1261,7 +1262,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     protected readonly Math          = Math;
 }
 
-type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA;
+type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE;
 
 type MixGraphElement = MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | TopDatumOrigin;
 
@@ -1273,7 +1274,8 @@ interface MixingGraphLink {
 
 const ORIGIN_DISPLAYED_TOP: TopDatumOrigin[] = [
     DatumOrigin.SYSTEM,
-    DatumOrigin.SENSOR_DATA
+    DatumOrigin.SENSOR_DATA,
+    DatumOrigin.SENSOR_UPDATE
 ];
 
 enum ToolbarAction {
