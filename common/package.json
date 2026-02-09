@@ -1,6 +1,6 @@
 {
   "name": "common",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": " Common classes to be used both in the backend and frontend",
   "license": "ISC",
   "author": "Asterio Fiora",
