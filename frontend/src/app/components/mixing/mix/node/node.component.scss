@@ -1,0 +1,105 @@
+@use "dimensions";
+@use "colors";
+@use "../../../entities/entity";
+@use "../connectors";
+
+.node-preview {
+    @include entity.container;
+
+    .node-preview-title {
+        @include entity.name(true, false);
+        text-align: center;
+    }
+
+    .node-preview-description {
+        opacity: 0.9;
+        font-size: 15px;
+        font-weight: 200;
+        color: var(--mat-sys-on-background);
+        text-align: center;
+        align-self: center;
+        margin-top: dimensions.$margin-medium;
+        padding: 0 dimensions.$margin-medium;
+    }
+
+    mat-checkbox {
+        margin: dimensions.$margin-medium dimensions.$margin-xxlarge
+    }
+
+    .node-preview-exposed-container {
+        align-self: stretch;
+        display: flex;
+        align-items: center;
+        margin-bottom: dimensions.$margin-mlarge;
+
+        .node-preview-exposed-side {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            flex-basis: 0;
+
+            .input-group,
+            .output-group {
+
+                display: flex;
+                flex-direction: column;
+                padding: dimensions.$margin-medium 0 dimensions.$margin-medium dimensions.$indent-medium;
+
+                &.output-group {
+                    margin-right: 10px;
+                }
+
+                &.input-group {
+                    margin-left: 10px;
+                }
+
+                position: relative;
+
+                @include connectors.connector;
+
+                .input-name,
+                .output-name {
+                    font-weight: 300;
+                    font-size: 18px;
+                }
+
+                .output-name {
+                    text-align: end;
+                }
+
+                .input-type,
+                .output-type {
+                    font-weight: 200;
+                    font-size: 15px;
+                }
+
+                .output-type {
+                    text-align: end;
+                }
+            }
+        }
+    }
+}
+
+.type-circle {
+    @include colors.datum-type-colors();
+
+    width: 14px;
+    height: 14px;
+    border-radius: 20px;
+    border: 2px solid var(--type-color, var(--mat-sys-on-background));
+
+    &.selected {
+        background: var(--type-color, var(--mat-sys-on-background));
+    }
+}
+
+.type-container {
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-mlarge;
+}
+
+.null-guard-input {
+    margin: dimensions.$margin-medium dimensions.$indent-msmall -10px;
+}

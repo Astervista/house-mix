@@ -1,6 +1,6 @@
-import {Mix, ConnectionDrainType, ConnectionSourceType} from "./mix";
+import {ConnectionDrainType, ConnectionSourceType, Mix} from "./mix";
 import {DatumType} from "./datum";
-import {ElaborationNodeCode, ElaborationNodeMathOperation, ElaborationNodeMultiplication} from "./elaboration-node";
+import {ElaborationNodeCode} from "./elaboration-node";
 
 describe("Composition", () => {
     test("Testing composition calculation", () => {
@@ -62,47 +62,47 @@ describe("Composition", () => {
                         inputName:          "costPerHour",
                         drainType:      ConnectionDrainType.NODE,
                         drainNodeId:        1,
-                        drainNodeInputName: ElaborationNodeMathOperation.FIRST_NUMBER_INPUT
+                        drainNodeInputName: "First number"
                     }, {
                         sourceType:      ConnectionSourceType.INPUT,
                         inputName:          "time",
                         drainType:      ConnectionDrainType.NODE,
                         drainNodeId:        1,
-                        drainNodeInputName: ElaborationNodeMathOperation.SECOND_NUMBER_INPUT
+                        drainNodeInputName: "Second number"
                     }, {
                         sourceType:      ConnectionSourceType.INPUT,
                         inputName: "discount",
                         drainType:      ConnectionDrainType.NODE,
                         drainNodeId: 0,
-                        drainNodeInputName: ElaborationNodeMathOperation.FIRST_NUMBER_INPUT
+                        drainNodeInputName: "First number"
                     },
                     {
                         sourceType:      ConnectionSourceType.NODE,
                         sourceNodeId: 1,
-                        sourceNodeOutputName: ElaborationNodeMultiplication.OUTPUT_NAME,
+                        sourceNodeOutputName: "Product",
                         drainType:      ConnectionDrainType.NODE,
                         drainNodeId: 0,
-                        drainNodeInputName: ElaborationNodeMathOperation.SECOND_NUMBER_INPUT
+                        drainNodeInputName:   "Second number"
                     },
                     {
                         sourceType:      ConnectionSourceType.NODE,
                         sourceNodeId: 0,
-                        sourceNodeOutputName: ElaborationNodeMultiplication.OUTPUT_NAME,
+                        sourceNodeOutputName: "Product",
                         drainType:      ConnectionDrainType.NODE,
                         drainNodeId: 2,
-                        drainNodeInputName: ElaborationNodeMathOperation.FIRST_NUMBER_INPUT
+                        drainNodeInputName:   "First number"
                     },
                     {
                         sourceType: ConnectionSourceType.CONSTANT,
                         sourceValue: 1.22,
                         drainType: ConnectionDrainType.NODE,
                         drainNodeId: 2,
-                        drainNodeInputName: ElaborationNodeMathOperation.SECOND_NUMBER_INPUT
+                        drainNodeInputName: "Second number"
                     },
                     {
                         sourceType: ConnectionSourceType.NODE,
                         sourceNodeId: 2,
-                        sourceNodeOutputName: ElaborationNodeMultiplication.OUTPUT_NAME,
+                        sourceNodeOutputName: "Product",
                         drainType: ConnectionDrainType.OUTPUT,
                         outputName: "pay"
                     },

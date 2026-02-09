@@ -6,7 +6,7 @@ import {firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
 import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
-import {ElaborationNode, ElaborationNodeNullGuard} from '@common/mixing/mix/elaboration-node';
+import {ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
 import {MixUiManager} from './mix-ui-manager';
 import {MatButton} from '@angular/material/button';
@@ -349,10 +349,14 @@ export class MixComponent implements AfterViewInit {
             dialogRef.afterClosed().subscribe(result => {
                 if ((result != null) && (this.mix != null)) {
                     let newNode: ElaborationNode;
-                    if (!result.special) {
-                        newNode = new result.constructor(this.mix.nodes.length);
+                    if (result.special) {
+                        if (!result.nullMarked) {
+                            newNode = new result.constructor(0, {dataType: result.datumType});
+                        } else {
+                            newNode = new result.constructor(0, {dataType: result.datumType, nullable: result.nullableMark});
+                        }
                     } else {
-                        newNode = new ElaborationNodeNullGuard(this.mix.nodes.length, {dataType: result.datumType});
+                        newNode = new result.constructor(0);
                     }
                     this.mix.addNode(newNode);
                     this.doBackup();

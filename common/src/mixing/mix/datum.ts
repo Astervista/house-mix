@@ -121,6 +121,39 @@ export class Datum {
         }
     }
     
+    public static compareEquality(dataType: DatumType, firstValue: unknown, secondValue: unknown): boolean {
+        if (firstValue == null && secondValue == null) {
+            return true;
+        }
+        if (firstValue == null || secondValue == null) {
+            return false;
+        }
+        switch (dataType) {
+            case DatumType.BOOLEAN:
+            case DatumType.NUMBER:
+            case DatumType.STRING:
+                return firstValue === secondValue;
+            case DatumType.COLOR:
+                return (firstValue as DatumTypeColor).equals(secondValue as DatumTypeColor);
+            case DatumType.TIME: {
+                const firstAsDate  = firstValue as Date;
+                const secondAsDate = secondValue as Date;
+                return firstAsDate.getHours() == secondAsDate.getHours()
+                       && firstAsDate.getMinutes() == secondAsDate.getMinutes()
+                       && firstAsDate.getSeconds() == secondAsDate.getSeconds();
+            }
+            case DatumType.DATE: {
+                const firstAsDate  = firstValue as Date;
+                const secondAsDate = secondValue as Date;
+                return firstAsDate.getFullYear() == secondAsDate.getFullYear()
+                       && firstAsDate.getMonth() == secondAsDate.getMonth()
+                       && firstAsDate.getDate() == secondAsDate.getDate();
+            }
+            case DatumType.DATE_TIME:
+                return (firstValue as Date).getTime() === (secondValue as Date).getTime();
+        }
+    }
+    
     public static valueFromJSON(value: unknown, type: DatumType): unknown {
         if (!Datum.checkValueJSON(value, type, true)) {
             throw new Error("Incompatible value and types");
@@ -391,12 +424,12 @@ export class DatumTypeColor {
                     if (this._r == undefined || this._g == undefined || this._b == undefined) {
                         return;
                     }
-                    const conversion = ColorSpace.sRGB.xyYFromColor(new Color(this._r, this._g, this._b, 1))
-                    this._x = conversion.x;
-                    this._y = conversion.y;
-                    this._r = undefined;
-                    this._g = undefined;
-                    this._b = undefined;
+                    const conversion = ColorSpace.sRGB.xyYFromColor(new Color(this._r, this._g, this._b, 1));
+                    this._x          = conversion.x;
+                    this._y          = conversion.y;
+                    this._r          = undefined;
+                    this._g          = undefined;
+                    this._b          = undefined;
                     break;
                 }
                 case DatumTypeColorBase.RGB: {
@@ -437,20 +470,20 @@ export class DatumTypeColor {
     
     public setRGB(r: number, g: number, b: number): void {
         this._base = DatumTypeColorBase.RGB;
-        this._r   = r;
-        this._g   = g;
-        this._b   = b;
-        this._x   = undefined;
-        this._y   = undefined;
+        this._r = r;
+        this._g = g;
+        this._b = b;
+        this._x = undefined;
+        this._y = undefined;
     }
     
     public setXY(x: number, y: number): void {
         this._base = DatumTypeColorBase.XY;
-        this._x   = x;
-        this._y   = y;
-        this._r   = undefined;
-        this._g   = undefined;
-        this._b   = undefined;
+        this._x = x;
+        this._y = y;
+        this._r = undefined;
+        this._g = undefined;
+        this._b = undefined;
     }
     
     public toHEX(): string {
@@ -461,6 +494,18 @@ export class DatumTypeColor {
             return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
         } else {
             return ColorSpace.sRGB.colorFromXY(this.x ?? 0.33, this.y ?? 0.33).toHex();
+        }
+    }
+    
+    public equals(other: DatumTypeColor): boolean {
+        if (this._base != other._base) {
+            return false;
+        }
+        switch (this._base) {
+            case DatumTypeColorBase.XY:
+                return this._x == other._x && this._y == other._y;
+            case DatumTypeColorBase.RGB:
+                return this._r == other._r && this._g == other._g && this._b == other._b;
         }
     }
     
