@@ -179,6 +179,7 @@ export class HomeComponent {
             case ToolbarAction.ADD_SENSOR:
                 return true;
         }
+        return true;
     }
 
     protected goTo(section: string): void {
@@ -648,7 +649,7 @@ export class HomeComponent {
                                         name:          selectedObject.name,
                                         zigbeeAddress: selectedObject.zigbeeAddress,
                                         actuatorType:  selectedObject.type,
-                                        exposes:       selectedObject.exposes
+                                        exposes: selectedObject.exposes.slice()
                                     }
                                 }
                             }

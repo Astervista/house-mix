@@ -6,7 +6,7 @@ import {firstValueFrom} from 'rxjs';
 import {MixingService} from '../mixing.service';
 import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
-import {ElaborationNode} from '@common/mixing/mix/elaboration-node';
+import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
 import {MixUiManager} from './mix-ui-manager';
 import {MatButton} from '@angular/material/button';
@@ -349,14 +349,19 @@ export class MixComponent implements AfterViewInit {
             dialogRef.afterClosed().subscribe(result => {
                 if ((result != null) && (this.mix != null)) {
                     let newNode: ElaborationNode;
+                    const nextId = this.mix.nodes.reduce((accum, node) => Math.max(accum, node.id), -1) + 1;
                     if (result.special) {
                         if (!result.nullMarked) {
-                            newNode = new result.constructor(0, {dataType: result.datumType});
+                            newNode = new result.constructor(nextId, {dataType: result.datumType});
                         } else {
-                            newNode = new result.constructor(0, {dataType: result.datumType, nullable: result.nullableMark});
+                            if (result.arbitraryNumber) {
+                                newNode = new result.constructor(nextId, {dataType: result.datumType, nullable: result.nullableMark, inputNumber: 1});
+                            } else {
+                                newNode = new result.constructor(nextId, {dataType: result.datumType, nullable: result.nullableMark});
+                            }
                         }
                     } else {
-                        newNode = new result.constructor(0);
+                        newNode = new result.constructor(nextId);
                     }
                     this.mix.addNode(newNode);
                     this.doBackup();
@@ -394,6 +399,14 @@ export class MixComponent implements AfterViewInit {
                     this.uiManager.updateEdgeConnections(false);
                 });
         }
+    }
+
+    protected getAllNodeInputs(node: ElaborationNode): NodeInputInfo[] {
+        const result = node.inputs.map(input => ({datum: input, specialInputAddMore: false}));
+        if (node instanceof ArbitraryInputsElaborationNode) {
+            result.push({datum: new Datum('Add a new input...', node.options.dataType, node.options.nullable), specialInputAddMore: true});
+        }
+        return result;
     }
 
     protected getConstantSourceForInput(node: ElaborationNode, input: Datum): (ConnectionSourceFromConstant & ConnectionDrainToNode) | null {
@@ -639,6 +652,26 @@ export class MixComponent implements AfterViewInit {
                 this.mix.removeConnection(constantConnection);
                 this.doBackup();
             }
+        }
+    }
+
+    protected addArbitraryNodeInput(node: ElaborationNode): void {
+        if (node instanceof ArbitraryInputsElaborationNode) {
+            node.addInput();
+            if (!node.options.nullable) {
+                const newConnection: Connection = {
+                    sourceType:         ConnectionSourceType.CONSTANT,
+                    sourceValue:        Datum.getDefaultForType(node.options.dataType),
+                    sourceValueType:    node.options.dataType,
+                    drainType:          ConnectionDrainType.NODE,
+                    drainNodeId:        node.id,
+                    drainNodeInputName: ArbitraryInputsElaborationNode.getInputName(node.options.inputNumber - 1)
+                };
+                this.mix?.addConnection(newConnection);
+                this.uiManager.addConnection(newConnection);
+            }
+            this.uiManager.updateNode(node);
+            this.doBackup();
         }
     }
 
@@ -939,6 +972,12 @@ export class MixComponent implements AfterViewInit {
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
+
+}
+
+export interface NodeInputInfo {
+    datum: Datum;
+    specialInputAddMore: boolean;
 }
 
 type SelectedElement = {

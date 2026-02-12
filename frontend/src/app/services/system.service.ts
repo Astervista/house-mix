@@ -5,6 +5,7 @@ import { SystemParameter } from "@common/system/parameter/system-parameter";
 import { SystemTimer } from "@common/system/timer/system-timer";
 import { EntityPathParams } from "@common/utils/rest-classes";
 import { SetParameterBody } from "@common/system/parameter/rest-classes";
+import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 
 @Injectable({
                 providedIn: 'root'
@@ -32,6 +33,15 @@ export class SystemService {
     )
     public setParameterValue!: (value: SetParameterBody, params: EntityPathParams) => Promise<void>;
 
+    @Get<MixPositionInfoJSON>(
+        'parameters/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getParameterDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
     @Get("/timers/", { result: SystemTimer, resultIsArray: true })
     public getTimers!: () => Promise<SystemTimer[]>;
 
@@ -45,4 +55,33 @@ export class SystemService {
     )
     public deleteTimer!: (params: EntityPathParams) => Promise<void>;
 
+    @Patch<SystemTimer, null>(
+        '/timers/:name'
+    )
+    public editTimer!: (changes: SystemTimer, params: EntityPathParams) => Promise<void>;
+
+    @Get<MixPositionInfoJSON>(
+        'timers/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getTimerDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getTimerDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getTimerDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
+
+    public async getParameterDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getParameterDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
 }

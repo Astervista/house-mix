@@ -14,12 +14,14 @@ import {SystemParameterDialogComponent} from '../dialogs/system-parameter-dialog
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
 import {MatSnackBar} from '@angular/material/snack-bar';
 import {ParameterComponent} from '../entities/system/parameter/parameter.component';
-import {ConfirmDialogComponent, ConfirmDialogData} from '../dialogs/confirm-dialog/confirm-dialog.component';
 import {SystemTimerDialogComponent} from '../dialogs/system-timer-dialog/system-timer-dialog.component';
 import {TimerComponent} from '../entities/system/timer/timer.component';
 import {ConstantEditDialogComponent} from '../mixing/mix/constant-edit-dialog/constant-edit-dialog.component';
 import {Datum} from '@common/mixing/mix/datum';
 import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
+import {DeleteEntityDialogComponent, DeleteEntityDialogData} from '../dialogs/delete-entity-dialog/delete-entity-dialog.component';
+import {SystemOrigin} from '@common/system/constants';
+
 
 @Component({
                selector:    'house-mix-system',
@@ -99,6 +101,8 @@ export class SystemComponent {
                 return this.selected != null;
             case ToolbarAction.CHANGE_PARAMETER_VALUE:
                 return this.selected != null && this.selected instanceof SystemParameter;
+            case ToolbarAction.EDIT:
+                return this.selected != null && this.selected instanceof SystemTimer;
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
@@ -121,6 +125,45 @@ export class SystemComponent {
                 break;
             }
             case ToolbarAction.SYSTEM: {
+                break;
+            }
+            case ToolbarAction.EDIT: {
+                const selected = this.selected;
+                if (selected != null && (selected instanceof SystemTimer)) {
+
+                    this.matDialog
+                        .open(
+                            SystemTimerDialogComponent,
+                            {
+                                data: {
+                                    edit:           selected,
+                                    forbiddenNames: this.timers.map(param => param.name).filter(name => name != selected.name)
+                                }
+                            }
+                        )
+                        .afterClosed()
+                        .subscribe((result: SystemTimer | undefined) => {
+                            if (result != null) {
+                                this.systemService
+                                    .editTimer(result, {name: selected.name})
+                                    .then(() => {
+                                        const position = this.timers.indexOf(selected);
+                                        if (position != -1) {
+                                            this.timers.splice(position, 1, result);
+                                        }
+                                    })
+                                    .catch(() => {
+                                        this.snackBar.open(
+                                            'There has been an error while editing the timer',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
+                        });
+                }
                 break;
             }
             case ToolbarAction.CHANGE_PARAMETER_VALUE: {
@@ -151,7 +194,7 @@ export class SystemComponent {
                                             if (e instanceof HttpErrorResponse) {
                                                 if (e.status as HttpStatusCode == HttpStatusCode.NotFound) {
                                                     this.snackBar.open(
-                                                        "The parameter cannot be set because it doesn't exist",
+                                                        'The parameter cannot be set because it doesn\'t exist',
                                                         undefined,
                                                         {
                                                             duration: SNACKBAR_TIMEOUT
@@ -161,7 +204,7 @@ export class SystemComponent {
                                                 }
                                             }
                                             this.snackBar.open(
-                                                "There has been an error while setting this parameter's value",
+                                                'There has been an error while setting this parameter\'s value',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
@@ -175,30 +218,42 @@ export class SystemComponent {
                 break;
             }
             case ToolbarAction.DELETE: {
-                let data: ConfirmDialogData | null = null;
-                const selected                     = this.selected;
-                if (this.selected instanceof SystemParameter) {
+                let data: DeleteEntityDialogData | null = null;
+                const selected                          = this.selected;
+                if (selected instanceof SystemParameter) {
                     data = {
-                        message:     `Are you sure you want to delete the parameter "${this.selected.displayName}"?`,
-                        title:       'Delete parameter',
-                        confirmText: 'Delete',
-                        warn:        true
+                        entityType:        SystemOrigin.PARAMETER,
+                        parameterToDelete: selected
                     };
+                    /*data = {
+                     message:     `Are you sure you want to delete the parameter "${this.selected.displayName}"?`,
+                     title:       'Delete parameter',
+                     confirmText: 'Delete',
+                     warn:        true
+                     };*/
                 }
-                if (this.selected instanceof SystemTimer) {
+                if (selected instanceof SystemTimer) {
                     data = {
-                        message:     `Are you sure you want to delete the timer "${this.selected.displayName}"?`,
-                        title:       'Delete timer',
-                        confirmText: 'Delete',
-                        warn:        true
+                        entityType:    SystemOrigin.TIMER,
+                        timerToDelete: selected
                     };
+                    /*data = {
+                     message:     `Are you sure you want to delete the timer "${this.selected.displayName}"?`,
+                     title:       'Delete timer',
+                     confirmText: 'Delete',
+                     warn:        true
+                     };*/
                 }
                 if (data == null) {
                     return;
                 }
-                this.matDialog.open(ConfirmDialogComponent, {
-                    data
-                })
+
+                this.matDialog.open(
+                    DeleteEntityDialogComponent,
+                    {
+                        data
+                    }
+                )
                     .afterClosed()
                     .subscribe(result => {
                         if (result == true) {
@@ -324,7 +379,8 @@ enum ToolbarAction {
     MIXING                 = 'mixing',
     SYSTEM                 = 'system',
     DELETE                 = 'delete',
-    CHANGE_PARAMETER_VALUE = 'change-parameter-value'
+    CHANGE_PARAMETER_VALUE = 'change-parameter-value',
+    EDIT                   = 'edit',
 }
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
@@ -359,6 +415,13 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'edit_square',
         id:    ToolbarAction.CHANGE_PARAMETER_VALUE,
         hint:  'Change parameter value',
+        order: 2
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'edit',
+        id:    ToolbarAction.EDIT,
+        hint:  'Edit',
         order: 2
     },
     {

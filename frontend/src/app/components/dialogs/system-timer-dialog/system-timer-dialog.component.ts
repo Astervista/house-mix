@@ -66,7 +66,27 @@ export class SystemTimerDialogComponent extends MatDialogComponent<SystemTimerDi
                 },
                 this.validate.bind(this)
             );
-
+            if (this.data.edit != null) {
+                this.typeFormControl.setValue(this.data.edit.type);
+                this.nameInputsComponent.nameFormControl.disable();
+                switch (this.data.edit.type) {
+                    case TimerType.DAILY: {
+                        this.hourFormControl.setValue(Math.floor(this.data.edit.occurrence / 60));
+                        this.minuteFormControl.setValue(this.data.edit.occurrence % 60);
+                        break;
+                    }
+                    case TimerType.HOURLY: {
+                        this.minuteFormControl.setValue(this.data.edit.occurrence);
+                        break;
+                    }
+                    case TimerType.MINUTE_INTERVAL: {
+                        this.minuteFormControl.setValue(this.data.edit.occurrence);
+                        break;
+                    }
+                }
+                this.nameInputsComponent.displayNameFormControl.setValue(this.data.edit.displayName);
+                this.nameInputsComponent.nameFormControl.setValue(this.data.edit.name);
+            }
         }
     }
 
@@ -161,7 +181,7 @@ export class SystemTimerDialogComponent extends MatDialogComponent<SystemTimerDi
     }
 
     protected confirm(): void {
-        const result = this.formGroup?.value as FormGroupValue | null;
+        const result = this.formGroup?.getRawValue() as FormGroupValue | null;
         if (
             result != null
             && this.formGroup?.valid == true
@@ -193,5 +213,6 @@ export class SystemTimerDialogComponent extends MatDialogComponent<SystemTimerDi
 
 export interface SystemTimerDialogData {
     forbiddenNames: string[];
+    edit?: SystemTimer;
 }
 

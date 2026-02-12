@@ -3,8 +3,8 @@ import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 export class SystemTimer {
     
-    private readonly _type: TimerType;
-    private readonly _occurrence: number;
+    private _type: TimerType;
+    private _occurrence: number;
     
     constructor(
         public name: string,
@@ -26,6 +26,13 @@ export class SystemTimer {
     
     public get occurrence(): number {
         return this._occurrence;
+    }
+    
+    public setInfo(type: TimerType, occurrence: number): void {
+        if (SystemTimer.checkOccurrence(occurrence, type)) {
+            this._type       = type;
+            this._occurrence = occurrence;
+        }
     }
     
     public getNextOccurrence(fromDate: Date = new Date): Date {

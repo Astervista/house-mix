@@ -5,6 +5,7 @@ import {FileService} from "../../helpers/file/file.service";
 import {DatumOrigin} from "@common/mixing/mix/datum";
 import {SystemOrigin} from "@common/system/constants";
 import MixService from "../../mixing/mix/mix.service";
+import {EngineService} from "../../engine/engine.service";
 
 const SAVE_FILE = "system/timers.json";
 
@@ -14,7 +15,9 @@ export class TimersService extends PersistentDataService<SystemTimerData, System
     constructor(
         fileService: FileService,
         @Inject(forwardRef(() => MixService))
-        private mixService: MixService
+        private mixService: MixService,
+        @Inject(forwardRef(() => EngineService))
+        private engineService: EngineService
     ) {
         super(fileService, SAVE_FILE, SystemTimerData);
     }
@@ -27,9 +30,22 @@ export class TimersService extends PersistentDataService<SystemTimerData, System
         const data = await this.data;
         const alreadyExists = data.timers.some(otherParam => otherParam.name == timer.name);
         if (alreadyExists) {
-            throw new Error("Timer already exists");
+            throw new ConflictException("Timer already exists");
         }
         data.timers.push(timer);
+        void this.engineService.updateTimers();
+        this.saveData();
+    }
+    
+    public async editTimer(edit: SystemTimer): Promise<void> {
+        const data  = await this.data;
+        const timer = data.timers.find(otherParam => otherParam.name == edit.name);
+        if (timer == null) {
+            throw new NotFoundException("Timer doesn't exist");
+        }
+        timer.displayName = edit.displayName;
+        timer.setInfo(edit.type, edit.occurrence);
+        void this.engineService.updateTimers();
         this.saveData();
     }
     
@@ -46,6 +62,7 @@ export class TimersService extends PersistentDataService<SystemTimerData, System
         if (toDeleteIndex !== -1) {
             data.timers.splice(toDeleteIndex, 1);
         }
+        void this.engineService.updateTimers();
         this.saveData();
     }
     

@@ -379,40 +379,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
     }
 
     private createLevels(graph: MixingGraph): void {
-        let alreadyFound: MixingGraphGroup[] = [];
-        let nextLevel: MixingGraphGroup[];
-        this.sensorGroupsLevels              = [];
-        do {
-            nextLevel = graph.sensorGroups.filter(
-                group =>
-                    !alreadyFound.includes(group)
-                    && group.dependingOn.every(
-                        dependency =>
-                            (dependency.origin != DatumOrigin.GROUP) || (alreadyFound.some(found => found.name == dependency.name))
-                    )
-            );
-            if (nextLevel.length > 0) {
-                this.sensorGroupsLevels.push(nextLevel);
-                alreadyFound.push(...nextLevel);
-            }
-        } while (nextLevel.length > 0);
-
-        alreadyFound              = [];
-        this.actuatorGroupsLevels = [];
-        do {
-            nextLevel = graph.actuatorGroups.filter(
-                group =>
-                    !alreadyFound.includes(group)
-                    && group.dependingOn.every(
-                        dependency =>
-                            (dependency.origin != DatumOrigin.GROUP) || (alreadyFound.some(found => found.name == dependency.name))
-                    )
-            );
-            if (nextLevel.length > 0) {
-                this.actuatorGroupsLevels.push(nextLevel);
-                alreadyFound.push(...nextLevel);
-            }
-        } while (nextLevel.length > 0);
+        const {sensorGroupLevels, actuatorGroupLevels} = graph.generateGroupLevels();
+        this.sensorGroupsLevels                        = sensorGroupLevels;
+        this.actuatorGroupsLevels                      = actuatorGroupLevels;
     }
 
     protected recalculateConnections(graph: MixingGraph): void {

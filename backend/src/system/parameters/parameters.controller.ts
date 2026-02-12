@@ -2,12 +2,17 @@ import {Body, Controller, Delete, Get, Param, Patch, Post} from "@nestjs/common"
 import {ParametersService} from "./parameters.service";
 import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
 import {SetParameterBody} from "@common/system/parameter/rest-classes";
+import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
+import {EntityType} from "@common/devices/constants";
+import MixService from "../../mixing/mix/mix.service";
+import {SystemOrigin} from "@common/system/constants";
 
 @Controller("/system/parameters/")
 export class ParametersController {
     
     constructor(
-        private readonly parametersService: ParametersService
+        private readonly parametersService: ParametersService,
+        private readonly mixService: MixService
     ) {
     
     }
@@ -53,6 +58,14 @@ export class ParametersController {
         return {
             value: await this.parametersService.getValue(name)
         };
+    }
+    
+    @Get("/:name/delete-locks")
+    public async canDelete(
+        @Param("name")
+        name: string
+    ): Promise<MixPositionInfo[]> {
+        return await this.mixService.getDeleteLocks(SystemOrigin.PARAMETER, name);
     }
     
 }

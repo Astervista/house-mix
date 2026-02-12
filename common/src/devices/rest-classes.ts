@@ -16,7 +16,7 @@ export class DeviceEditChanges {
     
     @IsOptional()
     @IsNotEmpty()
-    @Matches(/^[0-9A-F]+$/)
+    @Matches(/^[0-9a-f]+$/)
     public zigbeeAddress?: string;
     
     @IsOptional()

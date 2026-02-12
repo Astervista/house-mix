@@ -5,7 +5,7 @@ import {MatSelect} from '@angular/material/select';
 import {DATUM_TYPE_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, ElaborationNodeLibraryItem, getColorVarNameForType} from '../../constants';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {DatumType} from '@common/mixing/mix/datum';
-import {ElaborationNode, ElaborationNodeCode} from '@common/mixing/mix/elaboration-node';
+import {ArbitraryInputsElaborationNode, ElaborationNode, ElaborationNodeAddition, ElaborationNodeCode} from '@common/mixing/mix/elaboration-node';
 import {MatCheckbox} from '@angular/material/checkbox';
 
 @Component({
@@ -39,7 +39,12 @@ export class NodeComponent implements OnInit {
                     this.examples[this.item.code] = new this.item.constructor(0);
                 } else {
                     if (this.item.nullMarked) {
-                        this.examples[this.item.code] = new this.item.constructor(0, {nullable: this.nullMarkFormControl.value ?? this.item.nullableMark, dataType: value});
+                        if (this.item.arbitraryNumber) {
+                            this.examples[this.item.code] =
+                                new this.item.constructor(0, {nullable: this.nullMarkFormControl.value ?? this.item.nullableMark, dataType: value, inputNumber: 1});
+                        } else {
+                            this.examples[this.item.code] = new this.item.constructor(0, {nullable: this.nullMarkFormControl.value ?? this.item.nullableMark, dataType: value});
+                        }
                         this.item.nullableMark        = this.nullMarkFormControl.value ?? this.item.nullableMark;
                         this.item.datumType           = value;
                     } else {
@@ -55,7 +60,11 @@ export class NodeComponent implements OnInit {
                     this.examples[this.item.code] = new this.item.constructor(0);
                 } else {
                     if (this.item.nullMarked) {
-                        this.examples[this.item.code] = new this.item.constructor(0, {nullable: value, dataType: this.datumTypeFormControl.value ?? this.item.datumType});
+                        if (this.item.arbitraryNumber) {
+                            this.examples[this.item.code] = new this.item.constructor(0, {nullable: value, dataType: this.datumTypeFormControl.value ?? this.item.datumType, inputNumber: 1});
+                        } else {
+                            this.examples[this.item.code] = new this.item.constructor(0, {nullable: value, dataType: this.datumTypeFormControl.value ?? this.item.datumType});
+                        }
                         this.item.nullableMark        = value;
                         this.item.datumType           = this.datumTypeFormControl.value ?? this.item.datumType;
                     } else {
@@ -71,6 +80,10 @@ export class NodeComponent implements OnInit {
         if (this.item.special) {
             this.datumTypeFormControl.setValue(this.item.datumType);
         }
+    }
+
+    protected isArbitraryInputsNode(example: ElaborationNode): example is ArbitraryInputsElaborationNode {
+        return example instanceof ArbitraryInputsElaborationNode;
     }
 
     protected readonly getColorVarNameForType        = getColorVarNameForType;

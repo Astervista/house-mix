@@ -127,10 +127,19 @@ describe("Composition", () => {
         inputMap.set("costPerHour", 12);
         inputMap.set("time", 1.5);
         
-        const result = composition.calculate(inputMap);
+        const result = composition.calculate(inputMap, {
+            [DatumType.BOOLEAN]:   new Map<string, unknown>(),
+            [DatumType.COLOR]:     new Map<string, unknown>(),
+            [DatumType.DATE]:      new Map<string, unknown>(),
+            [DatumType.DATE_TIME]: new Map<string, unknown>(),
+            [DatumType.TIME]:      new Map<string, unknown>(),
+            [DatumType.NUMBER]:    new Map<string, unknown>(),
+            [DatumType.STRING]:    new Map<string, unknown>()
+            
+        });
         
-        expect(result.get("pay")).toBeCloseTo(0.8 * 12 * 1.5 * 1.22, 7);
-        expect(result.get("time")).toBeCloseTo(1.5, 7);
-        expect(result.get("VAT")).toBeCloseTo(1.22, 7);
+        expect(result.outputs.get("pay")).toBeCloseTo(0.8 * 12 * 1.5 * 1.22, 7);
+        expect(result.outputs.get("time")).toBeCloseTo(1.5, 7);
+        expect(result.outputs.get("VAT")).toBeCloseTo(1.22, 7);
     });
 });

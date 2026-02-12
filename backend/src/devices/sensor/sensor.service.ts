@@ -9,6 +9,7 @@ import {EntityType} from "@common/devices/constants";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {GetDevicesOptions, LockedExposes} from "@common/devices/rest-classes";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
+import {EngineService} from "../../engine/engine.service";
 
 const SAVE_FILE = "devices/sensor.json";
 
@@ -20,7 +21,9 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         @Inject(forwardRef(() => GroupService))
         private groupService: GroupService,
         @Inject(forwardRef(() => MixService))
-        private mixService: MixService
+        private mixService: MixService,
+        @Inject(forwardRef(() => EngineService))
+        private engineService: EngineService
     ) {
         super(fileService, SAVE_FILE, SensorData);
     }
@@ -66,9 +69,9 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         if (parentName != null) {
             await this.groupService.addDevice(parentName, sensor.name, EntityType.SENSOR, false, false);
         }
-        data.sensors.push(sensor);
-        
+        void this.engineService.updateSensors();
         this.saveData();
+        data.sensors.push(sensor);
     }
     
     public async sensorExists(sensorName: string): Promise<boolean> {
@@ -85,6 +88,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
         if (toDeleteIndex !== -1) {
             data.sensors.splice(toDeleteIndex, 1);
         }
+        void this.engineService.updateSensors();
         this.saveData();
     }
     
@@ -143,6 +147,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
             if (edit.type != null) {
                 sensorToEdit.type = edit.type;
             }
+            void this.engineService.updateSensors();
             this.saveData();
         } else {
             throw new ConflictException();

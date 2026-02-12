@@ -114,6 +114,9 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
                 }
                 for (const change of exposeChanges.filter(addition => addition.change === DatumChangeType.NEW)) {
                     actuatorToEdit.exposes.push(change.datum);
+                    if (actuatorToEdit.mix != null) {
+                        await this.mixService.addOutputToMix(actuatorToEdit.mix, change.datum);
+                    }
                 }
             }
             if ((newName != null) && (oldName != newName)) {

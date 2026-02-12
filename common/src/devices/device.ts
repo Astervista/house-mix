@@ -8,7 +8,15 @@ export class Device {
     
     public readonly exposes: Datum[] = [];
     
-    constructor(public zigbeeAddress: string, public name: string, public displayName: string) {
+    constructor(private _zigbeeAddress: string, public name: string, public displayName: string) {
+    }
+    
+    public get zigbeeAddress(): string {
+        return this._zigbeeAddress.toLowerCase();
+    }
+    
+    public set zigbeeAddress(value: string) {
+        this._zigbeeAddress = value.toLowerCase();
     }
     
     public calculateExposesChanges(newExposes: Datum[]): DatumChange[] {
@@ -52,7 +60,7 @@ export class Device {
 export class DeviceJSON {
     
     @IsNotEmpty()
-    @Matches(/^[0-9A-F]+$/)
+    @Matches(/^[0-9a-f]+$/)
     public zigbeeAddress: string;
     
     @IsNotEmpty()

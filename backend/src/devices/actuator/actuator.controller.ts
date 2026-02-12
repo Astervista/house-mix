@@ -75,7 +75,7 @@ export class ActuatorController {
         @Param('name')
         name: string
     ): Promise<MixPositionInfo[]> {
-        return await this.mixService.deleteLocks(EntityType.ACTUATOR, name);
+        return await this.mixService.getDeleteLocks(EntityType.ACTUATOR, name);
     }
     
     @Patch("/:name/parent")

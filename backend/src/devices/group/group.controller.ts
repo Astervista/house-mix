@@ -96,7 +96,7 @@ export class GroupController {
         @Param('name')
         name: string
     ): Promise<MixPositionInfo[]> {
-        return await this.mixService.deleteLocks(EntityType.GROUP, name);
+        return await this.mixService.getDeleteLocks(EntityType.GROUP, name);
     }
     
     @Patch("/:name/parent")

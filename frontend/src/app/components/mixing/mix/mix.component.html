@@ -325,9 +325,9 @@
                                                 [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.COLOR_INPUT_SQUARE_SIZE  + 7">
                                                 @if (color) {
                                                     @if (color.base == DatumTypeColorBase.XY) {
-                                                        XY: {{ color.x }}, {{ color.y }}
+                                                        XY: {{ color.x?.toFixed(3) }}, {{ color.y?.toFixed(3) }}
                                                     } @else {
-                                                        RGB: {{ color.r }}, {{ color.g }}, {{ color.b }}
+                                                        RGB: {{ Math.round(color.r ?? 255) }}, {{ Math.round(color.g ?? 255) }}, {{ Math.round(color.b ?? 255) }}
                                                     }
                                                 }
                                             </text>
@@ -454,7 +454,7 @@
                         <g
                             [attr.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR / 2}, 0)`">
                             @for (node of mix.nodes; track node.id) {
-                                @let stacks = Math.max(node.inputs.length, node.outputs.length);
+                                @let stacks = Math.max(getAllNodeInputs(node).length, node.outputs.length);
                                 @let leftDisplacement = uiManager.getNodeConnectionsDisplacement(node, true);
                                 @let rightDisplacement = uiManager.getNodeConnectionsDisplacement(node, false);
                                 @let nodePosition = uiManager.getNodePosition(node);
@@ -485,7 +485,8 @@
                                         y="0">
                                         {{ ELABORATION_NODE_DISPLAY_NAME[node.code] }}
                                     </text>
-                                    @for (input of node.inputs; track input; let inputIndex = $index) {
+                                    @for (inputInfo of getAllNodeInputs(node); track $index; let inputIndex = $index) {
+                                        @let input = inputInfo.datum;
                                         @let connectionTop = uiManager.getNodeConnectionTop(node, inputIndex) + leftDisplacement;
                                         @let disabled = inputsDisabled
                                                         || ((temporaryConnectorDatumInfo != null) && (input.type != temporaryConnectorDatumInfo.type))
@@ -494,7 +495,7 @@
                                         @let constantSource = getConstantSourceForInput(node, input);
 
                                         @let inputCanBeChanged = this.inputCanBeChanged(node, input);
-                                        @if (inputCanBeChanged) {
+                                        @if (inputCanBeChanged && !inputInfo.specialInputAddMore) {
                                             <rect
                                                 class="node-input-area"
                                                 [attr.width]="MEASURES.NODE_WIDTH / 2"
@@ -527,6 +528,26 @@
                                                 (click)="clearNodeInputConstant(node, input)">
                                             </rect>
 
+                                        } @else if (inputInfo.specialInputAddMore) {
+                                            <rect
+                                                class="node-input-area"
+                                                [attr.width]="MEASURES.NODE_WIDTH / 2"
+                                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
+                                                [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
+                                            </rect>
+                                            <rect
+                                                width="24px"
+                                                height="24px"
+                                                fill="transparent"
+                                                [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop - 12
+                                        }px)`"
+                                                (mousedown)="$event.stopPropagation()"
+                                                (click)="addArbitraryNodeInput(node)">
+                                            </rect>
+                                            <rect></rect>
                                         }
                                         <g class="node-input-tag">
                                             <text
@@ -573,7 +594,7 @@
                                                                 @if (color.base == DatumTypeColorBase.XY) {
                                                                     XY: {{ color.x?.toFixed(3) }}, {{ color.y?.toFixed(3) }}
                                                                 } @else {
-                                                                    RGB: {{ color.r }}, {{ color.g }}, {{ color.b }}
+                                                                    RGB: {{ Math.round(color.r ?? 255) }}, {{ Math.round(color.g ?? 255) }}, {{ Math.round(color.b ?? 255) }}
                                                                 }
                                                             }
                                                         </text>
@@ -607,7 +628,7 @@
                                                 }
                                             }
                                         </g>
-                                        @if (inputCanBeChanged) {
+                                        @if (inputCanBeChanged && !inputInfo.specialInputAddMore) {
                                             <path
                                                 [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
                                                 [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
@@ -624,13 +645,20 @@
                                                     d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
                                                 />
                                             }
+                                        } @else if (inputInfo.specialInputAddMore) {
+                                            <path
+                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                [style.--icon-pos-y]="connectionTop + 'px'"
+                                                class="mat-icon-svg"
+                                                d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                                            />
                                         }
-
                                         <path
                                             class="connector-snap"
                                             [class.unselectable]="disabled"
                                             [attr.transform]="`translate(${0}, ${connectionTop}) scale(${(MEASURES.CONNECTOR_SNAP_RADIUS - 2) / 100})`"
-                                            (mousemove)="uiManager.nodeConnectorMouseMove(node, input, false)"
+                                            (mousemove)="uiManager.nodeConnectorMouseMove(node, inputInfo, false)"
                                             d="M26.98-96.31c-8.58-2.4-17.63-3.69-26.98-3.69-55.23,0-100,44.77-100,100S-55.23,100,0,100c9.35,0,18.4-1.29,26.98-3.69V-96.31Z">
                                         </path>
                                         <circle
@@ -640,8 +668,8 @@
                                             [style.--connector-type-color]="getColorVarNameForType(input.type)"
                                             [attr.cy]="connectionTop"
                                             [attr.cx]="0"
-                                            (mousedown)="$event.stopPropagation(); uiManager.nodeConnectorMouseDown(node, input, false,$event)"
-                                            (mousemove)="uiManager.nodeConnectorMouseMove(node, input, false)">
+                                            (mousedown)="$event.stopPropagation(); uiManager.nodeConnectorMouseDown(node, inputInfo, false,$event)"
+                                            (mousemove)="uiManager.nodeConnectorMouseMove(node, inputInfo, false)">
                                         </circle>
                                         @if (!input.nullable) {
                                             <circle

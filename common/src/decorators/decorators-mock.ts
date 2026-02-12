@@ -24,3 +24,4 @@ export const IsBoolean = makeFn();
 export const IsString = makeFn();
 export const IsNumber = makeFn();
 export const Min = makeFn();
+export const isIp = makeFn();

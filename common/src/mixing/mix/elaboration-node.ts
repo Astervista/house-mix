@@ -3,6 +3,7 @@ import {IsEnum, IsInt, IsOptional, Min} from "rest-decorators";
 import {Allow} from "../../decorators/decorators-mock";
 import {Color, ColorSpace} from "../../utils/color-convert";
 import {getTimes} from "suncalc";
+import {MixingStorage} from "./mix";
 
 /*
  * This file contains the class that describes a generic elaboration node used to manipulate data in a mix, together with a library of
@@ -14,36 +15,37 @@ import {getTimes} from "suncalc";
  *      - Division: (number, number) => number
  *      - Maximum: (number, number) => number
  *      - Minimum: (number, number) => number
- *      L Clamp: (number, number*, number*) => number
- *      L Lerp: (number, number, number) => number
+ *      - Clamp: (number, number*, number*) => number
+ *      - Lerp: (number, number, number) => number
  *   Control flow
  *      - Null guard: (T*, T) => T
- *      L Equality check (T*, T*) => boolean
- *      L Greater than (number, number, boolean) => boolean
- *      L Less than (number, number, boolean) => boolean
- *      L Binary choice (T*?, T*?, boolean) => T*
+ *      - Equality check (T*, T*) => boolean
+ *      - Greater than (number, number, boolean) => boolean
+ *      - Less than (number, number, boolean) => boolean
+ *      - Binary choice (T*?, T*?, boolean) => T*
+ *      - Choice (T*?..., number) => T*?
  *   Color
- *      L Extract RGB: Color => (number, number, number)
- *      L Extract HSL: Color => (number, number, number)
- *      L Extract HSV: Color => (number, number, number)
- *      L Extract XY: Color => (number, number, number)
- *      L From RGB: (number, number, number) => Color
- *      L From HSL: (number, number, number) => Color
- *      L From HSV: (number, number, number) => Color
- *      L From XY: (number, number) => Color
+ *      - Extract RGB: Color => (number, number, number)
+ *      - Extract HSL: Color => (number, number, number)
+ *      - Extract HSV: Color => (number, number, number)
+ *      - Extract XY: Color => (number, number, number)
+ *      - From RGB: (number, number, number) => Color
+ *      - From HSL: (number, number, number) => Color
+ *      - From HSV: (number, number, number) => Color
+ *      - From XY: (number, number) => Color
  *   Date and time
- *      L Date values: Date => (number, number, number, number)
- *      L Time values: Time => (number, number, number)
- *      L Date Time values: Date Time => (number, number, number, number, number, number, number)
- *      L Date from values: (number, number, number) => Date
- *      L Time from values: (number, number, number) => Time
- *      L Date Time from values: (number, number, number, number, number, number) => Date Time
- *      L Combine Date and Time: (Date, Time) => Date Time
- *      L Epoch: Date Time => number
- *      L Sun events: Date => (Time [...x14])
+ *      - Date values: Date => (number, number, number, number)
+ *      - Time values: Time => (number, number, number)
+ *      - Date Time values: Date Time => (number, number, number, number, number, number, number)
+ *      - Date from values: (number, number, number) => Date
+ *      - Time from values: (number, number, number) => Time
+ *      - Date Time from values: (number, number, number, number, number, number) => Date Time
+ *      - Combine Date and Time: (Date, Time) => Date Time
+ *      - Epoch: Date Time => number
+ *      - Sun events: Date => (Time [...x14])
  *   Storage
- *      L Save: (T*?, string) => ()
- *      L Retrieve: (string, T*?) => T*?
+ *      - Save: (T*?, string) => ()
+ *      - Retrieve: (string, T*?) => T*?
  *   (test)
  *      - Test: (boolean, number, string, Color, Time, Date, Date Time, boolean?, number?, string?, Color?, Time?, Date?, Date Time?) => (boolean, number, string, Color, Time, Date, Date Time, boolean?, number?, string?, Color?, Time?, Date?, Date Time?)
  */
@@ -62,6 +64,7 @@ export enum ElaborationNodeCode {
     GREATER_THAN          = "GREATER_THAN",
     LESS_THAN             = "LESS_THAN",
     BINARY_CHOICE         = "BINARY_CHOICE",
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
     EXTRACT_RGB           = "EXTRACT_RGB",
     EXTRACT_HSL           = "EXTRACT_HSL",
     EXTRACT_HSV           = "EXTRACT_HSV",
@@ -175,6 +178,8 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeLessThan(id);
             case ElaborationNodeCode.BINARY_CHOICE:
                 return new ElaborationNodeBinaryChoice(id, options as TypedNullMarkedElaborationNodeOptions);
+            case ElaborationNodeCode.MULTIPLE_CHOICE:
+                return new ElaborationNodeMultipleChoice(id, options as ArbitraryInputsElaborationNodeOptions);
             case ElaborationNodeCode.EXTRACT_RGB:
                 return new ElaborationNodeExtractRGB(id);
             case ElaborationNodeCode.EXTRACT_HSL:
@@ -210,9 +215,9 @@ export abstract class ElaborationNode {
             case ElaborationNodeCode.SUN_EVENTS:
                 return new ElaborationNodeSunEvents(id);
             case ElaborationNodeCode.SAVE:
-                return new ElaborationNodeSaveEvent(id, options as TypedNullMarkedElaborationNodeOptions);
+                return new ElaborationNodeSave(id, options as TypedNullMarkedElaborationNodeOptions);
             case ElaborationNodeCode.RETRIEVE:
-                return new ElaborationNodeRetrieveEvent(id, options as TypedNullMarkedElaborationNodeOptions);
+                return new ElaborationNodeRetrieve(id, options as TypedNullMarkedElaborationNodeOptions);
             case ElaborationNodeCode.TEST:
                 return new ElaborationNodeAllTypesTest(id);
         }
@@ -223,6 +228,7 @@ export abstract class ElaborationNode {
 export type ElaborationNodeImplementationConstructor = new (id: number) => ElaborationNode;
 export type TypedElaborationNodeImplementationConstructor = new (id: number, options: TypedElaborationNodeOptions) => ElaborationNode;
 export type TypedNullMarkedElaborationNodeImplementationConstructor = new (id: number, options: TypedNullMarkedElaborationNodeOptions) => ElaborationNode;
+export type ArbitraryInputsElaborationNodeImplementationConstructor = new (id: number, options: ArbitraryInputsElaborationNodeOptions) => ElaborationNode;
 
 export class ElaborationNodeJSON {
     
@@ -389,7 +395,7 @@ export class ElaborationNodeMax extends ElaborationNodeMathOperation {
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         const firstNumber  = inputValues.get(ElaborationNodeMax.FIRST_NUMBER_INPUT) as number;
         const secondNumber = inputValues.get(ElaborationNodeMax.SECOND_NUMBER_INPUT) as number;
-        const result       = Math.max(firstNumber + secondNumber);
+        const result = Math.max(firstNumber, secondNumber);
         return new Map([[ElaborationNodeMax.OUTPUT_NAME, result]]);
     }
     
@@ -406,7 +412,7 @@ export class ElaborationNodeMin extends ElaborationNodeMathOperation {
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         const firstNumber  = inputValues.get(ElaborationNodeMin.FIRST_NUMBER_INPUT) as number;
         const secondNumber = inputValues.get(ElaborationNodeMin.SECOND_NUMBER_INPUT) as number;
-        const result       = Math.min(firstNumber + secondNumber);
+        const result = Math.min(firstNumber, secondNumber);
         return new Map([[ElaborationNodeMin.OUTPUT_NAME, result]]);
     }
     
@@ -619,7 +625,7 @@ export class ElaborationNodeGreaterThan extends ElaborationNode {
     private static readonly SECOND_VALUE: string = "Second value";
     private static readonly INCLUSIVE: string    = "Inclusive";
     
-    private static readonly OUTPUT: string = "Is equal";
+    private static readonly OUTPUT: string = "First is greater";
     
     public readonly inputs: readonly Datum[];
     
@@ -645,7 +651,7 @@ export class ElaborationNodeGreaterThan extends ElaborationNode {
             return new Map<string, unknown>(
                 [
                     [
-                        ElaborationNodeGreaterThan.OUTPUT, firstValue > secondValue
+                        ElaborationNodeGreaterThan.OUTPUT, firstValue >= secondValue
                     ]
                 ]);
         } else {
@@ -653,7 +659,7 @@ export class ElaborationNodeGreaterThan extends ElaborationNode {
                 [
                     [
                         ElaborationNodeGreaterThan.OUTPUT,
-                        firstValue >= secondValue
+                        firstValue > secondValue
                     ]
                 ]);
         }
@@ -667,7 +673,7 @@ export class ElaborationNodeLessThan extends ElaborationNode {
     private static readonly SECOND_VALUE: string = "Second value";
     private static readonly INCLUSIVE: string    = "Inclusive";
     
-    private static readonly OUTPUT: string = "Is equal";
+    private static readonly OUTPUT: string = "First is less";
     
     public readonly inputs: readonly Datum[];
     
@@ -693,7 +699,7 @@ export class ElaborationNodeLessThan extends ElaborationNode {
             return new Map<string, unknown>(
                 [
                     [
-                        ElaborationNodeLessThan.OUTPUT, firstValue < secondValue
+                        ElaborationNodeLessThan.OUTPUT, firstValue <= secondValue
                     ]
                 ]);
         } else {
@@ -701,7 +707,7 @@ export class ElaborationNodeLessThan extends ElaborationNode {
                 [
                     [
                         ElaborationNodeLessThan.OUTPUT,
-                        firstValue <= secondValue
+                        firstValue < secondValue
                     ]
                 ]);
         }
@@ -745,6 +751,80 @@ export class ElaborationNodeBinaryChoice extends TypedNullMarkedElaborationNode 
             ]);
     }
     
+}
+
+export interface ArbitraryInputsElaborationNodeOptions {
+    dataType: DatumType;
+    nullable: boolean;
+    inputNumber: number;
+}
+
+export abstract class ArbitraryInputsElaborationNode extends TypedNullMarkedElaborationNode {
+    
+    public readonly inputs: Datum[] = [];
+    
+    public override options: ArbitraryInputsElaborationNodeOptions;
+    
+    protected constructor(id: number, code: ElaborationNodeCode, options: ArbitraryInputsElaborationNodeOptions) {
+        super(id, code, options);
+        options.inputNumber = Math.max(1, options.inputNumber);
+        for (let i = 0; i < options.inputNumber; i++) {
+            this.inputs.push(new Datum(ArbitraryInputsElaborationNode.getInputName(i), options.dataType, options.nullable));
+        }
+        this.options = options;
+    }
+    
+    public addInput(): void {
+        const input = new Datum(ArbitraryInputsElaborationNode.getInputName(this.options.inputNumber), this.options.dataType, this.options.nullable);
+        this.inputs.push(input);
+        this.options.inputNumber++;
+    }
+    
+    public removeLastInput(): void {
+        this.inputs.pop();
+        this.options.inputNumber--;
+    }
+    
+    public static getInputName(index: number): string {
+        return `Input ${index + 1}`;
+    }
+    
+    public override toJSON(): ElaborationNodeJSON {
+        const result   = super.toJSON();
+        result.options = this.options;
+        return result;
+    }
+    
+}
+
+export class ElaborationNodeMultipleChoice extends ArbitraryInputsElaborationNode {
+    
+    private static readonly INDEX: string = "Choose index?";
+    
+    private static readonly OUTPUT: string = "Choice";
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: ArbitraryInputsElaborationNodeOptions) {
+        super(id, ElaborationNodeCode.MULTIPLE_CHOICE, options);
+        this.inputs.splice(0, 0, new Datum(ElaborationNodeMultipleChoice.INDEX, DatumType.NUMBER, false));
+        this.outputs = [
+            new Datum(ElaborationNodeMultipleChoice.OUTPUT, options.dataType, options.nullable)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        let chooserValue  = inputValues.get(ElaborationNodeMultipleChoice.INDEX) as number;
+        chooserValue      = Math.round(chooserValue);
+        chooserValue      = chooserValue % this.options.inputNumber;
+        const chosenValue = inputValues.get(ArbitraryInputsElaborationNode.getInputName(chooserValue));
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeMultipleChoice.OUTPUT, chosenValue
+                ]
+            ]);
+    }
 }
 
 export class ElaborationNodeExtractRGB extends ElaborationNode {
@@ -1537,7 +1617,7 @@ export class ElaborationNodeSunEvents extends ElaborationNode {
     
 }
 
-export class ElaborationNodeSaveEvent extends TypedNullMarkedElaborationNode {
+export class ElaborationNodeSave extends TypedNullMarkedElaborationNode {
     
     private static readonly VALUE: string = "Value";
     private static readonly NAME: string  = "Name";
@@ -1551,8 +1631,8 @@ export class ElaborationNodeSaveEvent extends TypedNullMarkedElaborationNode {
     constructor(id: number, options: TypedNullMarkedElaborationNodeOptions) {
         super(id, ElaborationNodeCode.SAVE, options);
         this.inputs  = [
-            new Datum(ElaborationNodeSaveEvent.VALUE, options.dataType, options.nullable),
-            new Datum(ElaborationNodeSaveEvent.NAME, DatumType.STRING, false)
+            new Datum(ElaborationNodeSave.VALUE, options.dataType, options.nullable),
+            new Datum(ElaborationNodeSave.NAME, DatumType.STRING, false)
         ];
         this.outputs = [];
     }
@@ -1569,8 +1649,8 @@ export class ElaborationNodeSaveEvent extends TypedNullMarkedElaborationNode {
     }
     
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
-        const value               = inputValues.get(ElaborationNodeSaveEvent.VALUE);
-        const name                = inputValues.get(ElaborationNodeSaveEvent.NAME) as string;
+        const value = inputValues.get(ElaborationNodeSave.VALUE);
+        const name  = inputValues.get(ElaborationNodeSave.NAME) as string;
         this._lastElaborationSave = {
             name,
             value
@@ -1580,7 +1660,7 @@ export class ElaborationNodeSaveEvent extends TypedNullMarkedElaborationNode {
     
 }
 
-export class ElaborationNodeRetrieveEvent extends TypedNullMarkedElaborationNode {
+export class ElaborationNodeRetrieve extends TypedNullMarkedElaborationNode {
     
     private static readonly NAME: string    = "Name";
     private static readonly DEFAULT: string = "Default";
@@ -1591,25 +1671,25 @@ export class ElaborationNodeRetrieveEvent extends TypedNullMarkedElaborationNode
     
     public readonly outputs: readonly Datum[];
     
-    public allSaves: Map<string, unknown> = new Map<string, unknown>();
+    public allSaves?: MixingStorage;
     
     constructor(id: number, options: TypedNullMarkedElaborationNodeOptions) {
         super(id, ElaborationNodeCode.RETRIEVE, options);
         this.inputs  = [
-            new Datum(ElaborationNodeRetrieveEvent.NAME, DatumType.STRING, false),
-            new Datum(ElaborationNodeRetrieveEvent.DEFAULT, options.dataType, options.nullable)
+            new Datum(ElaborationNodeRetrieve.NAME, DatumType.STRING, false),
+            new Datum(ElaborationNodeRetrieve.DEFAULT, options.dataType, options.nullable)
         ];
         this.outputs = [
-            new Datum(ElaborationNodeRetrieveEvent.VALUE, options.dataType, options.nullable)
+            new Datum(ElaborationNodeRetrieve.VALUE, options.dataType, options.nullable)
         ];
     }
     
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
-        const defaultValue = inputValues.get(ElaborationNodeRetrieveEvent.DEFAULT);
-        const name         = inputValues.get(ElaborationNodeRetrieveEvent.NAME) as string;
+        const defaultValue = inputValues.get(ElaborationNodeRetrieve.DEFAULT);
+        const name         = inputValues.get(ElaborationNodeRetrieve.NAME) as string;
         let value: unknown;
-        if (this.allSaves.has(name)) {
-            value = this.allSaves.get(name);
+        if (this.allSaves?.[this.options.dataType].has(name) == true) {
+            value = this.allSaves[this.options.dataType].get(name);
             if (!this.options.nullable && value == null) {
                 value = defaultValue;
             }
@@ -1617,7 +1697,7 @@ export class ElaborationNodeRetrieveEvent extends TypedNullMarkedElaborationNode
             value = defaultValue;
         }
         return new Map<string, unknown>([
-                                            [ElaborationNodeRetrieveEvent.VALUE, value]
+                                            [ElaborationNodeRetrieve.VALUE, value]
                                         ]);
     }
     

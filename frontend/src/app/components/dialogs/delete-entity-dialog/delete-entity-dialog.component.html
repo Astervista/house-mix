@@ -37,6 +37,12 @@
             </div>
         } @else {
             @switch (data.entityType) {
+                @case (SystemOrigin.TIMER) {
+                    <p>Are you sure you want to delete the timer <i>{{ data.timerToDelete.displayName }}</i>?</p>
+                }
+                @case (SystemOrigin.PARAMETER) {
+                    <p>Are you sure you want to delete the parameter <i>{{ data.parameterToDelete.displayName }}</i>?</p>
+                }
                 @case (EntityType.SENSOR) {
                     <p>Are you sure you want to delete the sensor <i>{{ data.sensorToDelete.displayName }}</i>?</p>
                     @if (this.selfLocks != null && this.selfLocks.length > 0) {

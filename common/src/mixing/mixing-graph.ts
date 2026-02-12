@@ -24,6 +24,48 @@ export class MixingGraph {
         }
     }
     
+    public generateGroupLevels(): MixingGraphGroupLevels {
+        let alreadyFound: MixingGraphGroup[]              = [];
+        let nextLevel: MixingGraphGroupLevel;
+        const sensorGroupsLevels: MixingGraphGroupLevel[] = [];
+        do {
+            nextLevel = this.sensorGroups.filter(
+                group =>
+                    !alreadyFound.includes(group)
+                    && group.dependingOn.every(
+                        dependency =>
+                            (dependency.origin != DatumOrigin.GROUP) || (alreadyFound.some(found => found.name == dependency.name))
+                    )
+            );
+            if (nextLevel.length > 0) {
+                sensorGroupsLevels.push(nextLevel);
+                alreadyFound.push(...nextLevel);
+            }
+        } while (nextLevel.length > 0);
+        
+        alreadyFound                                        = [];
+        const actuatorGroupsLevels: MixingGraphGroupLevel[] = [];
+        do {
+            nextLevel = this.actuatorGroups.filter(
+                group =>
+                    !alreadyFound.includes(group)
+                    && group.dependingOn.every(
+                        dependency =>
+                            (dependency.origin != DatumOrigin.GROUP) || (alreadyFound.some(found => found.name == dependency.name))
+                    )
+            );
+            if (nextLevel.length > 0) {
+                actuatorGroupsLevels.push(nextLevel);
+                alreadyFound.push(...nextLevel);
+            }
+        } while (nextLevel.length > 0);
+        
+        return {
+            actuatorGroupLevels: actuatorGroupsLevels,
+            sensorGroupLevels:   sensorGroupsLevels
+        };
+    }
+    
     public toJSON(): MixingGraphJSON {
         return {
             origins:        this.origins.slice(),
@@ -166,6 +208,13 @@ export class MixingGraphGroup {
         mixingGraphGroup.dependingOn = mixingGraphGroupJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency));
         return mixingGraphGroup
     }
+}
+
+export type MixingGraphGroupLevel = MixingGraphGroup[];
+
+export interface MixingGraphGroupLevels {
+    actuatorGroupLevels: MixingGraphGroupLevel[],
+    sensorGroupLevels: MixingGraphGroupLevel[]
 }
 
 export class MixingGraphActuator {

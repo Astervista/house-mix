@@ -75,7 +75,7 @@ export class SensorController {
         @Param('name')
         name: string
     ): Promise<MixPositionInfo[]> {
-        return await this.mixService.deleteLocks(EntityType.SENSOR, name);
+        return await this.mixService.getDeleteLocks(EntityType.SENSOR, name);
     }
     
     

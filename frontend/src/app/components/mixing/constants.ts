@@ -1,5 +1,6 @@
 import {DatumOrigin, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {
+    ArbitraryInputsElaborationNodeImplementationConstructor,
     ElaborationNodeAddition,
     ElaborationNodeAllTypesTest,
     ElaborationNodeBinaryChoice,
@@ -27,10 +28,11 @@ import {
     ElaborationNodeLessThan,
     ElaborationNodeMax,
     ElaborationNodeMin,
+    ElaborationNodeMultipleChoice,
     ElaborationNodeMultiplication,
     ElaborationNodeNullGuard,
-    ElaborationNodeRetrieveEvent,
-    ElaborationNodeSaveEvent,
+    ElaborationNodeRetrieve,
+    ElaborationNodeSave,
     ElaborationNodeSubtraction,
     ElaborationNodeSunEvents,
     ElaborationNodeTimeFromValues,
@@ -74,7 +76,18 @@ export type ElaborationNodeLibraryItem = {
     special: true,
     isTyped: true,
     nullMarked: true,
+    arbitraryNumber: false,
     constructor: TypedNullMarkedElaborationNodeImplementationConstructor;
+    description: string;
+    code: ElaborationNodeCode;
+    datumType: DatumType;
+    nullableMark: boolean
+} | {
+    special: true,
+    isTyped: true,
+    nullMarked: true,
+    arbitraryNumber: true,
+    constructor: ArbitraryInputsElaborationNodeImplementationConstructor;
     description: string;
     code: ElaborationNodeCode;
     datumType: DatumType;
@@ -96,6 +109,7 @@ export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> 
     GREATER_THAN:          'Greater than',
     LESS_THAN:             'Less than',
     BINARY_CHOICE:         'Binary choice',
+    MULTIPLE_CHOICE: 'Multiple choice',
     EXTRACT_RGB:           'Extract RGB',
     EXTRACT_HSL:           'Extract_HSL',
     EXTRACT_HSV:           'Extract_HSV',
@@ -213,7 +227,19 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 nullableMark: false,
                 special:      true,
                 isTyped:      true,
-                nullMarked:   true
+                nullMarked:      true,
+                arbitraryNumber: false
+            },
+            {
+                constructor:     ElaborationNodeMultipleChoice,
+                description:     'Selects a value among a series of options, by index. Indexes outside of range loop, non-integer indexes get rounded.',
+                code:            ElaborationNodeCode.MULTIPLE_CHOICE,
+                datumType:       DatumType.STRING,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: true
             }
         ]
     },
@@ -333,7 +359,7 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
         sectionName: 'Storage',
         nodes:       [
             {
-                constructor:  ElaborationNodeSaveEvent,
+                constructor:     ElaborationNodeSave,
                 description:  'Stores a value in permanent storage so it can be retrieved in a future elaboration of the mix through a "Retrieve a value" node.' +
                               ' Different values can be saved independently with a different name',
                 code:         ElaborationNodeCode.SAVE,
@@ -341,10 +367,11 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 nullableMark: false,
                 special:      true,
                 isTyped:      true,
-                nullMarked:   true
+                nullMarked:      true,
+                arbitraryNumber: false
             },
             {
-                constructor:  ElaborationNodeRetrieveEvent,
+                constructor:     ElaborationNodeRetrieve,
                 description:  'Retrieves a value from permanent storage that was previously stored with a "Store a value" node' +
                               ' Different values can be saved independently with a different name',
                 code:         ElaborationNodeCode.RETRIEVE,
@@ -352,7 +379,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 nullableMark: false,
                 special:      true,
                 isTyped:      true,
-                nullMarked:   true
+                nullMarked:      true,
+                arbitraryNumber: false
             }
         ]
     }

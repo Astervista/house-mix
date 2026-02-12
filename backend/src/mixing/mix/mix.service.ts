@@ -14,6 +14,7 @@ import {MixingGraph, MixingGraphActuator, MixingGraphCenter, MixingGraphDependen
 import {Group} from "@common/devices/group/group";
 import {EntityType} from "@common/devices/constants";
 import {Actuator} from "@common/devices/actuator/actuator";
+import {EngineService} from "../../engine/engine.service";
 
 const SAVE_FILE = "mixing/mix.json";
 
@@ -31,7 +32,9 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         @Inject(forwardRef(() => ActuatorService))
         private actuatorService: ActuatorService,
         @Inject(forwardRef(() => GroupService))
-        private groupService: GroupService
+        private groupService: GroupService,
+        @Inject(forwardRef(() => EngineService))
+        private engineService: EngineService
     ) {
         super(fileService, SAVE_FILE, MixData);
     }
@@ -331,6 +334,9 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         if (mix.hasFreeNonNull) {
             throw new BadRequestException("The new mix has non-null inputs that are free-floating");
         }
+        if (!mix.uniqueInboundConnections) {
+            throw new BadRequestException("The new mix has non-unique inbound connections");
+        }
         
         if (isNew) {
             data.mixes.push(mix);
@@ -363,6 +369,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             }
             data.mixes.push(mix);
         }
+        this.engineService.requestRecalculation();
         this.saveData();
         const newId = mix.id;
         if (newId == "NEW") {
@@ -391,7 +398,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                           return new ExportedDatum(
                               timer.name,
                               DatumType.DATE_TIME,
-                              false,
+                              true,
                               DatumOrigin.SYSTEM,
                               SystemOrigin.TIMER,
                               timer.displayName
@@ -810,6 +817,22 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         if (datum != null) {
             mix.removeOutput(datum);
         }
+        this.engineService.requestRecalculation();
+        this.saveData();
+    }
+    
+    
+    public async addOutputToMix(mixId: number, outputInfo: Datum): Promise<void> {
+        const data = await this.data;
+        const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
+        if (mix == null) {
+            throw new NotFoundException();
+        }
+        if (mix.outputs.some(otherOutput => otherOutput.name == outputInfo.name)) {
+            throw new BadRequestException("Output already exists");
+        }
+        mix.addOutput(outputInfo);
+        this.engineService.requestRecalculation();
         this.saveData();
     }
     
@@ -1083,10 +1106,32 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
-    public async deleteLocks(entityType: EntityType, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
+    public async getDeleteLocks(entityType: EntityType | SystemOrigin, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
         const data = await this.data;
         let mixes: Mix[];
         switch (entityType) {
+            case SystemOrigin.PARAMETER: {
+                mixes = data.mixes.filter(
+                    mix => !excludeMixes.includes(mix.id) && mix.imports.some(
+                        imp =>
+                           imp.origin == DatumOrigin.SYSTEM
+                           && imp.originName == (SystemOrigin.PARAMETER as string)
+                           && imp.name == name
+                    )
+                );
+                break;
+            }
+            case SystemOrigin.TIMER: {
+                mixes = data.mixes.filter(
+                    mix => !excludeMixes.includes(mix.id) && mix.imports.some(
+                        imp =>
+                           imp.origin == DatumOrigin.SYSTEM
+                           && imp.originName == (SystemOrigin.TIMER as string)
+                           && imp.name == name
+                    )
+                );
+                break;
+            }
             case EntityType.GROUP: {
                 const group = await this.groupService.getGroupByName(name);
                 if (group == null) {
@@ -1247,6 +1292,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             }
         }
         data.mixes.splice(index, 1);
+        this.engineService.requestRecalculation();
         this.saveData();
     }
     

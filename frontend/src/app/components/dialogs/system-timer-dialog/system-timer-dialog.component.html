@@ -75,6 +75,11 @@
     <button
         mat-button
         [disabled]="formGroup == null || formGroup.invalid"
-        (click)="confirm()">add
+        (click)="confirm()">
+        @if (data.edit != null) {
+            Edit
+        } @else {
+            Add
+        }
     </button>
 </mat-dialog-actions>

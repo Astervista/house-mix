@@ -1,17 +1,17 @@
 import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {Datum, DatumJSON, DatumOrigin, DatumType, ExportedDatum, ExportedDatumJSON} from "./datum";
-import {ElaborationNode, ElaborationNodeJSON} from "./elaboration-node";
+import {ElaborationNode, ElaborationNodeJSON, ElaborationNodeRetrieve, ElaborationNodeSave} from "./elaboration-node";
 
 
-export enum CompositionCalculationErrorType {
+export enum MixCalculationErrorType {
     CYCLIC_GRAPH      = "CYCLIC_GRAPH",
     WRONG_CONNECTIONS = "WRONG_CONNECTIONS",
     UNKNOWN_NODE      = "UNKNOWN_NODE",
 }
 
-export class CompositionCalculationError extends Error {
+export class MixCalculationError extends Error {
     constructor(
-        public readonly type: CompositionCalculationErrorType) {
+        public readonly type: MixCalculationErrorType) {
         super(`Error while calculating composition result. Error type ${type}`);
     }
 }
@@ -269,21 +269,25 @@ export class Mix {
         }
     }
     
-    public calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+    public calculate(inputValues: Map<string, unknown>, storage: MixingStorage): MixingCalculationResult {
         if (this.containsCycles) {
-            throw new CompositionCalculationError(CompositionCalculationErrorType.CYCLIC_GRAPH);
+            throw new MixCalculationError(MixCalculationErrorType.CYCLIC_GRAPH);
         }
         if (this.wrongConnections.length > 0) {
-            throw new CompositionCalculationError(CompositionCalculationErrorType.WRONG_CONNECTIONS);
+            throw new MixCalculationError(MixCalculationErrorType.WRONG_CONNECTIONS);
         }
         const knownInputs: Map<number, Map<string, unknown>> = new Map<number, Map<string, unknown>>();
-        const discoveredNodes: Set<ElaborationNode>          = new Set<ElaborationNode>;
-        const results: Map<string, unknown>                  = new Map<string, unknown>();
+        const discoveredNodes: Set<ElaborationNode> = new Set<ElaborationNode>(this.sourceNodes);
+        const result: MixingCalculationResult       = {
+            outputs:       new Map<string, unknown>(),
+            storageUpdate: [],
+            nodeOutputs:   {}
+        };
         
         const addOutput = (connection: Connection, value: unknown): void => {
             if (connection.drainType == ConnectionDrainType.OUTPUT) {
                 if (this._outputs.some(output => output.name == connection.outputName)) {
-                    results.set(connection.outputName, value);
+                    result.outputs.set(connection.outputName, value);
                 } else {
                     throw new CompositionCalculationOutputError(CompositionCalculationOutputErrorType.UNKNOWN_OUTPUT_NAME, connection.outputName);
                 }
@@ -296,7 +300,7 @@ export class Mix {
                 nodeKnownInputs.set(connection.drainNodeInputName, value);
                 const node = this._nodes.find(candidateNode => candidateNode.id == connection.drainNodeId);
                 if (node == null) {
-                    throw new CompositionCalculationError(CompositionCalculationErrorType.UNKNOWN_NODE);
+                    throw new MixCalculationError(MixCalculationErrorType.UNKNOWN_NODE);
                 }
                 discoveredNodes.add(node);
             }
@@ -322,11 +326,51 @@ export class Mix {
                 if (nodeKnownInputs == null) {
                     continue;
                 }
-                // Check if every input is known
-                if (node.inputs.every(input => nodeKnownInputs.has(input.name))) {
+                // Check if every input is known or it's a nullable input without any inbound connection
+                if (
+                    node
+                        .inputs
+                        .every(input => {
+                                   if (nodeKnownInputs.has(input.name)) {
+                                       return true;
+                                   }
+                                   if (input.nullable) {
+                                       if (!this.connections.some(connection => connection.drainType == ConnectionDrainType.NODE && connection.drainNodeId == node.id &&
+                                                                                connection.drainNodeInputName == input.name)) {
+                                           return true;
+                                       }
+                                   }
+                                   return false;
+                               }
+                        )
+                ) {
                     // If it is, we advance the discovery by adding to the known inputs the outputs of this node
-                    unchanged     = false;
+                    unchanged = false;
+                    // If it's a node that retrieves from storage, we need to pass the storage
+                    if (node instanceof ElaborationNodeRetrieve) {
+                        node.allSaves = storage;
+                    }
+                    for (const input of node.inputs) {
+                        if (!nodeKnownInputs.has(input.name)) {
+                            nodeKnownInputs.set(input.name, null);
+                        }
+                    }
                     const outputs = node.elaborate(nodeKnownInputs);
+                    const outputObject          = {};
+                    result.nodeOutputs[node.id] = outputObject;
+                    for (const nodeOutput of node.outputs) {
+                        outputObject[nodeOutput.name] = Datum.valueToJSON(outputs.get(nodeOutput.name), nodeOutput.type);
+                    }
+                    if (node instanceof ElaborationNodeSave) {
+                        const lastElaborationSave = node.lastElaborationSave;
+                        if (lastElaborationSave != null) {
+                            result.storageUpdate.push({
+                                                          datumType: node.options.dataType,
+                                                          name:      lastElaborationSave.name,
+                                                          value:     lastElaborationSave.value
+                                                      });
+                        }
+                    }
                     // Get all the outgoing connections to update
                     for (const connection of this.getConnectionsFromNode(node.id)) {
                         addOutput(connection, outputs.get(connection.sourceNodeOutputName));
@@ -337,16 +381,16 @@ export class Mix {
         } while (!unchanged && discoveredNodes.size > 0);
         
         for (const output of this._outputs) {
-            if (!results.has(output.name) && !output.nullable) {
+            if (!result.outputs.has(output.name) && !output.nullable) {
                 throw {type: CompositionCalculationOutputErrorType.MISSING_OUTPUT, outputName: output.name} as CompositionCalculationOutputError;
             }
-            const outputValue = results.get(output.name) ?? null;
+            const outputValue = result.outputs.get(output.name) ?? null;
             if (!output.checkValue(outputValue)) {
                 throw {type: CompositionCalculationOutputErrorType.WRONG_OUTPUT_TYPE, outputName: output.name} as CompositionCalculationOutputError;
             }
         }
         
-        return results;
+        return result;
     }
     
     public get sourceConnections(): (ConnectionSourceFromInput & ConnectionDrain)[] {
@@ -425,12 +469,8 @@ export class Mix {
     
     public get containsCycles(): boolean {
         const firstChildren = new Set<number>(
-            this
-                ._connections
-                .filter((connection: Connection): connection is ConnectionSourceFromInput & ConnectionDrainToNode => {
-                    return connection.sourceType == ConnectionSourceType.INPUT && connection.drainType == ConnectionDrainType.NODE;
-                })
-                .map(connection => connection.drainNodeId)
+            this.sourceNodes
+                .map(node => node.id)
         );
         for (const firstChild of firstChildren) {
             if (this.checkCycleDepth(new Set<number>(), firstChild)) {
@@ -438,6 +478,22 @@ export class Mix {
             }
         }
         return false;
+    }
+    
+    private get sourceNodes(): ElaborationNode[] {
+        return this
+            ._nodes
+            .filter(
+                node =>
+                    this
+                        ._connections
+                        .filter(
+                            connection =>
+                                connection.drainType == ConnectionDrainType.NODE
+                                && connection.drainNodeId == node.id
+                                && connection.sourceType == ConnectionSourceType.NODE
+                        ).length == 0
+            );
     }
     
     private checkCycleDepth(passed: Set<number>, current: number): boolean {
@@ -515,6 +571,32 @@ export class Mix {
                                       );
                        }
                    );
+    }
+    
+    public get uniqueInboundConnections(): boolean {
+        for (const connection of this._connections) {
+            if (connection.drainType == ConnectionDrainType.NODE) {
+                if (this._connections.some(
+                    otherConnection =>
+                        otherConnection != connection
+                        && otherConnection.drainType == ConnectionDrainType.NODE
+                        && otherConnection.drainNodeId == connection.drainNodeId
+                        && otherConnection.drainNodeInputName == connection.drainNodeInputName)
+                ) {
+                    return false;
+                }
+            } else { // ConnectionDrainType.OUTPUT
+                if (this._connections.some(
+                    otherConnection =>
+                        otherConnection != connection
+                        && otherConnection.drainType == ConnectionDrainType.OUTPUT
+                        && otherConnection.outputName == connection.outputName
+                )) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
     
     public getInputByNodeAndName(nodeId: number, inputName: string): Datum | null {
@@ -658,6 +740,90 @@ export interface ConnectionDrainToNode {
 type ConnectionDrain = ConnectionDrainToOutput | ConnectionDrainToNode
 
 export type Connection = ConnectionSource & ConnectionDrain;
+
+export type MixingStorage = Record<DatumType, Map<string, unknown>>;
+
+export type MixingStorageJSON = Record<DatumType, Record<string, unknown>>
+
+export function mixingStorageToJSON(storage: MixingStorage): MixingStorageJSON {
+    
+    const result = {} as MixingStorageJSON;
+    for (const datumType of Object.values(DatumType)) {
+        result[datumType] =
+            Object.fromEntries(
+                [...storage[datumType].entries()]
+                    .map(entry =>
+                             [
+                                 entry[0],
+                                 Datum.valueToJSON(
+                                     entry[1],
+                                     datumType
+                                 )
+                             ]
+                    )
+            );
+        
+    }
+    return result;
+}
+
+
+export interface StorageUpdate {
+    datumType: DatumType,
+    name: string,
+    value: unknown
+}
+
+export interface StorageUpdateJSON {
+    datumType: DatumType,
+    name: string,
+    value: unknown
+}
+
+export function storageUpdateToJSON(storageUpdate: StorageUpdate): StorageUpdateJSON {
+    return {
+        datumType: storageUpdate.datumType,
+        name:      storageUpdate.name,
+        value:     Datum.valueToJSON(storageUpdate.value, storageUpdate.datumType)
+    };
+}
+
+export function storageUpdateFromJSON(storageUpdateJSON: StorageUpdateJSON): StorageUpdate {
+    return {
+        datumType: storageUpdateJSON.datumType,
+        name:      storageUpdateJSON.name,
+        value:     Datum.valueFromJSON(storageUpdateJSON.value, storageUpdateJSON.datumType)
+    };
+}
+
+
+export interface MixingCalculationResult {
+    outputs: Map<string, unknown>;
+    storageUpdate: StorageUpdate[];
+    nodeOutputs: Record<number, Record<string, unknown>>;
+}
+
+export interface MixingCalculationResultJSON {
+    outputs: Record<string, unknown>;
+    storageUpdate: StorageUpdateJSON[];
+    nodeOutputs: Record<number, Record<string, unknown>>;
+}
+
+export function mixingCalculationResultToJSON(result: MixingCalculationResult): MixingCalculationResultJSON {
+    return {
+        outputs:       Object.fromEntries(result.outputs),
+        storageUpdate: result.storageUpdate.map(storageUpdateToJSON),
+        nodeOutputs:   result.nodeOutputs
+    };
+}
+
+export function mixingCalculationResultFromJSON(resultJSON: MixingCalculationResultJSON): MixingCalculationResult {
+    return {
+        outputs:       new Map(Object.entries(resultJSON.outputs)),
+        storageUpdate: resultJSON.storageUpdate.map(storageUpdateFromJSON),
+        nodeOutputs:   resultJSON.nodeOutputs
+    };
+}
 
 export class ConnectionJSON {
     

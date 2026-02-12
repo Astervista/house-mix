@@ -5,6 +5,7 @@ import {FileService} from "../../helpers/file/file.service";
 import MixService from "../../mixing/mix/mix.service";
 import {DatumOrigin} from "@common/mixing/mix/datum";
 import {SystemOrigin} from "@common/system/constants";
+import {EngineService} from "../../engine/engine.service";
 
 const SAVE_FILE = "system/parameters.json";
 
@@ -14,7 +15,9 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
     constructor(
         fileService: FileService,
         @Inject(forwardRef(() => MixService))
-        private mixService: MixService
+        private mixService: MixService,
+        @Inject(forwardRef(() => EngineService))
+        private engineService: EngineService
     ) {
         super(fileService, SAVE_FILE, ParameterData);
     }
@@ -69,6 +72,7 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
             throw new BadRequestException("The provided value is not valid for the chosen parameter")
         }
         parameter.value = value;
+        this.engineService.requestRecalculation();
         this.saveData();
     }
 }

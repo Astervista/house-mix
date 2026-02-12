@@ -36,7 +36,6 @@
         <div
             class="node-preview-exposed-side">
             @for (input of examples[item.code].inputs; track $index) {
-
                 <div
                     class="input-group">
                                             <span class="connector-input-circle"
@@ -48,6 +47,23 @@
                     <span class="input-name">{{ input.name }}</span>
                     <span class="input-type">{{ DATUM_TYPE_DISPLAY[input.type] }}</span>
                     @if (input.nullable) {
+                        <span class="input-type">Nullable</span>
+                    }
+                </div>
+            }
+            @let example = examples[item.code];
+            @if (isArbitraryInputsNode(example)) {
+                <div
+                    class="input-group">
+                                            <span class="connector-input-circle"
+                                                  [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
+                    @if (!example.options.nullable) {
+                        <span class="connector-input-circle-non-null"
+                              [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
+                    }
+                    <span class="input-name">...Additional inputs</span>
+                    <span class="input-type">{{ DATUM_TYPE_DISPLAY[example.options.dataType] }}</span>
+                    @if (example.options.nullable) {
                         <span class="input-type">Nullable</span>
                     }
                 </div>

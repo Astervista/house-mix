@@ -44,7 +44,11 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
                     if (!item.nullMarked) {
                         examples[item.code] = new item.constructor(0, {dataType: item.datumType});
                     } else {
-                        examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullMarked});
+                        if (item.arbitraryNumber) {
+                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullMarked, inputNumber: 1});
+                        } else {
+                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullMarked});
+                        }
                     }
                 } else {
                     examples[item.code] = new item.constructor(0);

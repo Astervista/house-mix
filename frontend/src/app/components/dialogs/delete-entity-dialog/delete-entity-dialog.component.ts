@@ -20,6 +20,10 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {MatIcon} from '@angular/material/icon';
 import {UnavailableParents} from '@common/devices/rest-classes';
 import {NgTemplateOutlet} from '@angular/common';
+import {SystemOrigin} from '@common/system/constants';
+import {SystemParameter} from '@common/system/parameter/system-parameter';
+import {SystemTimer} from '@common/system/timer/system-timer';
+import {SystemService} from '../../../services/system.service';
 
 @Component({
                selector:    'house-mix-delete-entity-dialog',
@@ -71,7 +75,8 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
         @Inject(MAT_DIALOG_DATA) data: DeleteEntityDialogData,
         matDialogRef: MatDialogRef<DeleteEntityDialogComponent, DeleteGroupOptions>,
         private groupService: GroupService,
-        private deviceService: DeviceService
+        private deviceService: DeviceService,
+        private systemService: SystemService
     ) {
         super(data, matDialogRef);
         if (data.entityType == EntityType.GROUP) {
@@ -161,12 +166,21 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
             case EntityType.ACTUATOR:
                 lockPromise = this.deviceService.getActuatorDeleteLocks({name: data.actuatorToDelete.name})
                 break;
+            case SystemOrigin.TIMER:
+                lockPromise = this.systemService.getTimerDeleteLocks({name: data.timerToDelete.name});
+                break;
+            case SystemOrigin.PARAMETER:
+                lockPromise = this.systemService.getParameterDeleteLocks({name: data.parameterToDelete.name});
+                break;
         }
         lockPromise
             .then(locks => {
                 this.deleteLocksLoadingStatus = LoadingStatus.LOADED;
                 const selfLocks   = locks.filter(lock => {
                     switch (data.entityType) {
+                        case SystemOrigin.TIMER:
+                        case SystemOrigin.PARAMETER:
+                            return false;
                         case EntityType.SENSOR:
                             return lock.phase == MixPhase.SENSORS && lock.target == MixTarget.DEVICE && lock.sensorName == data.sensorToDelete.name;
                         case EntityType.GROUP:
@@ -225,7 +239,8 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
     protected readonly EntityType    = EntityType;
     protected readonly LoadingStatus = LoadingStatus;
     protected readonly MixPhase  = MixPhase;
-    protected readonly MixTarget = MixTarget;
+    protected readonly MixTarget    = MixTarget;
+    protected readonly SystemOrigin = SystemOrigin;
 }
 
 export type DeleteEntityDialogData = {
@@ -239,4 +254,10 @@ export type DeleteEntityDialogData = {
 } | {
     entityType: EntityType.ACTUATOR;
     actuatorToDelete: Actuator
+} | {
+    entityType: SystemOrigin.TIMER;
+    timerToDelete: SystemTimer
+} | {
+    entityType: SystemOrigin.PARAMETER;
+    parameterToDelete: SystemParameter
 }
