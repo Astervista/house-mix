@@ -4,7 +4,7 @@ import {Router} from '@angular/router';
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
 import {AddMixDialogComponent} from '../dialogs/add-mix-dialog/add-mix-dialog.component';
 import {MixingService} from './mixing.service';
-import {MixingGraph, MixingGraphActuator, MixingGraphCenter, MixingGraphDependency, MixingGraphGroup, MixingGraphSensor} from '@common/mixing/mixing-graph';
+import {MixGraphElement, MixingGraph, MixingGraphActuator, MixingGraphCenter, MixingGraphDependency, MixingGraphGroup, MixingGraphSensor} from '@common/mixing/mixing-graph';
 import {DatumOrigin} from '@common/mixing/mix/datum';
 import {DATUM_ORIGIN_DISPLAY, graphConnectionSmoothPath, Line, MEASURES} from './constants';
 import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.component';
@@ -138,8 +138,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     protected sensorGroupsLevels: MixingGraphGroup[][]   = [];
     protected actuatorGroupsLevels: MixingGraphGroup[][] = [];
+    protected orders: Map<MixGraphElement, number> = new Map<MixGraphElement, number>();
 
-    private _selectedElement: MixGraphElement | null = null;
+    private _selectedElement: MixGraphElement | TopDatumOrigin | null = null;
 
     private _selectedPhase: MixGraphPhase | null = null;
 
@@ -202,6 +203,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
             .then(graph => {
                 this.graph = graph;
                 this.createLevels(graph);
+                this.reorderElements();
                 return graph;
             });
         return this.graphReady;
@@ -269,11 +271,11 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         this.subscriptions = [];
     }
 
-    public get selectedElement(): MixGraphElement | null {
+    public get selectedElement(): MixGraphElement | TopDatumOrigin | null {
         return this._selectedElement;
     }
 
-    public set selectedElement(value: MixGraphElement | null) {
+    public set selectedElement(value: MixGraphElement | TopDatumOrigin | null) {
         this._selectedElement = value;
         this._selectedPhase   = null;
         setTimeout(() => {
@@ -309,7 +311,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                ) == 0;
     }
 
-    public isElementInPhase(element: MixGraphElement, phase: MixGraphPhase | null): boolean {
+    public isElementInPhase(element: MixGraphElement | TopDatumOrigin, phase: MixGraphPhase | null): boolean {
         if (phase == null) {
             return false;
         }
@@ -382,6 +384,112 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         const {sensorGroupLevels, actuatorGroupLevels} = graph.generateGroupLevels();
         this.sensorGroupsLevels                        = sensorGroupLevels;
         this.actuatorGroupsLevels                      = actuatorGroupLevels;
+    }
+
+    private reorderElements(): void {
+        const orders: Map<MixGraphElement, number> = new Map<MixGraphElement, number>();
+        if (this.graph != null) {
+            const sensorNamesOrder =
+                      this
+                          .graph
+                          .sensors
+                          .map(sensor => sensor.name)
+                          .sort((a, b) => a.localeCompare(b));
+            let orderProgressive   = 0;
+            for (const sensor of this.graph.sensors) {
+                orders.set(sensor, sensorNamesOrder.indexOf(sensor.name));
+                this.graph.getDependingFrom(sensor).forEach(dependency => {
+                    orders.set(dependency, orderProgressive);
+                });
+                orderProgressive++;
+            }
+            for (const level of this.sensorGroupsLevels) {
+                orderProgressive   = 0;
+                const orderedLevel = this.finalizeOrder(level, orders);
+                for (const group of orderedLevel) {
+                    orderProgressive = this.reorderChildElements(group, orders, orderProgressive);
+                }
+            }
+            orderProgressive     = 0;
+            const orderedCenters = this.finalizeOrder(this.graph.centers, orders);
+            for (const center of orderedCenters) {
+                orderProgressive = this.reorderChildElements(center, orders, orderProgressive);
+            }
+            for (const level of this.actuatorGroupsLevels) {
+                orderProgressive   = 0;
+                const orderedLevel = this.finalizeOrder(level, orders);
+                for (const group of orderedLevel) {
+                    orderProgressive = this.reorderChildElements(group, orders, orderProgressive);
+                }
+            }
+            orderProgressive       = 0;
+            const orderedActuators = this.finalizeOrder(this.graph.actuators, orders);
+            for (const actuator of orderedActuators) {
+                orderProgressive = this.reorderChildElements(actuator, orders, orderProgressive);
+            }
+        }
+        this.orders = orders;
+    }
+
+    private finalizeOrder<T extends MixGraphElement>(elements: T[], orders: Map<MixGraphElement, number>): T[] {
+        const orderedElements = elements
+            .slice()
+            .sort((a, b) => {
+                if (orders.get(a) != null && orders.get(b) != null) {
+                    if ((orders.get(a) ?? 0) < (orders.get(b) ?? 0)) {
+                        return -1;
+                    } else if ((orders.get(a) ?? 0) > (orders.get(b) ?? 0)) {
+                        return 1;
+                    } else {
+                        return a.name.localeCompare(b.name);
+                    }
+                } else if (orders.get(a) != null) {
+                    return -1;
+                } else if (orders.get(b) != null) {
+                    return 1;
+                } else {
+                    return a.name.localeCompare(b.name);
+                }
+            });
+        orderedElements
+            .forEach((el, index) => {
+                orders.set(el, index);
+            });
+        return orderedElements;
+    }
+
+    private reorderChildElements(element: MixGraphElement, orders: Map<MixGraphElement, number>, orderProgressive: number): number {
+        if (this.graph) {
+            const dependingElements     = this
+                .graph
+                .getDependingFrom(element)
+                .sort((a, b) => {
+                    if (orders.get(a) != null && orders.get(b) != null) {
+                        return (orders.get(a) ?? 0) - (orders.get(b) ?? 0);
+                    } else if (orders.get(a) != null) {
+                        return -1;
+                    } else if (orders.get(b) != null) {
+                        return 1;
+                    } else {
+                        return 0;
+                    }
+                });
+            let preOrder: null | number = null;
+            const lastPreOrder          = dependingElements[0];
+            if (lastPreOrder) {
+                preOrder = orders.get(lastPreOrder) ?? null;
+            }
+            for (const depending of dependingElements) {
+                const thisPreOrder = orders.get(depending) ?? null;
+                if (thisPreOrder != preOrder) {
+                    orderProgressive++;
+                    preOrder = thisPreOrder;
+                }
+                orders.set(depending, orderProgressive);
+            }
+            orderProgressive++;
+        }
+        return orderProgressive;
     }
 
     protected recalculateConnections(graph: MixingGraph): void {
@@ -1233,11 +1341,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE;
 
-type MixGraphElement = MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | TopDatumOrigin;
-
 interface MixingGraphLink {
-    from: MixGraphElement,
-    to: MixGraphElement,
+    from: MixGraphElement | TopDatumOrigin,
+    to: MixGraphElement | TopDatumOrigin,
     displayPosition: Line;
 }
 

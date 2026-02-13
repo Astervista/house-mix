@@ -15,6 +15,8 @@ import {Group} from "@common/devices/group/group";
 import {EntityType} from "@common/devices/constants";
 import {Actuator} from "@common/devices/actuator/actuator";
 import {EngineService} from "../../engine/engine.service";
+import {DeviceMonitorService} from "../../system/device-monitor/device-monitor.service";
+import {MixLayout} from "@common/mixing/mix/mix-layout";
 
 const SAVE_FILE = "mixing/mix.json";
 
@@ -27,6 +29,8 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         private parameterService: ParametersService,
         @Inject(forwardRef(() => TimersService))
         private timersService: TimersService,
+        @Inject(forwardRef(() => DeviceMonitorService))
+        private deviceMonitorService: DeviceMonitorService,
         @Inject(forwardRef(() => SensorService))
         private sensorService: SensorService,
         @Inject(forwardRef(() => ActuatorService))
@@ -404,6 +408,18 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                               timer.displayName
                           );
                       });
+        const deviceMonitorData =
+                  (await this.deviceMonitorService.getAllDevices())
+                      .map((device): ExportedDatum => {
+                          return new ExportedDatum(
+                              device.name,
+                              DatumType.BOOLEAN,
+                              true,
+                              DatumOrigin.SYSTEM,
+                              SystemOrigin.DEVICE_STATUS,
+                              device.name
+                          );
+                      });
         
         if (position.phase == MixPhase.SENSORS) {
             if (position.target == MixTarget.DEVICE) {
@@ -414,6 +430,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...deviceMonitorData,
                     ...sensor
                         .exposes
                         .flatMap(exposed =>
@@ -447,6 +464,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...deviceMonitorData,
                     ...await this.getGroupImportsInSensorPhase(group)
                 ];
             }
@@ -454,6 +472,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             return [
                 ...parameterData,
                 ...timerData,
+                ...deviceMonitorData,
                 ...await this.getGroupImportsInSensorPhase(null)
             ];
         } else { // MixPhase.ACTUATORS
@@ -484,6 +503,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...deviceMonitorData,
                     ...centerMixOutputs,
                     ...await this.getGroupImportsInActuatorPhase(group)
                 ];
@@ -496,6 +516,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...deviceMonitorData,
                     ...centerMixOutputs,
                     ...(group != null ? await this.getGroupImportsInActuatorPhase(group, true) : [])
                 ];
@@ -1110,6 +1131,17 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         const data = await this.data;
         let mixes: Mix[];
         switch (entityType) {
+            case SystemOrigin.DEVICE_STATUS: {
+                mixes = data.mixes.filter(
+                    mix => !excludeMixes.includes(mix.id) && mix.imports.some(
+                        imp =>
+                           imp.origin == DatumOrigin.SYSTEM
+                           && imp.originName == (SystemOrigin.DEVICE_STATUS as string)
+                           && imp.name == name
+                    )
+                );
+                break;
+            }
             case SystemOrigin.PARAMETER: {
                 mixes = data.mixes.filter(
                     mix => !excludeMixes.includes(mix.id) && mix.imports.some(
@@ -1296,6 +1328,32 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         this.saveData();
     }
     
+    public async getMixLayout(mixId: number): Promise<MixLayout> {
+        const data = await this.data;
+        const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
+        if (mix == null) {
+            throw new NotFoundException();
+        }
+        return data.layouts.find(layout => layout.mixId == mixId)?.layout ?? new MixLayout({});
+    }
+    
+    public async saveMixLayout(mixId: number, layout: MixLayout): Promise<void> {
+        const data = await this.data;
+        const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
+        if (mix == null) {
+            throw new NotFoundException();
+        }
+        if (!Object.keys(layout.nodePositions).map(key => parseInt(key)).every(id => mix.nodes.some(node => node.id == id))) {
+            throw new BadRequestException("Some node positions are invalid");
+        }
+        const savedLayout = data.layouts.find(otherLayout => otherLayout.mixId == mixId);
+        if (savedLayout) {
+            savedLayout.layout = layout;
+        } else {
+            data.layouts.push({mixId, layout});
+        }
+        this.saveData();
+    }
 }
 
 export default MixService;
@@ -1309,6 +1367,8 @@ class MixData {
     
     public centerMixes: { name: string, displayName: string, mixId: number }[] = [];
     
+    public layouts: { mixId: number, layout: MixLayout }[] = [];
+    
     constructor(mixDataJSON?: MixDataJSON) {
         if (mixDataJSON) {
             this.mixes  = mixDataJSON.mixes.map((mixJSON: MixJSON) => Mix.fromJSON(mixJSON));
@@ -1318,13 +1378,15 @@ class MixData {
             this.nextId = 0;
         }
         this.centerMixes = mixDataJSON?.centerMixes ?? [];
+        this.layouts = mixDataJSON?.layouts ?? [];
     }
     
     public toJSON(): MixDataJSON {
         return {
             mixes:       this.mixes.map((mix: Mix) => mix.toJSON()),
             nextId:      this.nextId,
-            centerMixes: this.centerMixes
+            centerMixes: this.centerMixes,
+            layouts:     this.layouts
         };
     }
     
@@ -1334,4 +1396,5 @@ interface MixDataJSON {
     mixes: MixJSON[];
     nextId: number;
     centerMixes?: { name: string, displayName: string, mixId: number }[];
+    layouts?: { mixId: number, layout: MixLayout }[];
 }

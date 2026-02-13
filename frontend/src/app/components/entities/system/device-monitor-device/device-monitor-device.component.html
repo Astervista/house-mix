@@ -1,0 +1,20 @@
+<span
+    class="display-name">
+    <mat-icon
+        [style.color]="device.connected == null ? 'var(--house-mix-border-color)' : (device.connected ? 'var(--house-mix-correct-color)' : 'var(--house-mix-error-color)')">
+        {{ device.connected == null ? "question_mark" : (device.connected ? "sensors" : "sensors_off") }}
+    </mat-icon>
+    {{ device.name }}
+</span>
+<div class="content">
+    <span class="ip-title">
+        IP address
+    </span>
+    <span class="ip-value">
+        {{ device.ip }}
+    </span>
+</div>
+<span class="current-value">
+    <span class="title">Current status</span>
+    <span class="value">{{ device.connected == null ? "Unknown" : (device.connected ? "Online" : "Offline") }}</span>
+</span>

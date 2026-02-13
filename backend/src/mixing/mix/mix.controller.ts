@@ -4,6 +4,7 @@ import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {createMixInfo, mixInfoFromJSON, MixPositionInfoJSON, PutMixBodyJSON} from "@common/mixing/mix/rest-classes";
 import {ExportedDatumJSON} from "@common/mixing/mix/datum";
 import {MixingGraphJSON} from "@common/mixing/mixing-graph";
+import {MixLayout, Point} from "@common/mixing/mix/mix-layout";
 
 @Controller("mixing/")
 export class MixController {
@@ -45,6 +46,36 @@ export class MixController {
     public async getMixPosition(@Param("id", new ParseIntPipe()) id: number): Promise<MixPositionInfoJSON> {
         return MixPositionInfoJSON.toJSON(await this.mixService.getMixPosition(id));
     }
+    
+    @Get("mixes/:id/layout")
+    public async getMixLayout(@Param("id", new ParseIntPipe()) id: number): Promise<MixLayout> {
+        return await this.mixService.getMixLayout(id);
+    }
+    
+    @Put("mixes/:id/layout")
+    public async saveLayout(@Param("id", new ParseIntPipe()) id: number, @Body() layout: MixLayout): Promise<void> {
+        (layout as { nodePositions: Record<string, Point> | null }).nodePositions ??= {};
+        const oldPositions   = layout.nodePositions;
+        layout.nodePositions = {};
+        for (const key of Object.keys(oldPositions)) {
+            if (isNaN(parseInt(key))) {
+                throw new BadRequestException(`Invalid node index for position (${key} is not an integer)`);
+            }
+            const oldPosition = oldPositions[key] as unknown;
+            if (typeof oldPosition != "object") {
+                throw new BadRequestException(`Invalid node position object (${JSON.stringify(oldPosition)} is not a Point)`);
+            } else if (oldPosition != null) {
+                const checkValue = oldPosition as { x?: unknown, y?: unknown };
+                if (typeof checkValue.x != "number" || typeof checkValue.y != "number") {
+                    throw new BadRequestException(`Node position must contain numerical x and y`);
+                } else {
+                    layout.nodePositions[key] = {x: checkValue.x, y: checkValue.y};
+                }
+            }
+        }
+        await this.mixService.saveMixLayout(id, layout);
+    }
+    
     
     @Put("mixes/")
     public async create(

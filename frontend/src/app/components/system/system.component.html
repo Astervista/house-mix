@@ -78,4 +78,40 @@
             </house-mix-loading-scrim>
         }
     </div>
+    <div class="section-title">
+        <span>
+            Device monitor
+        </span>
+        <button
+                mat-icon-button
+                matTooltip="Monitor a new device"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                (click)="addDevice()">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+    <div
+            class="section-content"
+            [class.fixed-height]="devicesLoadingStatus != LoadingStatus.LOADED || this.devices.length == 0">
+        @if (this.devicesLoadingStatus == LoadingStatus.LOADED) {
+            @if (this.devices.length > 0) {
+                @for (device of this.devices; track device.name) {
+                    <house-mix-device-monitor-device
+                            [device]="device"
+                            [selected]="this.selected == device"
+                            (click)="this.selected = device; $event.stopPropagation()">
+
+                    </house-mix-device-monitor-device>
+                }
+            } @else {
+                <span class="no-items">There is currently no device being monitored</span>
+            }
+        } @else {
+            <house-mix-loading-scrim
+                    [loadingStatus]="devicesLoadingStatus">
+
+            </house-mix-loading-scrim>
+        }
+    </div>
 </div>

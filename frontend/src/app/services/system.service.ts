@@ -6,6 +6,7 @@ import { SystemTimer } from "@common/system/timer/system-timer";
 import { EntityPathParams } from "@common/utils/rest-classes";
 import { SetParameterBody } from "@common/system/parameter/rest-classes";
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
+import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 
 @Injectable({
                 providedIn: 'root'
@@ -14,6 +15,8 @@ import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mix
 export class SystemService {
 
     constructor(private httpClient: HttpClient) { }
+
+    // PARAMETERS
 
     @Get("/parameters/", { result: SystemParameter, resultIsArray: true })
     public getParameters!: () => Promise<SystemParameter[]>;
@@ -41,6 +44,18 @@ export class SystemService {
         }
     )
     private getParameterDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getParameterDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+        const mixPositionJSON = await this
+            .getParameterDeleteLocksRest(params);
+        return mixPositionJSON
+            .map(mixInfoFromJSON)
+            .filter(a => a != null);
+    }
+
+
+    // TIMERS
+
 
     @Get("/timers/", { result: SystemTimer, resultIsArray: true })
     public getTimers!: () => Promise<SystemTimer[]>;
@@ -77,9 +92,40 @@ export class SystemService {
             .filter(a => a != null);
     }
 
-    public async getParameterDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
+
+    // DEVICE MONITOR
+
+
+    @Get('/device-monitor/', {result: DeviceMonitorDevice, resultIsArray: true})
+    public getDeviceMonitorDevices!: () => Promise<DeviceMonitorDevice[]>;
+
+    @Post<SystemTimer, null>(
+        '/device-monitor/'
+    )
+    public createDeviceMonitorDevice!: (deviceMonitorDevice: DeviceMonitorDevice) => Promise<void>;
+
+    @Delete<null, null>(
+        '/device-monitor/:name/'
+    )
+    public deleteDeviceMonitorDevice!: (params: EntityPathParams) => Promise<void>;
+
+    @Patch<DeviceMonitorDevice, null>(
+        '/device-monitor/:name'
+    )
+    public editDeviceMonitorDevice!: (changes: DeviceMonitorDevice, params: EntityPathParams) => Promise<void>;
+
+    @Get<MixPositionInfoJSON>(
+        'device-monitor/:name/delete-locks',
+        {
+            result:        MixPositionInfoJSON,
+            resultIsArray: true
+        }
+    )
+    private getDeviceMonitorDeviceDeleteLocksRest!: (params: EntityPathParams) => Promise<MixPositionInfoJSON[]>;
+
+    public async getDeviceMonitorDeviceDeleteLocks(params: EntityPathParams): Promise<MixPositionInfo[]> {
         const mixPositionJSON = await this
-            .getParameterDeleteLocksRest(params);
+            .getDeviceMonitorDeviceDeleteLocksRest(params);
         return mixPositionJSON
             .map(mixInfoFromJSON)
             .filter(a => a != null);

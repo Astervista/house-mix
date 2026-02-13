@@ -5,6 +5,7 @@ import {HttpClient} from '@angular/common/http';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON, PutMixBodyJSON} from '@common/mixing/mix/rest-classes';
 import {ExportedDatum} from '@common/mixing/mix/datum';
 import {MixingGraph} from '@common/mixing/mixing-graph';
+import {MixLayout} from '@common/mixing/mix/mix-layout';
 
 @Injectable({
                 providedIn: 'root'
@@ -28,6 +29,12 @@ export class MixingService {
 
     @Get('/mixes/:id/position', {result: MixPositionInfoJSON})
     private getMixPositionRest!: (pathParams: { id: number }) => Promise<MixPositionInfoJSON>;
+
+    @Get('/mixes/:id/layout', {result: MixLayout})
+    public getMixLayout!: (pathParams: { id: number }) => Promise<MixLayout>;
+
+    @Put<MixLayout, null>('/mixes/:id/layout', {result: null})
+    public updateMixLayout!: (body: MixLayout, pathParams: { id: number }) => Promise<void>;
 
     @Put<PutMixBodyJSON, { id: number }>('/mixes')
     private putMixRest!: (body: PutMixBodyJSON) => Promise<{ id: number }>;

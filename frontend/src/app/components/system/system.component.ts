@@ -21,18 +21,23 @@ import {Datum} from '@common/mixing/mix/datum';
 import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 import {DeleteEntityDialogComponent, DeleteEntityDialogData} from '../dialogs/delete-entity-dialog/delete-entity-dialog.component';
 import {SystemOrigin} from '@common/system/constants';
+import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
+import {DeviceMonitorDeviceComponent} from '../entities/system/device-monitor-device/device-monitor-device.component';
+import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device-monitor-device-dialog/system-device-monitor-device-dialog.component';
+
 
 
 @Component({
                selector:    'house-mix-system',
-               imports:     [
+               imports: [
                    ToolbarComponent,
                    LoadingScrimComponent,
                    MatIcon,
                    MatIconButton,
                    MatTooltip,
                    ParameterComponent,
-                   TimerComponent
+                   TimerComponent,
+                   DeviceMonitorDeviceComponent
                ],
                templateUrl: './system.component.html',
                styleUrl:    './system.component.scss'
@@ -45,7 +50,10 @@ export class SystemComponent {
     protected timers: SystemTimer[]              = [];
     protected timersLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
-    protected selected: SystemParameter | SystemTimer | null = null;
+    protected devices: DeviceMonitorDevice[]      = [];
+    protected devicesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
+
+    protected selected: SystemParameter | SystemTimer | DeviceMonitorDevice | null = null;
 
     constructor(
         private router: Router,
@@ -70,6 +78,15 @@ export class SystemComponent {
             })
             .catch(() => {
                 this.timersLoadingStatus = LoadingStatus.ERROR;
+            });
+        systemService
+            .getDeviceMonitorDevices()
+            .then(devices => {
+                this.devices              = devices;
+                this.devicesLoadingStatus = LoadingStatus.LOADED;
+            })
+            .catch(() => {
+                this.devicesLoadingStatus = LoadingStatus.ERROR;
             });
     }
 
@@ -102,7 +119,7 @@ export class SystemComponent {
             case ToolbarAction.CHANGE_PARAMETER_VALUE:
                 return this.selected != null && this.selected instanceof SystemParameter;
             case ToolbarAction.EDIT:
-                return this.selected != null && this.selected instanceof SystemTimer;
+                return this.selected != null && (this.selected instanceof SystemTimer || this.selected instanceof DeviceMonitorDevice);
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
@@ -225,24 +242,12 @@ export class SystemComponent {
                         entityType:        SystemOrigin.PARAMETER,
                         parameterToDelete: selected
                     };
-                    /*data = {
-                     message:     `Are you sure you want to delete the parameter "${this.selected.displayName}"?`,
-                     title:       'Delete parameter',
-                     confirmText: 'Delete',
-                     warn:        true
-                     };*/
                 }
                 if (selected instanceof SystemTimer) {
                     data = {
                         entityType:    SystemOrigin.TIMER,
                         timerToDelete: selected
                     };
-                    /*data = {
-                     message:     `Are you sure you want to delete the timer "${this.selected.displayName}"?`,
-                     title:       'Delete timer',
-                     confirmText: 'Delete',
-                     warn:        true
-                     };*/
                 }
                 if (data == null) {
                     return;
@@ -299,10 +304,63 @@ export class SystemComponent {
                                         );
                                     });
                             }
+                            if (selected instanceof DeviceMonitorDevice) {
+                                this.systemService
+                                    .deleteDeviceMonitorDevice({
+                                                                   name: selected.name
+                                                               })
+                                    .then(() => {
+                                        const index = this.devices.indexOf(selected);
+                                        if (index != -1) {
+                                            this.devices.splice(index, 1);
+                                        }
+                                    })
+                                    .catch(() => {
+                                        this.snackBar.open(
+                                            'There has been an error while deleting the device from monitoring',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
                         }
                     });
             }
         }
+    }
+
+    protected addParameter(): void {
+        this.matDialog
+            .open(
+                SystemParameterDialogComponent,
+                {
+                    data: {
+                        forbiddenNames: this.parameters.map(param => param.name)
+                    }
+                }
+            )
+            .afterClosed()
+            .subscribe((result: SystemParameter | undefined) => {
+                if (result != null) {
+                    this.systemService
+                        .createParameter(result)
+                        .then(() => {
+                            this.parameters.push(result);
+                        })
+                        .catch(() => {
+                            this.snackBar.open(
+                                'There has been an error while creating the parameter',
+                                undefined,
+                                {
+                                    duration: SNACKBAR_TIMEOUT
+                                }
+                            );
+                        });
+                }
+            });
+
     }
 
     protected addTimer(): void {
@@ -336,27 +394,27 @@ export class SystemComponent {
             });
     }
 
-    protected addParameter(): void {
+    protected addDevice(): void {
         this.matDialog
             .open(
-                SystemParameterDialogComponent,
+                SystemDeviceMonitorDeviceDialogComponent,
                 {
                     data: {
-                        forbiddenNames: this.parameters.map(param => param.name)
+                        forbiddenNames: this.devices.map(param => param.name)
                     }
                 }
             )
             .afterClosed()
-            .subscribe((result: SystemParameter | undefined) => {
+            .subscribe((result: DeviceMonitorDevice | undefined) => {
                 if (result != null) {
                     this.systemService
-                        .createParameter(result)
+                        .createDeviceMonitorDevice(result)
                         .then(() => {
-                            this.parameters.push(result);
+                            this.devices.push(result);
                         })
                         .catch(() => {
                             this.snackBar.open(
-                                'There has been an error while creating the parameter',
+                                'There has been an error while creating the device monitoring',
                                 undefined,
                                 {
                                     duration: SNACKBAR_TIMEOUT
@@ -365,7 +423,6 @@ export class SystemComponent {
                         });
                 }
             });
-
     }
 
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }

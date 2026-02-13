@@ -27,6 +27,8 @@ import {ConfirmDialogComponent} from '../../dialogs/confirm-dialog/confirm-dialo
 import {LocalStorageObject, LocalStorageService} from '../../../services/local-storage.service';
 import {BackupDialogComponent} from './backup-dialog/backup-dialog.component';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {MixLayout} from '@common/mixing/mix/mix-layout';
+
 
 @Component({
                selector:    'house-mix-mix',
@@ -123,10 +125,10 @@ export class MixComponent implements AfterViewInit {
                 () => firstValueFrom(this.route.queryParams)
             )
             .then(
-                async (params: Record<string, string>) => {
+                async (params: Record<string, string>): Promise<[Mix, MixLayout]> => {
                     if (backup != null) {
                         this.mixPosition = backup.position;
-                        return backup.mix;
+                        return [backup.mix, backup.layout];
                     }
                     this.mixBackups = this
                         .localStorageService
@@ -143,7 +145,7 @@ export class MixComponent implements AfterViewInit {
                                 if (this.mixBackups != null) {
                                     this.mixBackups.editingBackup = latestBackup;
                                 }
-                                return latestBackup.mix;
+                                return [latestBackup.mix, latestBackup.layout];
                             } else {
                                 const error = new Error('Wrong mix position info');
                                 error.cause = 'WRONG_MIX_POSITION';
@@ -159,23 +161,28 @@ export class MixComponent implements AfterViewInit {
                         this.mixPosition = mixInfo;
                         const newMix     = new Mix('NEW');
                         if (this.mixBackups != null) {
-                            this.mixBackups.addBackup(newMix, mixInfo, true);
+                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}), true);
                         } else {
                             this.mixBackups = new MixBackups(id);
-                            this.mixBackups.addBackup(newMix, mixInfo, true);
+                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}), true);
                         }
                         this.localStorageService.setItem<MixBackups | null>(
                             new LocalStorageObject<MixBackups | null>(`mix-save.${id}`, null),
                             this.mixBackups,
                             MixBackups.toJSON
                         );
-                        return newMix;
+                        return [newMix, new MixLayout({})];
                     } else {
-                        return this.mixService.getMix({id});
+                        return Promise.all(
+                            [
+                                this.mixService.getMix({id}),
+                                this.mixService.getMixLayout({id})
+                            ]
+                        );
                     }
                 })
             .then(
-                async (mix) => {
+                async ([mix, mixLayout]) => {
                     await this.router.navigate(
                         [],
                         {
@@ -187,7 +194,10 @@ export class MixComponent implements AfterViewInit {
                     this.mix           = mix;
                     this.uiManager.mix = mix;
                     if (backup != null) {
+                        this.uiManager.importLayout(backup.layout);
                         return backup.position;
+                    } else {
+                        this.uiManager.importLayout(mixLayout);
                     }
                     this.savedOutputs = mix.outputs.slice();
                     if (id == 'NEW') {
@@ -302,7 +312,6 @@ export class MixComponent implements AfterViewInit {
             height: this.elementRef.nativeElement.offsetHeight - 62,
             target: this.elementRef.nativeElement
         };
-        this.uiManager.rearrangeNodes();
     }
 
     protected addInput(): void {
@@ -670,7 +679,7 @@ export class MixComponent implements AfterViewInit {
                 this.mix?.addConnection(newConnection);
                 this.uiManager.addConnection(newConnection);
             }
-            this.uiManager.updateNode(node);
+            this.uiManager.updateNode();
             this.doBackup();
         }
     }
@@ -919,6 +928,13 @@ export class MixComponent implements AfterViewInit {
                                 }
                             );
                         });
+                    this
+                        .mixService
+                        .updateMixLayout(this.uiManager.exportLayout(), {id: mix.id as number})
+                        .catch(() => {
+                            SAVE_BUTTON.loading = false;
+                            SAVE_BUTTON.badge   = true;
+                        });
                 }
                 break;
             }
@@ -932,7 +948,7 @@ export class MixComponent implements AfterViewInit {
         if (this.mix != null && this.mixPosition != null) {
             this.mixBackups ??= new MixBackups(this.mix.id);
             if (this.mixBackups.editingBackup == null) {
-                this.mixBackups.addBackup(this.mix, this.mixPosition, true);
+                this.mixBackups.addBackup(this.mix, this.mixPosition, this.uiManager.exportLayout(), true);
             }
             SAVE_BUTTON.badge = true;
             this.saveBackups();
@@ -1110,7 +1126,7 @@ export class MixBackups {
         this._editingBackup = editingBackup;
         if (editingBackup != null) {
             if (!this._backups.includes(editingBackup)) {
-                this.addBackup(editingBackup.mix, editingBackup.position);
+                this.addBackup(editingBackup.mix, editingBackup.position, editingBackup.layout);
             }
         }
     }
@@ -1130,11 +1146,12 @@ export class MixBackups {
         this._backups.sort((a, b) => a.date.getTime() - b.date.getTime());
     }
 
-    public addBackup(newMix: Mix, mixInfo: MixPositionInfo, setEditing: boolean = false): MixBackup {
+    public addBackup(newMix: Mix, mixInfo: MixPositionInfo, layout: MixLayout, setEditing: boolean = false): MixBackup {
         const backup = {
             date:     new Date(),
             mix:      newMix,
-            position: mixInfo
+            position: mixInfo,
+            layout
         };
         this._backups.push(backup);
         this.sortBackups();
@@ -1168,7 +1185,8 @@ export class MixBackups {
             return {
                 date:     new Date(backup.date),
                 mix:      Mix.fromJSON(backup.mix),
-                position: position
+                position: position,
+                layout:   backup.layout
             };
         });
         mixBackups.sortBackups();
@@ -1186,7 +1204,8 @@ export class MixBackups {
                                    return {
                                        date:     backup.date.getTime(),
                                        mix:      backup.mix.toJSON(),
-                                       position: MixPositionInfoJSON.toJSON(backup.position)
+                                       position: MixPositionInfoJSON.toJSON(backup.position),
+                                       layout:   backup.layout
                                    };
                                })
         };
@@ -1201,11 +1220,13 @@ export interface MixBackupsJSON {
 export interface MixBackup {
     date: Date,
     position: MixPositionInfo,
-    mix: Mix
+    mix: Mix,
+    layout: MixLayout
 }
 
 export interface MixBackupJSON {
     date: number,
     position: MixPositionInfoJSON,
-    mix: MixJSON
+    mix: MixJSON,
+    layout: MixLayout
 }

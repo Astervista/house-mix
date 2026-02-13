@@ -10,5 +10,6 @@ export const SYSTEM_TIMER_TYPE_DISPLAY: Record<TimerType, string> = {
 
 export const SYSTEM_ORIGIN_DISPLAY: Record<SystemOrigin, string> = {
     PARAMETER: 'Parameter',
-    TIMER: 'Timer'
+    TIMER:         'Timer',
+    DEVICE_STATUS: 'Device online'
 }

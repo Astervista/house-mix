@@ -5,7 +5,7 @@ import {MatSelect} from '@angular/material/select';
 import {DATUM_TYPE_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, ElaborationNodeLibraryItem, getColorVarNameForType} from '../../constants';
 import {FormControl, ReactiveFormsModule} from '@angular/forms';
 import {DatumType} from '@common/mixing/mix/datum';
-import {ArbitraryInputsElaborationNode, ElaborationNode, ElaborationNodeAddition, ElaborationNodeCode} from '@common/mixing/mix/elaboration-node';
+import {ArbitraryInputsElaborationNode, ElaborationNode, ElaborationNodeCode} from '@common/mixing/mix/elaboration-node';
 import {MatCheckbox} from '@angular/material/checkbox';
 
 @Component({
@@ -45,8 +45,8 @@ export class NodeComponent implements OnInit {
                         } else {
                             this.examples[this.item.code] = new this.item.constructor(0, {nullable: this.nullMarkFormControl.value ?? this.item.nullableMark, dataType: value});
                         }
-                        this.item.nullableMark        = this.nullMarkFormControl.value ?? this.item.nullableMark;
-                        this.item.datumType           = value;
+                        this.item.nullableMark = this.nullMarkFormControl.value ?? this.item.nullableMark;
+                        this.item.datumType    = value;
                     } else {
                         this.examples[this.item.code] = new this.item.constructor(0, {dataType: value});
                         this.item.datumType           = value;
@@ -65,8 +65,8 @@ export class NodeComponent implements OnInit {
                         } else {
                             this.examples[this.item.code] = new this.item.constructor(0, {nullable: value, dataType: this.datumTypeFormControl.value ?? this.item.datumType});
                         }
-                        this.item.nullableMark        = value;
-                        this.item.datumType           = this.datumTypeFormControl.value ?? this.item.datumType;
+                        this.item.nullableMark = value;
+                        this.item.datumType    = this.datumTypeFormControl.value ?? this.item.datumType;
                     } else {
                         this.examples[this.item.code] = new this.item.constructor(0, {dataType: this.datumTypeFormControl.value ?? this.item.datumType});
                         this.item.datumType           = this.datumTypeFormControl.value ?? this.item.datumType;

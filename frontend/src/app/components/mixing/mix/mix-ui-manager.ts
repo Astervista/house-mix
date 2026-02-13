@@ -5,6 +5,8 @@ import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mix
 import { Line, MEASURES } from "../constants";
 import {ResizeEvent} from '../../../directives/resize-event/resize-event.directive';
 import {NodeInputInfo} from './mix.component';
+import {MixLayout} from '@common/mixing/mix/mix-layout';
+import {mapToRecord, recordFromEntries} from '@common/utils/generics';
 
 export class MixUiManager {
 
@@ -34,7 +36,6 @@ export class MixUiManager {
     public set mix(mix: Mix) {
         this._mix = mix;
         this.refreshMix();
-        this.rearrangeNodes();
     }
 
     public set viewSize(resizeEvent: ResizeEvent) {
@@ -101,38 +102,27 @@ export class MixUiManager {
         }
 
         const tree: TreeNode[]              = [];
-        const discoveredTreeNodes: TreeNode[] = [];
+        const sourceTreeNodes: TreeNode[] = [];
         const connections                   = mix.connections.slice();
         let missingNodes: ElaborationNode[] = mix.nodes.slice();
         let maxHeight: number | null = null;
-
-        for (const input of mix.inputs) {
-            const drainConnection =
-                      connections
-                          .find(
-                              a =>
-                                  a.sourceType == ConnectionSourceType.INPUT
-                                  && a.inputName == input.name
-                          );
-            if (drainConnection?.drainType == ConnectionDrainType.NODE) {
-                const nodeIndex = missingNodes.findIndex(
-                    a => a.id == drainConnection.drainNodeId
-                );
+        for (const node of mix.nodes) {
+            // We gather all nodes that don't have other nodes before them (meaning they come either from inputs, or have all constant or null inputs
+            if (!mix.connections.some(connection => connection.drainType == ConnectionDrainType.NODE && connection.drainNodeId == node.id)) {
+                const nodeIndex = missingNodes.indexOf(node);
                 if (nodeIndex != -1) {
-                    const node = missingNodes[nodeIndex];
                     missingNodes.splice(nodeIndex, 1);
-                    if (node != null) {
-                        const newNode = {
-                            node,
-                            children: [],
-                            parents:  []
-                        };
-                        tree.push(newNode);
-                        discoveredTreeNodes.push(newNode);
-                    }
+                    const newNode = {
+                        node,
+                        children: [],
+                        parents:  []
+                    };
+                    tree.push(newNode);
+                    sourceTreeNodes.push(newNode);
                 }
             }
         }
+
         // We know we have to at least check all the tree children (if we have found some)
         let level      = tree;
         let cycleFound = false;
@@ -167,13 +157,13 @@ export class MixUiManager {
                                 parents:  [node]
                             };
                             node.children.push(newNode);
-                            discoveredTreeNodes.push(newNode);
+                            sourceTreeNodes.push(newNode);
                             newLevel.push(newNode);
                         }
                     } else {
                         // The node has already been discovered. It may be a cycle, but it may also be caught by another branch.
                         // To check if it's a cycle, we search back to the parents until we get to the root or we find the cycle
-                        const treeNode = discoveredTreeNodes.find(otherTreeNode => otherTreeNode.node.id == connection.drainNodeId);
+                        const treeNode = sourceTreeNodes.find(otherTreeNode => otherTreeNode.node.id == connection.drainNodeId);
                         if (treeNode != null) {
                             let toCheck = node.parents;
                             let found   = false;
@@ -438,7 +428,7 @@ export class MixUiManager {
             .forEach(connection => {this.updateConnection(connection);});
     }
 
-    public updateNode(node: ElaborationNode): void {
+    public updateNode(): void {
         this._mix
             ?.connections
             .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT)
@@ -1007,7 +997,7 @@ export class MixUiManager {
                 if (connector instanceof Datum) {
                     this.currentDragging.snapPosition     = this.getNodeConnectorPosition(node, connector, true);
                     this.currentDragging.candidatePartner = {external: false, node, datum: connector, input: false};
-                } else if (connector.specialInputAddMore != true) {
+                } else if (!connector.specialInputAddMore) {
                     this.currentDragging.snapPosition     = this.getNodeConnectorPosition(node, connector.datum, true);
                     this.currentDragging.candidatePartner = {external: false, node, datum: connector.datum, input: false};
                 }
@@ -1351,6 +1341,30 @@ export class MixUiManager {
         this.changeCallbacks.forEach(callback => {
             callback()
         });
+    }
+
+    public exportLayout(): MixLayout {
+        return new MixLayout(
+            recordFromEntries([...this.nodePositions.entries()].map(entry => [entry[0].id, entry[1]]))
+        );
+    }
+
+    public importLayout(layout: MixLayout): void {
+        if (this._mix != null) {
+            this.maxNodeXPosition = 0;
+            for (const node of this._mix.nodes) {
+                const position = layout.nodePositions[node.id.toString()];
+                if (position != null) {
+                    this.nodePositions.set(node, position);
+                    this.maxNodeXPosition = Math.max(this.maxNodeXPosition, position.x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
+                }
+            }
+            this
+                ._mix
+                .connections
+                .forEach(connection => { this.updateConnection(connection); });
+        }
+
     }
 
 }

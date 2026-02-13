@@ -1,0 +1,52 @@
+@use "dimensions";
+@use "../../entity";
+@use "graphical-elements";
+
+:host {
+    @include entity.container;
+
+    min-width: 100px;
+    gap: dimensions.$margin-medium;
+    padding-bottom: dimensions.$margin-medium;
+}
+
+
+.display-name {
+    @include entity.name(true);
+
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-medium
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    padding: dimensions.$margin-mlarge;
+    gap: dimensions.$margin-medium;
+
+    .ip-title {
+        font-size: 18px;
+    }
+
+    .ip-value {
+        font-weight: 200;
+    }
+}
+
+
+.current-value {
+
+    border-top: solid 1px var(--house-mix-entity-border-color);
+    transition: border-top-color 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    padding: dimensions.$margin-medium;
+    gap: dimensions.$indent-msmall;
+
+    .title {
+        font-weight: 200;
+        flex-grow: 1;
+    }
+
+}

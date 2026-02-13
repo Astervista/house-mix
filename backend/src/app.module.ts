@@ -14,11 +14,13 @@ import {ParametersService} from "./system/parameters/parameters.service";
 import { TimersService } from './system/timers/timers.service';
 import { TimersController } from './system/timers/timers.controller';
 import {EngineService} from "./engine/engine.service";
+import {DeviceMonitorService} from "./system/device-monitor/device-monitor.service";
+import {DeviceMonitorController} from "./system/device-monitor/device-monitor.controller";
 
 @Module({
             imports:     [],
-            controllers: [ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController],
-            providers: [ZigbeeService, FileService, GroupService, ActuatorService, SensorService, MixService, ParametersService, TimersService, EngineService]
+            controllers: [ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController, DeviceMonitorController],
+            providers:   [ZigbeeService, FileService, GroupService, ActuatorService, SensorService, MixService, ParametersService, TimersService, EngineService, DeviceMonitorService]
         })
 export class AppModule {
 

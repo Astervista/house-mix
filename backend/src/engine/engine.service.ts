@@ -29,6 +29,7 @@ import {PersistentDataService} from "../helpers/file/persistent-data-service";
 import {FileService} from "../helpers/file/file.service";
 import {ActuatorService} from "../devices/actuator/actuator.service";
 import * as Schedule from "node-schedule";
+import {DeviceMonitorDevice} from "@common/system/device-monitor/device-monitor-device";
 
 const SAVE_FILE = "engine/engine.json";
 
@@ -79,11 +80,11 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
     
     private readonly elaborationQueue: Promise<void>[] = [];
     
-    private tick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange): void {
+    private tick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange, updateDeviceStatuses: DeviceMonitorDevice[] = []): void {
         let promise: Promise<void>;
         const lastElement = this.elaborationQueue[this.elaborationQueue.length - 1];
         if (lastElement == undefined) {
-            promise = this.asyncTick(sensorDataChange, timerDataChange);
+            promise = this.asyncTick(sensorDataChange, timerDataChange, updateDeviceStatuses);
         } else {
             promise = lastElement.then(() => this.asyncTick(sensorDataChange));
         }
@@ -108,7 +109,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             });
     }
     
-    private async asyncTick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange): Promise<void> {
+    private async asyncTick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange, updateDeviceStatuses: DeviceMonitorDevice[] = []): Promise<void> {
         const data                                             = await this.data;
         const storage                                          = data.storage;
         const mixingGraph                                      = await this.mixService.getGraph();
@@ -138,7 +139,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                         break;
                     }
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
                         break;
                     }
                     case DatumOrigin.GROUP:
@@ -177,7 +178,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                             break;
                         }
                         case DatumOrigin.SYSTEM: {
-                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange));
+                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
                             break;
                         }
                         case DatumOrigin.SENSOR: {
@@ -222,7 +223,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                         break;
                     }
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
                         break;
                     }
                     case DatumOrigin.SENSOR: {
@@ -259,7 +260,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 for (const imp of mix.imports) {
                     switch (imp.origin) {
                         case DatumOrigin.SYSTEM: {
-                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange));
+                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
                             break;
                         }
                         case DatumOrigin.GROUP: {
@@ -299,7 +300,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             for (const imp of mix.imports) {
                 switch (imp.origin) {
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
                         break;
                     }
                     case DatumOrigin.GROUP: {
@@ -451,22 +452,33 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         imp: ExportedDatum,
         parameters: SystemParameter[],
         mix: Mix,
-        timerChanged?: TimerDataChange
-    ): unknown {
-        if (imp.originName == SystemOrigin.PARAMETER as string) {
-            const parameter = parameters.find(otherParameter => otherParameter.name == imp.name);
-            if (parameter == null) {
-                throw new TickError(TickErrorType.MISSING_PARAMETER, {mixId: mix.id as number, parameterName: imp.name, import: imp});
+        timerChanged?: TimerDataChange,
+        updateDeviceStatuses: DeviceMonitorDevice[] = []): unknown {
+        const originType = imp.originName as SystemOrigin;
+        switch (originType) {
+            case SystemOrigin.PARAMETER: {
+                const parameter = parameters.find(otherParameter => otherParameter.name == imp.name);
+                if (parameter == null) {
+                    throw new TickError(TickErrorType.MISSING_PARAMETER, {mixId: mix.id as number, parameterName: imp.name, import: imp});
+                }
+                return parameter.value;
             }
-            return parameter.value;
-        } else if (imp.originName == SystemOrigin.TIMER as string) {
-            if (imp.name == timerChanged?.name) {
-                return timerChanged.time;
-            } else {
-                return null;
+            case SystemOrigin.TIMER: {
+                if (imp.name == timerChanged?.name) {
+                    return timerChanged.time;
+                } else {
+                    return null;
+                }
+            }
+            case SystemOrigin.DEVICE_STATUS: {
+                const device = updateDeviceStatuses.find(update => update.name == imp.name);
+                if (device != null) {
+                    return device.connected;
+                } else {
+                    return null;
+                }
             }
         }
-        throw new TickError(TickErrorType.MISSING_PARAMETER, {mixId: mix.id as number, parameterName: imp.name, import: imp});
     }
     
     private getSensorExportForImport(
@@ -577,6 +589,10 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             };
             scheduleNext();
         }
+    }
+    
+    public deviceStatusChanged(updateDeviceStatuses: DeviceMonitorDevice[]): void {
+        this.tick(undefined, undefined, updateDeviceStatuses);
     }
 }
 

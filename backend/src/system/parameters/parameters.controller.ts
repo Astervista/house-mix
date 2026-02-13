@@ -3,7 +3,6 @@ import {ParametersService} from "./parameters.service";
 import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
 import {SetParameterBody} from "@common/system/parameter/rest-classes";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
-import {EntityType} from "@common/devices/constants";
 import MixService from "../../mixing/mix/mix.service";
 import {SystemOrigin} from "@common/system/constants";
 

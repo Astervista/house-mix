@@ -1,0 +1,47 @@
+<h2 mat-dialog-title>Monitor a new device</h2>
+<mat-dialog-content>
+    <mat-form-field>
+        <mat-label>Name</mat-label>
+        <input matInput [formControl]="nameFormControl">
+        <mat-hint>A name for this device</mat-hint>
+        @if (nameFormControl.hasError("required")) {
+            <mat-error>
+                The name is required
+            </mat-error>
+        } @else if (nameFormControl.hasError("forbiddenName")) {
+            <mat-error>
+                There already is a device with this name
+            </mat-error>
+        }
+    </mat-form-field>
+    <mat-form-field>
+        <mat-label>IP address</mat-label>
+        <input matInput [formControl]="ipFormControl">
+        <mat-hint>The IPv4 address to ping</mat-hint>
+        @if (nameFormControl.hasError("required")) {
+            <mat-error>
+                The IP address is required
+            </mat-error>
+        } @else if (nameFormControl.hasError("invalidIp")) {
+            <mat-error>
+                This IP address is not valid
+            </mat-error>
+        }
+    </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        [disabled]="ipFormControl.invalid || nameFormControl.invalid"
+        (click)="confirm()">
+        @if (data.edit != null) {
+            Edit
+        } @else {
+            Add
+        }
+    </button>
+</mat-dialog-actions>

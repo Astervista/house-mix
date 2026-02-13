@@ -66,29 +66,125 @@ export class MixingGraph {
         };
     }
     
+    public getDependingFrom(element: MixGraphElement): MixGraphElement[] {
+        if (element instanceof MixingGraphSensor) {
+            return [
+                ...this.sensorGroups.filter(
+                    group =>
+                        group
+                            .dependingOn
+                            .some(dependency =>
+                                      dependency.origin == DatumOrigin.SENSOR
+                                      && dependency.name == element.name
+                            )
+                ),
+                ...this.centers.filter(
+                    group =>
+                        group
+                            .dependingOn
+                            .some(dependency =>
+                                      dependency.origin == DatumOrigin.SENSOR
+                                      && dependency.name == element.name
+                            )
+                )
+            ];
+            
+        } else if (element instanceof MixingGraphGroup) {
+            if (element.sensorPhase) {
+                return [
+                    ...this.sensorGroups.filter(
+                        group =>
+                            group
+                                .dependingOn
+                                .some(dependency =>
+                                          dependency.origin == DatumOrigin.GROUP
+                                          && dependency.name == element.name
+                                )
+                    ),
+                    ...this.centers.filter(
+                        group =>
+                            group
+                                .dependingOn
+                                .some(dependency =>
+                                          dependency.origin == DatumOrigin.GROUP
+                                          && dependency.name == element.name
+                                )
+                    )
+                ];
+            } else {
+                return [
+                    ...this.actuatorGroups.filter(
+                        group =>
+                            group
+                                .dependingOn
+                                .some(dependency =>
+                                          dependency.origin == DatumOrigin.GROUP
+                                          && dependency.name == element.name
+                                )
+                    ),
+                    ...this.actuators.filter(
+                        group =>
+                            group
+                                .dependingOn
+                                .some(dependency =>
+                                          dependency.origin == DatumOrigin.GROUP
+                                          && dependency.name == element.name
+                                )
+                    )
+                ];
+            }
+        } else if (element instanceof MixingGraphCenter) {
+            
+            return [
+                ...this.actuatorGroups.filter(
+                    group =>
+                        group
+                            .dependingOn
+                            .some(dependency =>
+                                      dependency.origin == DatumOrigin.CENTER
+                                      && dependency.name == element.name
+                            )
+                ),
+                ...this.actuators.filter(
+                    group =>
+                        group
+                            .dependingOn
+                            .some(dependency =>
+                                      dependency.origin == DatumOrigin.CENTER
+                                      && dependency.name == element.name
+                            )
+                )
+            ];
+        }
+        return [];
+    }
+    
     public toJSON(): MixingGraphJSON {
         return {
             origins:        this.origins.slice(),
             sensors:        this.sensors.map(sensor => sensor.toJSON()),
-            sensorGroups:        this.sensorGroups.map(group => group.toJSON()),
-            centers: this.centers.map(center => center.toJSON()),
-            actuatorGroups:        this.actuatorGroups.map(group => group.toJSON()),
-            actuators:        this.actuators.map(actuator => actuator.toJSON())
-        }
+            sensorGroups:   this.sensorGroups.map(group => group.toJSON()),
+            centers:        this.centers.map(center => center.toJSON()),
+            actuatorGroups: this.actuatorGroups.map(group => group.toJSON()),
+            actuators:      this.actuators.map(actuator => actuator.toJSON())
+        };
     }
     
     public static fromJSON(json: MixingGraphJSON): MixingGraph {
-        const graph = new MixingGraph();
-        graph.origins = json.origins.slice();
-        graph.sensors = json.sensors.map(sensor => MixingGraphSensor.fromJSON(sensor));
+        const graph        = new MixingGraph();
+        graph.origins      = json.origins.slice();
+        graph.sensors      = json.sensors.map(sensor => MixingGraphSensor.fromJSON(sensor));
         graph.sensorGroups = json.sensorGroups.map(group => MixingGraphGroup.fromJSON(group));
-        graph.centers = json.centers.map(center => MixingGraphCenter.fromJSON(center));
+        graph.centers      = json.centers.map(center => MixingGraphCenter.fromJSON(center));
         graph.actuatorGroups = json.actuatorGroups.map(group => MixingGraphGroup.fromJSON(group));
-        graph.actuators = json.actuators.map(actuator => MixingGraphActuator.fromJSON(actuator))
+        graph.actuators    = json.actuators.map(actuator => MixingGraphActuator.fromJSON(actuator));
         return graph;
     }
     
 }
+
+
+export type MixGraphElement = MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter;
 
 export class MixingGraphDependency {
     
@@ -127,17 +223,17 @@ export class MixingGraphSensor {
             type:        this.type,
             dependingOn: this.dependingOn.map(dependency => dependency.toJSON()),
             mix: this.mix
-        }
+        };
     }
     
     public static fromJSON(mixingGraphSensorJSON: MixingGraphSensorJSON): MixingGraphSensor {
-        const mixingGraphSensor = new MixingGraphSensor(
+        const mixingGraphSensor       = new MixingGraphSensor(
             mixingGraphSensorJSON.name,
             mixingGraphSensorJSON.displayName,
             mixingGraphSensorJSON.type,
             mixingGraphSensorJSON.mix
-        )
-        mixingGraphSensor.dependingOn = mixingGraphSensorJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency))
+        );
+        mixingGraphSensor.dependingOn = mixingGraphSensorJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency));
         return mixingGraphSensor;
     }
 }
@@ -161,16 +257,16 @@ export class MixingGraphCenter {
             displayName: this.displayName,
             dependingOn: this.dependingOn.map(dependency => dependency.toJSON()),
             mix: this.mix
-        }
+        };
     }
     
     public static fromJSON(mixingGraphCenterJSON: MixingGraphCenterJSON): MixingGraphCenter {
-        const mixingGraphSensor = new MixingGraphCenter(
+        const mixingGraphSensor       = new MixingGraphCenter(
             mixingGraphCenterJSON.name,
             mixingGraphCenterJSON.displayName,
             mixingGraphCenterJSON.mix
-        )
-        mixingGraphSensor.dependingOn = mixingGraphCenterJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency))
+        );
+        mixingGraphSensor.dependingOn = mixingGraphCenterJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency));
         return mixingGraphSensor;
     }
 }
@@ -195,7 +291,7 @@ export class MixingGraphGroup {
             dependingOn: this.dependingOn.map(dependency => dependency.toJSON()),
             sensorPhase: this.sensorPhase,
             mix: this.mix
-        }
+        };
     }
     
     public static fromJSON(mixingGraphGroupJSON: MixingGraphGroupJSON): MixingGraphGroup {
@@ -206,7 +302,7 @@ export class MixingGraphGroup {
             mixingGraphGroupJSON.mix
         );
         mixingGraphGroup.dependingOn = mixingGraphGroupJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency));
-        return mixingGraphGroup
+        return mixingGraphGroup;
     }
 }
 
@@ -236,18 +332,18 @@ export class MixingGraphActuator {
             type:        this.type,
             dependingOn: this.dependingOn.map(dependency => dependency.toJSON()),
             mix: this.mix
-        }
+        };
     }
     
     public static fromJSON(mixingGraphActuatorJSON: MixingGraphActuatorJSON): MixingGraphActuator {
-        const mixingGraphActuator = new MixingGraphActuator(
+        const mixingGraphActuator       = new MixingGraphActuator(
             mixingGraphActuatorJSON.name,
             mixingGraphActuatorJSON.displayName,
             mixingGraphActuatorJSON.type,
             mixingGraphActuatorJSON.mix
         );
-        mixingGraphActuator.dependingOn = mixingGraphActuatorJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency))
-        return mixingGraphActuator
+        mixingGraphActuator.dependingOn = mixingGraphActuatorJSON.dependingOn.map(dependency => MixingGraphDependency.fromJSON(dependency));
+        return mixingGraphActuator;
     }
     
 }
@@ -292,7 +388,7 @@ export class MixingGraphJSON {
                     })
     @Type(() => MixingGraphActuatorJSON)
     public actuators: MixingGraphActuatorJSON[] = [];
-
+    
 }
 
 export class MixingGraphDependencyJSON {
@@ -347,7 +443,7 @@ export class MixingGraphSensorJSON {
         this.displayName = displayName;
         this.type = type;
         this.dependingOn = dependingOn;
-        this.mix = mix;
+        this.mix  = mix;
     }
 }
 
@@ -383,7 +479,7 @@ export class MixingGraphCenterJSON {
         this.name = name;
         this.displayName = displayName;
         this.dependingOn = dependingOn;
-        this.mix = mix;
+        this.mix  = mix;
     }
 }
 
@@ -423,7 +519,7 @@ export class MixingGraphGroupJSON {
         this.displayName = displayName;
         this.sensorPhase = sensorPhase;
         this.dependingOn = dependingOn;
-        this.mix = mix;
+        this.mix  = mix;
     }
 }
 
@@ -463,6 +559,6 @@ export class MixingGraphActuatorJSON {
         this.displayName = displayName;
         this.type = type;
         this.dependingOn = dependingOn;
-        this.mix = mix;
+        this.mix  = mix;
     }
 }
