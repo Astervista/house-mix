@@ -1,22 +1,29 @@
 import {Point} from '@angular/cdk/drag-drop';
 import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';
-import {Connection, ConnectionDrainToNode, ConnectionDrainType, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
+import {Connection, ConnectionDrain, ConnectionDrainToNode, ConnectionDrainType, ConnectionSource, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
 import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mixing/mix/datum';
-import { Line, MEASURES } from "../constants";
+import {Line, MEASURES} from '../constants';
 import {ResizeEvent} from '../../../directives/resize-event/resize-event.directive';
 import {NodeInputInfo} from './mix.component';
-import {MixLayout} from '@common/mixing/mix/mix-layout';
-import {mapToRecord, recordFromEntries} from '@common/utils/generics';
+import {MixLayout, NodeGroupJSON} from '@common/mixing/mix/mix-layout';
+import {recordFromEntries} from '@common/utils/generics';
 
 export class MixUiManager {
 
     public translation: Point = {x: MEASURES.SECTIONS_SEPARATOR + MEASURES.INPUT_WIDTH, y: 0};
     public scale: number      = 1;
 
-    private nodePositions: Map<ElaborationNode, Point> = new Map<ElaborationNode, Point>();
-    private maxNodeXPosition: number                   = 0;
+    private nodePositions: Map<ElaborationNode, Point>                   = new Map<ElaborationNode, Point>();
+    public visibleNodes: ElaborationNode[]                               = [];
+    private maxNodeXPosition: number                                     = 0;
+    private invisibleNodeCollapsedGroup: Map<ElaborationNode, NodeGroup> = new Map<ElaborationNode, NodeGroup>();
 
-    private connections: Map<Connection, Line> = new Map<Connection, Line>();
+    public firstLevelGroups: NodeGroup[] = [];
+    public allGroups: NodeGroup[]        = [];
+    public visibleGroups: NodeGroup[]    = [];
+
+    private connections: Map<Connection, Line>         = new Map<Connection, Line>();
+    public hiddenConnections: Map<Connection, boolean> = new Map<Connection, boolean>();
 
     private lockedInputs: ElaborationNodeDatum[] = [];
     private lockedExternalOutputs: Datum[]       = [];
@@ -29,13 +36,15 @@ export class MixUiManager {
 
     public showOutputAdd: boolean = true;
 
-    private _viewSize: Point = { x: 0, y: 0};
+    private _viewSize: Point = {x: 0, y: 0};
 
     private changeCallbacks: (() => void)[] = [];
 
     public set mix(mix: Mix) {
         this._mix = mix;
         this.refreshMix();
+        this.rearrangeNodes();
+        this.calculateVisibleElements();
     }
 
     public set viewSize(resizeEvent: ResizeEvent) {
@@ -48,9 +57,7 @@ export class MixUiManager {
         if (mix == null) {
             return;
         }
-        this.maxNodeXPosition = mix
-            .nodes
-            .reduce((acc, val) => Math.max(acc, this.getNodePosition(val).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0);
+        this.recalculateMaxX();
         for (const node of this.nodePositions.keys()) {
             if (!mix.nodes.includes(node)) {
                 this.nodePositions.delete(node);
@@ -105,7 +112,7 @@ export class MixUiManager {
         const sourceTreeNodes: TreeNode[] = [];
         const connections                   = mix.connections.slice();
         let missingNodes: ElaborationNode[] = mix.nodes.slice();
-        let maxHeight: number | null = null;
+        let maxHeight: number | null      = null;
         for (const node of mix.nodes) {
             // We gather all nodes that don't have other nodes before them (meaning they come either from inputs, or have all constant or null inputs
             if (!mix.connections.some(connection => connection.drainType == ConnectionDrainType.NODE && connection.drainNodeId == node.id)) {
@@ -218,7 +225,7 @@ export class MixUiManager {
                 levelNumber++;
             }
             // All nodes have been placed. We now sort the parents by level to have an ordered tree
-            const ordered    = [...placedParents.values()].sort(
+            const ordered = [...placedParents.values()].sort(
                 (a, b) => {
                     if (a.level == null || b.level == null) {
                         return 0;
@@ -226,8 +233,8 @@ export class MixUiManager {
                     return a.level - b.level;
                 }
             );
-            let y            = 0;
-            let lastLevel    = 0;
+            let y         = 0;
+            let lastLevel = 0;
             const levelHeights = new Map<number, number>();
             for (const treeNode of ordered) {
                 if (treeNode.level != lastLevel) {
@@ -258,12 +265,12 @@ export class MixUiManager {
             }
             for (const treeNode of ordered) {
                 if (treeNode.level != null) {
-                    this.shiftNode({x: 0, y: - (levelHeights.get(treeNode.level) ?? 0) / 2}, treeNode.node)
+                    this.shiftNode({x: 0, y: -(levelHeights.get(treeNode.level) ?? 0) / 2}, treeNode.node);
                 }
             }
         } else {
             // There is a cycle. All the nodes must be rearranged loosely, as if they weren't oriented.
-            missingNodes        = mix.nodes.slice();
+            missingNodes = mix.nodes.slice();
         }
 
         // Ordering the missing nodes
@@ -308,9 +315,9 @@ export class MixUiManager {
             } else {
                 return b.parents.length - a.parents.length;
             }
-        })
+        });
 
-        const clusters: { seed: TreeNode, cluster: TreeNode[]}[] = [];
+        const clusters: { seed: TreeNode, cluster: TreeNode[] }[] = [];
         while (linkedTreeNodes.length != 0) {
             const nextSeed = linkedTreeNodes.pop();
             if (nextSeed == null) {
@@ -334,19 +341,19 @@ export class MixUiManager {
         }
 
         let centerY;
-        let topShift: number | null = null;
+        let topShift: number | null                               = null;
         let bottomShift: number | null = null;
-        let shift: "CENTER" | "TOP" | "BOTTOM";
+        let shift: 'CENTER' | 'TOP' | 'BOTTOM';
         if ((maxHeight == null) || (tree.length == 0)) {
             centerY = 0;
-            shift   = "CENTER";
+            shift = 'CENTER';
         } else {
-            centerY = - maxHeight / 2 - MEASURES.NODE_SPACING;
-            shift   = "TOP";
+            centerY = -maxHeight / 2 - MEASURES.NODE_SPACING;
+            shift   = 'TOP';
         }
         for (const cluster of clusters) {
             let nextMaxHeight = 0;
-            let x = 0;
+            let x         = 0;
             for (const node of cluster.cluster) {
                 const stacks = Math.max(node.node.inputs.length, node.node.outputs.length);
                 const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
@@ -354,32 +361,32 @@ export class MixUiManager {
                 this.nodePositions.set(node.node, {
                     x,
                     y: centerY - height / 2
-                })
+                });
                 x += MEASURES.NODE_WIDTH + MEASURES.NODE_SPACING;
             }
             switch (shift) {
-                case "TOP":
-                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: -nextMaxHeight / 2}, node.node)});
+                case 'TOP':
+                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: -nextMaxHeight / 2}, node.node);});
                     topShift = centerY - nextMaxHeight - MEASURES.NODE_SPACING;
-                    shift = "BOTTOM";
+                    shift = 'BOTTOM';
                     if (bottomShift == null) {
-                        centerY = (maxHeight ?? 0)/2;
+                        centerY = (maxHeight ?? 0) / 2;
                     } else {
                         centerY = bottomShift;
                     }
                     maxHeight = nextMaxHeight;
                     break;
-                case "CENTER":
-                    centerY = - nextMaxHeight / 2 - MEASURES.NODE_SPACING;
-                    shift   = "TOP";
+                case 'CENTER':
+                    centerY = -nextMaxHeight / 2 - MEASURES.NODE_SPACING;
+                    shift   = 'TOP';
                     maxHeight = nextMaxHeight;
                     break;
-                case "BOTTOM":
-                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: nextMaxHeight / 2}, node.node)});
+                case 'BOTTOM':
+                    cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: nextMaxHeight / 2}, node.node);});
                     bottomShift = centerY + nextMaxHeight + MEASURES.NODE_SPACING;
-                    shift = "TOP";
+                    shift   = 'TOP';
                     if (topShift == null) {
-                        centerY = -(maxHeight ?? 0)/2;
+                        centerY = -(maxHeight ?? 0) / 2;
                     } else {
                         centerY = topShift;
                     }
@@ -387,13 +394,66 @@ export class MixUiManager {
                     break;
             }
         }
+        this.allGroups.forEach(group => {group.collapsed = false;});
+        this.visibleNodes = mix.nodes.slice();
         this.refreshMix();
+        this.calculateVisibleElements();
+        for (const group of this.firstLevelGroups) {
+            this.recalculateGroupBounds(group);
+        }
+        this.recalculateMaxX();
+        mix
+            .connections
+            .forEach(connection => {this.updateConnection(connection);});
+
         const viewWidth = this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR + MEASURES.OUTPUT_WIDTH;
         this.translation.x = this._viewSize.x / 2 - viewWidth / 2 + (MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR * 0.5) / 2;
         if (this.translation.x < MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR) {
             this.translation.x = MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR;
         }
         this.translation.y = this._viewSize.y / 2;
+    }
+
+    private recalculateMaxX(): void {
+
+        let nodeMaxX =
+                this
+                    .visibleNodes
+                    .reduce((acc, otherNode) =>
+                                Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0);
+        for (const group of this.firstLevelGroups) {
+            nodeMaxX = Math.max(nodeMaxX, group.displayX + group.displayWidth + MEASURES.SECTIONS_SEPARATOR / 2);
+        }
+        this.maxNodeXPosition = nodeMaxX;
+    }
+
+    private checkMinX(): void {
+
+        if (this._mix != null) {
+            let nodeMinX =
+                    this
+                        .visibleNodes
+                        .reduce((acc, otherNode) =>
+                                    Math.min(acc, this.getNodePosition(otherNode).x), 0);
+            for (const group of this.firstLevelGroups) {
+                nodeMinX = Math.min(nodeMinX, group.displayX);
+            }
+            if (nodeMinX < 0) {
+                for (const node of this._mix.nodes) {
+                    const position = this.getNodePosition(node);
+                    position.x -= nodeMinX;
+                    this.nodePositions.set(node, position);
+                }
+            }
+            this.calculateVisibleElements();
+            for (const group of this.firstLevelGroups) {
+                this.recalculateGroupBounds(group);
+            }
+            this.recalculateMaxX();
+            this._mix
+                .connections
+                .forEach(connection => {this.updateConnection(connection);});
+        }
     }
 
     private shiftNode(delta: Point, node: ElaborationNode): void {
@@ -426,6 +486,40 @@ export class MixUiManager {
             ?.connections
             .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT)
             .forEach(connection => {this.updateConnection(connection);});
+        this.visibleNodes.push(node);
+    }
+
+    public nodeDeleted(node: ElaborationNode): void {
+        if (this._mix != null) {
+            this.nodePositions.delete(node);
+            const containingGroup =
+                      NodeGroup.findParent(
+                          node,
+                          this._mix
+                              .nodes
+                              .concat([node])
+                              .filter(otherNode =>
+                                          !this.firstLevelGroups.some(otherGroup =>
+                                                                          otherGroup.containsNode(otherNode)
+                                          )
+                              ),
+                          this.firstLevelGroups
+                      );
+            if (containingGroup != null) {
+                if (containingGroup != 'ROOT') {
+                    containingGroup.nodes = containingGroup.nodes.filter(a => a != node);
+                }
+                this.calculateVisibleElements();
+                for (const group of this.firstLevelGroups) {
+                    this.recalculateGroupBounds(group);
+                }
+                this.recalculateMaxX();
+                this._mix
+                    .connections
+                    .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT)
+                    .forEach(connection => {this.updateConnection(connection);});
+            }
+        }
     }
 
     public updateNode(): void {
@@ -445,6 +539,8 @@ export class MixUiManager {
         }
         let from: Point = {x: 0, y: 0};
         let to: Point   = {x: 0, y: 0};
+        let fromHidden = false;
+        let toHidden   = false;
         if (connection.sourceType === ConnectionSourceType.NODE) {
             const node = this._mix.nodes.find(a => a.id === connection.sourceNodeId);
             if (node == null) {
@@ -455,6 +551,9 @@ export class MixUiManager {
                 return;
             }
             from = this.getNodeConnectorPosition(node, datum, true);
+            if (!this.visibleNodes.includes(node)) {
+                fromHidden = true;
+            }
         } else if (connection.sourceType === ConnectionSourceType.INPUT) {
             const datum = this._mix.imports.find(a => a.uniqueName == connection.inputName);
             if (datum == null) {
@@ -472,16 +571,20 @@ export class MixUiManager {
                 return;
             }
             to = this.getNodeConnectorPosition(node, datum, false);
-            if (
-                this.lockedInputs
-                    .find(a => a.node.id == connection.drainNodeId && a.datum.name == connection.drainNodeInputName) == null
-                && connection.sourceType != ConnectionSourceType.CONSTANT
-            ) {
-                this.lockedInputs.push({
-                                           datum,
-                                           input: true,
-                                           node
-                                       });
+            if (this.visibleNodes.includes(node)) {
+                if (
+                    this.lockedInputs
+                        .find(a => a.node.id == connection.drainNodeId && a.datum.name == connection.drainNodeInputName) == null
+                    && connection.sourceType != ConnectionSourceType.CONSTANT
+                ) {
+                    this.lockedInputs.push({
+                                               datum,
+                                               input: true,
+                                               node
+                                           });
+                }
+            } else {
+                toHidden = true;
             }
         }
         if (connection.drainType === ConnectionDrainType.OUTPUT) {
@@ -493,6 +596,11 @@ export class MixUiManager {
             if (!this.lockedExternalOutputs.includes(datum) && connection.sourceType != ConnectionSourceType.CONSTANT) {
                 this.lockedExternalOutputs.push(datum);
             }
+        }
+        if (fromHidden && toHidden) {
+            this.hiddenConnections.set(connection, true);
+        } else {
+            this.hiddenConnections.set(connection, false);
         }
         this.connections.set(connection, {from, to});
     }
@@ -548,26 +656,72 @@ export class MixUiManager {
     }
 
     public getNodeConnectorPosition(node: ElaborationNode, connector: Datum, rightFacing: boolean, additional?: boolean): Point {
+        if (this.visibleNodes.includes(node)) {
+            if (rightFacing) {
+                const from = this.getNodePosition(node);
+
+                from.x += MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2;
+
+                from.y += this.getConnectionTop(node.outputs.indexOf(connector));
+                from.y += this.getConnectionsDisplacement(node, false);
+
+                return from;
+            } else {
+                const to = this.getNodePosition(node);
+
+                to.x += MEASURES.SECTIONS_SEPARATOR / 2;
+
+                if (additional == true) {
+                    to.y += this.getConnectionTop(node.inputs.length);
+                } else {
+                    to.y += this.getConnectionTop(node.inputs.indexOf(connector));
+                }
+                to.y += this.getConnectionsDisplacement(node, true);
+
+                return to;
+            }
+        } else {
+            const groupToAttach = this.invisibleNodeCollapsedGroup.get(node);
+            if (groupToAttach != null) {
+                return this.getGroupConnectorPosition(groupToAttach, node.id, connector, rightFacing);
+            }
+            return {x: 0, y: 0};
+        }
+    }
+
+    public getGroupConnectorPosition(group: NodeGroup, nodeId: number, connector: Datum, rightFacing: boolean): Point {
         if (rightFacing) {
-            const from = this.getNodePosition(node);
+            const from = {
+                x: group.x + (group.width - MEASURES.NODE_WIDTH) / 2,
+                y: group.y
+            };
 
             from.x += MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2;
 
-            from.y += this.getNodeConnectionTop(node, node.outputs.indexOf(connector));
-            from.y += this.getNodeConnectionsDisplacement(node, false);
+            if (group.showConnectors) {
+                from.y += this.getConnectionTop(group.outputs.findIndex(a => a.datum == connector));
+                from.y += this.getConnectionsDisplacement(group, false);
+                from.y += MEASURES.NODE_HEADING_HEIGHT / 2;
+            } else {
+                from.y += MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5;
+            }
 
             return from;
         } else {
-            const to = this.getNodePosition(node);
+            const to = {
+                x: group.x + (group.width - MEASURES.NODE_WIDTH) / 2,
+                y: group.y
+            };
 
             to.x += MEASURES.SECTIONS_SEPARATOR / 2;
 
-            if (additional == true) {
-                to.y += this.getNodeConnectionTop(node, node.inputs.length);
+            if (group.showConnectors) {
+                to.y += this.getConnectionTop(group.inputs.findIndex(a => a.datum == connector));
+                to.y += this.getConnectionsDisplacement(group, true);
+                to.y += MEASURES.NODE_HEADING_HEIGHT / 2;
             } else {
-                to.y += this.getNodeConnectionTop(node, node.inputs.indexOf(connector));
+                to.y += MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5;
             }
-            to.y += this.getNodeConnectionsDisplacement(node, true);
 
             return to;
         }
@@ -645,7 +799,7 @@ export class MixUiManager {
         return null;
     }
 
-    public getNodeConnectionsDisplacement(node: ElaborationNode, left: boolean): number {
+    public getConnectionsDisplacement(node: ElaborationNode | NodeGroup, left: boolean): number {
         const leftHeight  = MEASURES.NODE_CONNECTION_HEIGHT * node.inputs.length + MEASURES.NODE_INTERNAL_SPACING * (node.inputs.length - 1);
         const rightHeight = MEASURES.NODE_CONNECTION_HEIGHT * node.outputs.length + MEASURES.NODE_INTERNAL_SPACING * (node.outputs.length - 1);
         if (left) {
@@ -655,7 +809,7 @@ export class MixUiManager {
         }
     }
 
-    public getNodeConnectionTop(node: ElaborationNode, index: number): number {
+    public getConnectionTop(index: number): number {
         return MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_INTERNAL_SPACING * (index + 1) + MEASURES.NODE_CONNECTION_HEIGHT * (index + 0.5);
     }
 
@@ -775,20 +929,57 @@ export class MixUiManager {
         if (event.button != 0) {
             return;
         }
-        const fallbackNodeX =
-                  this
-                      ._mix
-                      ?.nodes
-                      .filter(a => a.id != node.id)
-                      .reduce((acc, otherNode) =>
-                                  Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0) ?? 0;
+        let fallbackNodeX =
+                this
+                    .visibleNodes
+                    .filter(a => a.id != node.id)
+                    .reduce((acc, otherNode) =>
+                                Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0);
+        for (const group of this.firstLevelGroups) {
+            fallbackNodeX = Math.max(fallbackNodeX, group.displayX + group.displayWidth + MEASURES.SECTIONS_SEPARATOR / 2);
+        }
         this.currentDragging ??= {
-            type:                 DraggingElementType.NODE,
-            node:                 node,
-            startPosition:        {...this.getNodePosition(node)},
-            startDrag:            pointerPosition,
-            fallBackFurtherNodeX: fallbackNodeX
+            type:          DraggingElementType.NODE,
+            hasMoved:      false,
+            node:          node,
+            startPosition: {...this.getNodePosition(node)},
+            startDrag:     pointerPosition
         };
+    }
+
+    public isDraggingNode(node: ElaborationNode): boolean {
+        return this.currentDragging?.type == DraggingElementType.NODE && this.currentDragging.node == node && this.currentDragging.hasMoved;
+    }
+
+    public groupMouseDown(group: NodeGroup, event: MouseEvent): void {
+        const pointerPosition = this.extractTransformedPosition(event);
+        if (event.button != 0) {
+            return;
+        }
+        const allNodes    = group.allNodes;
+        let fallbackNodeX =
+                this
+                    .visibleNodes
+                    .filter(a => !allNodes.some(node => a.id == node.id))
+                    .reduce((acc, otherNode) =>
+                                Math.max(acc, this.getNodePosition(otherNode).x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2), 0);
+        for (const otherGroup of this.firstLevelGroups) {
+            if (otherGroup != group) {
+                fallbackNodeX = Math.max(fallbackNodeX, otherGroup.displayX + otherGroup.displayWidth + MEASURES.SECTIONS_SEPARATOR / 2);
+            }
+        }
+        this.currentDragging ??= {
+            type:               DraggingElementType.GROUP,
+            hasMoved:           false,
+            group,
+            nodeStartPositions: allNodes.map(node => this.getNodePosition(node)),
+            startPosition:      {x: group.displayX, y: group.y},
+            startDrag:          pointerPosition
+        };
+    }
+
+    public isDraggingGroup(group: NodeGroup): boolean {
+        return this.currentDragging?.type == DraggingElementType.GROUP && this.currentDragging.group == group && this.currentDragging.hasMoved;
     }
 
     public nodeConnectorMouseDown(node: ElaborationNode, datum: Datum | NodeInputInfo, rightFacing: boolean, event: MouseEvent): void {
@@ -1077,19 +1268,51 @@ export class MixUiManager {
         return this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND;
     }
 
+    public groupHeaderMove(group: NodeGroup): void {
+        if (this.currentDragging != null && (this.currentDragging.type == DraggingElementType.GROUP || this.currentDragging.type == DraggingElementType.NODE)) {
+            this.currentDragging.moveToGroup = group;
+            if (this.currentDragging.type == DraggingElementType.NODE) {
+                this.currentDragging.snapPosition = {x: group.displayX + group.displayWidth * 0.5 - MEASURES.NODE_WIDTH * 0.5, y: group.y + MEASURES.NODE_HEADING_HEIGHT * 1.5};
+            } else {
+                if (group == this.currentDragging.group) {
+                    this.currentDragging.moveToGroup = undefined;
+                    return;
+                }
+                this.currentDragging.snapPosition =
+                    {x: group.displayX + group.displayWidth * 0.5 - this.currentDragging.group.displayWidth * 0.5, y: group.y + MEASURES.NODE_HEADING_HEIGHT * 1.5};
+            }
+        }
+    }
+
+    public groupHeaderLeave(): void {
+        if (this.currentDragging != null && (this.currentDragging.type == DraggingElementType.GROUP || this.currentDragging.type == DraggingElementType.NODE)) {
+            this.currentDragging.moveToGroup  = undefined;
+            this.currentDragging.snapPosition = undefined;
+        }
+    }
+
     public mouseMove(event: MouseEvent): void {
         const pointerPosition = this.extractTransformedPosition(event);
         if (this.currentDragging == null) {
             return;
         }
         if (this.currentDragging.type == DraggingElementType.NODE) {
-            const node = this.currentDragging.node;
-            const newX = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
+            this.currentDragging.hasMoved = true;
+            const node                    = this.currentDragging.node;
+            let newX;
+            let newY;
+            if (this.currentDragging.snapPosition != null) {
+                newX = this.currentDragging.snapPosition.x;
+                newY = this.currentDragging.snapPosition.y;
+            } else {
+                newX = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
+                newY = this.currentDragging.startPosition.y + pointerPosition.y - this.currentDragging.startDrag.y;
+            }
             this.nodePositions.set(node, {
                 x: newX,
-                y: this.currentDragging.startPosition.y + pointerPosition.y - this.currentDragging.startDrag.y
+                y: newY
             });
-            this.maxNodeXPosition = Math.max(this.currentDragging.fallBackFurtherNodeX, newX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
+            this.recalculateMaxX();
             this
                 ._mix
                 ?.connections
@@ -1098,7 +1321,58 @@ export class MixUiManager {
                             || (a.drainType == ConnectionDrainType.NODE && a.drainNodeId == node.id)
                             || (a.drainType == ConnectionDrainType.OUTPUT))
                 .forEach(connection => { this.updateConnection(connection); });
-
+            const containingGroup = this.firstLevelGroups.find(nodeGroup => nodeGroup.containsNode(node));
+            if (containingGroup != null) {
+                this.recalculateGroupBounds(containingGroup);
+            }
+        } else if (this.currentDragging.type == DraggingElementType.GROUP) {
+            this.currentDragging.hasMoved = true;
+            const group                   = this.currentDragging.group;
+            let newX;
+            let newY;
+            if (this.currentDragging.snapPosition != null) {
+                newX = this.currentDragging.snapPosition.x;
+                newY = this.currentDragging.snapPosition.y;
+            } else {
+                newX = Math.max(0, this.currentDragging.startPosition.x + pointerPosition.x - this.currentDragging.startDrag.x);
+                newY = this.currentDragging.startPosition.y + pointerPosition.y - this.currentDragging.startDrag.y;
+            }
+            const deltaX = newX - this.currentDragging.startPosition.x;
+            const deltaY = newY - this.currentDragging.startPosition.y;
+            // group.x           = newX;
+            // group.y           = newY;
+            let maxX          = newX;
+            const nodesToMove = group.allNodes;
+            for (let i = 0; i < nodesToMove.length; i++) {
+                const node        = nodesToMove[i];
+                const oldPosition = this.currentDragging.nodeStartPositions[i];
+                if (oldPosition == null || node == null) {
+                    continue;
+                }
+                const newNodeX = oldPosition.x + deltaX;
+                if (newNodeX > maxX) {
+                    maxX = newNodeX;
+                }
+                this.nodePositions.set(node, {
+                    x: newNodeX,
+                    y: oldPosition.y + deltaY
+                });
+            }
+            this.recalculateMaxX();
+            this
+                ._mix
+                ?.connections
+                .filter(a =>
+                            (a.sourceType == ConnectionSourceType.NODE && nodesToMove.some(node => a.sourceNodeId == node.id))
+                            || (a.drainType == ConnectionDrainType.NODE && nodesToMove.some(node => a.drainNodeId == node.id))
+                            || (a.drainType == ConnectionDrainType.OUTPUT))
+                .forEach(connection => { this.updateConnection(connection); });
+            const containingGroup = this.firstLevelGroups.find(nodeGroup => nodeGroup.containsGroup(group));
+            if (containingGroup != null) {
+                this.recalculateGroupBounds(containingGroup);
+            } else {
+                this.recalculateGroupBounds(group);
+            }
         } else if (this.currentDragging.type == DraggingElementType.BACKGROUND) {
             this.translation.x = this.currentDragging.startTransform.x + event.clientX - this.currentDragging.startDrag.x;
             this.translation.y = this.currentDragging.startTransform.y + event.clientY - this.currentDragging.startDrag.y;
@@ -1307,6 +1581,22 @@ export class MixUiManager {
                 }
             }
         }
+        if (this.currentDragging.type == DraggingElementType.NODE) {
+            if (this.currentDragging.moveToGroup != null) {
+                this.switchGroup(this.currentDragging.node, this.currentDragging.moveToGroup);
+            }
+            if (this.currentDragging.hasMoved) {
+                this.emitChanges();
+            }
+        }
+        if (this.currentDragging.type == DraggingElementType.GROUP) {
+            if (this.currentDragging.moveToGroup != null) {
+                this.switchGroup(this.currentDragging.group, this.currentDragging.moveToGroup);
+            }
+            if (this.currentDragging.hasMoved) {
+                this.emitChanges();
+            }
+        }
         this.currentDragging = null;
     }
 
@@ -1339,38 +1629,385 @@ export class MixUiManager {
 
     private emitChanges(): void {
         this.changeCallbacks.forEach(callback => {
-            callback()
+            callback();
         });
     }
 
     public exportLayout(): MixLayout {
         return new MixLayout(
-            recordFromEntries([...this.nodePositions.entries()].map(entry => [entry[0].id, entry[1]]))
+            recordFromEntries([...this.nodePositions.entries()].map(entry => [entry[0].id, entry[1]])),
+            this.allGroups.map(group => group.toJSON(this.allGroups))
         );
     }
 
     public importLayout(layout: MixLayout): void {
-        if (this._mix != null) {
+        const mix = this._mix;
+        if (mix != null) {
             this.maxNodeXPosition = 0;
-            for (const node of this._mix.nodes) {
+            for (const node of mix.nodes) {
                 const position = layout.nodePositions[node.id.toString()];
                 if (position != null) {
                     this.nodePositions.set(node, position);
                     this.maxNodeXPosition = Math.max(this.maxNodeXPosition, position.x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
                 }
             }
-            this
-                ._mix
-                .connections
-                .forEach(connection => { this.updateConnection(connection); });
+            const groups = layout.groups.map(group => NodeGroup.fromJSON(group, mix.nodes));
+            for (let i = 0; i < groups.length; i++) {
+                const group     = groups[i];
+                const groupJSON = layout.groups[i];
+                if (groupJSON != null) {
+                    group?.fromJSONAdjust(groupJSON, groups);
+                }
+            }
+            this.allGroups        = groups;
+            this.firstLevelGroups = groups.filter(group => group.parent == null);
+
+            this.allGroups.forEach(group => {
+                group.updateInputs(mix.connections);
+            });
+
+            this.calculateVisibleElements();
+            for (const otherGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(otherGroup);
+            }
+            this.recalculateMaxX();
+            for (const connection of mix.connections) {
+                this.updateConnection(connection);
+            }
         }
 
     }
 
+    // GROUP HANDLING
+
+    public createGroup(newGroupElements: (ElaborationNode | NodeGroup)[]): void {
+        if (this._mix != null) {
+            const sampleElement = newGroupElements[0];
+            if (sampleElement == null) {
+                return;
+            }
+            if (!this.canFormGroup(newGroupElements)) {
+                return;
+            }
+            const containingGroup =
+                      NodeGroup.findParent(
+                          sampleElement,
+                          this._mix
+                              .nodes
+                              .filter(node =>
+                                          !this.firstLevelGroups.some(otherGroup =>
+                                                                          otherGroup.containsNode(node)
+                                          )
+                              ),
+                          this.firstLevelGroups
+                      );
+            if (containingGroup != null) {
+                const newGroup     = new NodeGroup();
+                newGroup.nodes     = newGroupElements.filter(element => element instanceof ElaborationNode);
+                newGroup.subGroups = newGroupElements.filter(element => element instanceof NodeGroup);
+                if (containingGroup === 'ROOT') {
+                    this.recalculateGroupBounds(newGroup);
+                    newGroup.parent       = null;
+                    newGroup.level        = 0;
+                    this.firstLevelGroups = this.firstLevelGroups.filter(group => !newGroup.subGroups.includes(group));
+                    this.firstLevelGroups.push(newGroup);
+                } else {
+                    if (containingGroup.nodes.length + containingGroup.subGroups.length == newGroupElements.length) {
+                        return;
+                    }
+                    newGroup.parent           = containingGroup;
+                    newGroup.level            = containingGroup.level + 1;
+                    containingGroup.subGroups = containingGroup.subGroups.filter(group => !newGroup.subGroups.includes(group));
+                    containingGroup.nodes     = containingGroup.nodes.filter(node => !newGroup.nodes.includes(node));
+                    containingGroup.subGroups.push(newGroup);
+                    this.recalculateGroupBounds(containingGroup);
+                }
+                newGroup.subGroups.forEach(subGroup => {
+                    subGroup.parent = newGroup;
+                });
+                this.allGroups.push(newGroup);
+                this.visibleGroups.push(newGroup);
+                this.visibleGroups.sort((a, b) => a.level - b.level);
+                if (newGroup.x < 0) {
+                    for (const node of this._mix.nodes) {
+                        const oldPosition = this.nodePositions.get(node);
+                        if (oldPosition != null) {
+                            oldPosition.x -= newGroup.x;
+                        }
+                    }
+                }
+            }
+            this.calculateVisibleElements();
+            for (const otherGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(otherGroup);
+            }
+            this.recalculateMaxX();
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+
+        }
+    }
+
+    public switchGroup(element: ElaborationNode | NodeGroup, toGroup: NodeGroup): void {
+        if (this._mix != null) {
+            if (element instanceof ElaborationNode) {
+                const containingGroup =
+                          NodeGroup.findParent(
+                              element,
+                              this._mix
+                                  .nodes
+                                  .filter(node =>
+                                              !this.firstLevelGroups.some(otherGroup =>
+                                                                              otherGroup.containsNode(node)
+                                              )
+                                  ),
+                              this.firstLevelGroups
+                          );
+                if (containingGroup != null) {
+                    if (containingGroup != 'ROOT') {
+                        containingGroup.nodes = containingGroup.nodes.filter(node => node != element);
+                    }
+                }
+                toGroup.nodes.push(element);
+                const oldPosition = this.nodePositions.get(element);
+                const stacks      = Math.max(element.inputs.length, element.outputs.length);
+                if (oldPosition != null) {
+                    this.nodePositions.set(element, {
+                        x: oldPosition.x,
+                        y: oldPosition.y - (MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1)) -
+                           MEASURES.GROUP_PADDING
+                    });
+                }
+            } else {
+                if (element.parent != null) {
+                    element.parent.subGroups = element.parent.subGroups.filter(otherGroup => otherGroup != element);
+                } else {
+                    this.firstLevelGroups = this.firstLevelGroups.filter(otherGroup => otherGroup != element);
+                }
+                toGroup.subGroups.push(element);
+                element.parent = toGroup;
+                element.level  = toGroup.level + 1;
+                element.allNodes.forEach(node => {
+                    const oldPosition = this.nodePositions.get(node);
+                    if (oldPosition != null) {
+                        this.nodePositions.set(node, {
+                            x: oldPosition.x,
+                            y: oldPosition.y - toGroup.displayHeight - MEASURES.GROUP_PADDING
+                        });
+                    }
+                });
+            }
+            this.calculateVisibleElements();
+            for (const group of this.firstLevelGroups) {
+                this.recalculateGroupBounds(group);
+            }
+            this.recalculateMaxX();
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
+    }
+
+    public deleteGroup(group: NodeGroup): void {
+        if (this._mix != null) {
+            this.allGroups = this.allGroups.filter(otherGroup => otherGroup != group);
+            if (group.parent != null) {
+                group.parent.subGroups = group.parent.subGroups.filter(otherGroup => otherGroup != group);
+                group.parent.nodes.push(...group.nodes);
+                for (const subGroup of group.subGroups) {
+                    subGroup.parent = group.parent;
+                    group.parent.subGroups.push(subGroup);
+                    group.level = subGroup.parent.level + 1;
+                }
+            } else {
+                this.firstLevelGroups = this.firstLevelGroups.filter(otherGroup => otherGroup != group);
+                for (const subGroup of group.subGroups) {
+                    subGroup.parent = group.parent;
+                    this.firstLevelGroups.push(subGroup);
+                    group.level = 0;
+                }
+            }
+            this.calculateVisibleElements();
+            for (const otherGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(otherGroup);
+            }
+            this.recalculateMaxX();
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
+    }
+
+    public degroup(elements: (NodeGroup | ElaborationNode)[]): void {
+        if (this._mix != null) {
+            for (const element of elements) {
+                if (element instanceof ElaborationNode) {
+                    const containingGroup =
+                              NodeGroup.findParent(
+                                  element,
+                                  this._mix
+                                      .nodes
+                                      .filter(node =>
+                                                  !this.firstLevelGroups.some(otherGroup =>
+                                                                                  otherGroup.containsNode(node)
+                                                  )
+                                      ),
+                                  this.firstLevelGroups
+                              );
+                    if (containingGroup != null) {
+                        if (containingGroup != 'ROOT') {
+                            containingGroup.nodes = containingGroup.nodes.filter(node => node != element);
+                        }
+                    }
+                } else {
+                    if (element.parent != null) {
+                        element.parent.subGroups = element.parent.subGroups.filter(group => group != element);
+                        this.firstLevelGroups.push(element);
+                        element.parent = null;
+                        element.level  = 0;
+                    }
+                }
+            }
+            this.calculateVisibleElements();
+            for (const otherGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(otherGroup);
+            }
+            this.recalculateMaxX();
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
+    }
+
+    public canFormGroup(newGroupElements: (ElaborationNode | NodeGroup)[]): boolean {
+        if (this._mix != null) {
+            const result = NodeGroup
+                .checkElementsAreSiblings(
+                    newGroupElements,
+                    this._mix
+                        .nodes
+                        .filter(node =>
+                                    !this.firstLevelGroups.some(group =>
+                                                                    group.containsNode(node)
+                                    )
+                        ),
+                    this.firstLevelGroups
+                );
+            // We don't care if the answer is no or unknown, if we haven't found out now the answer is no
+            return result === true;
+        }
+        return false;
+    }
+
+    public calculateVisibleElements(): void {
+        if (this._mix != null) {
+            const nodesToRemove: ElaborationNode[] = [];
+            const groupsToRemove: NodeGroup[]      = [];
+            for (const group of this.firstLevelGroups) {
+                nodesToRemove.push(...group.collapsedNodes);
+                groupsToRemove.push(...group.collapsedGroups);
+            }
+            for (const node of nodesToRemove) {
+                const parent = NodeGroup.findParent(node, [], this.firstLevelGroups);
+                if (parent != null && parent != 'ROOT') {
+                    let bubble: NodeGroup | null           = parent;
+                    let highestCollapsed: NodeGroup | null = null;
+                    while (bubble != null) {
+                        if (bubble.collapsed) {
+                            highestCollapsed = bubble;
+                        }
+                        bubble = bubble.parent;
+                    }
+                    if (highestCollapsed != null) {
+                        this.invisibleNodeCollapsedGroup.set(node, highestCollapsed);
+                    }
+                }
+            }
+            this.visibleNodes  = this._mix.nodes.filter(node => !nodesToRemove.includes(node));
+            this.visibleGroups = this.allGroups.filter(group => !groupsToRemove.includes(group));
+            this.visibleGroups.sort((a, b) => a.level - b.level);
+        }
+    }
+
+    public toggleCollapsedGroup(group: NodeGroup): void {
+        group.collapsed = !group.collapsed;
+        this.calculateVisibleElements();
+        if (this._mix != null) {
+            group.updateInputs(this._mix.connections);
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            for (const firstLevelGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(firstLevelGroup);
+            }
+            this.recalculateMaxX();
+            this.checkMinX();
+            this.emitChanges();
+        }
+    }
+
+    public toggleShowConnectorsGroup(group: NodeGroup): void {
+        group.showConnectors = !group.showConnectors;
+        this.calculateVisibleElements();
+        this.recalculateMaxX();
+        if (this._mix != null) {
+            group.updateInputs(this._mix.connections);
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            for (const firstLevelGroup of this.firstLevelGroups) {
+                this.recalculateGroupBounds(firstLevelGroup);
+            }
+        }
+        this.emitChanges();
+    }
+
+    private recalculateGroupBounds(group: NodeGroup): Rect {
+        const positions: Rect[] = group.nodes
+                                       .map(node => {
+                                           const stacks = Math.max(node.inputs.length, node.outputs.length);
+                                           const height = MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
+                                           return ({
+                                               x:     this.nodePositions.get(node)?.x ?? 0,
+                                               y:     this.nodePositions.get(node)?.y ?? 0,
+                                               height,
+                                               width: MEASURES.NODE_WIDTH
+                                           });
+                                       });
+        positions.push(...group.subGroups.map(subGroup => this.recalculateGroupBounds(subGroup)));
+        const firstNodeX = Math.min(...positions.map(position => position.x));
+        const firstNodeY = Math.min(...positions.map(position => position.y));
+        const lastNodeX  = Math.max(...positions.map(position => position.x + position.width));
+        const lastNodeY  = Math.max(...positions.map(position => position.y + position.height));
+        group.x          = firstNodeX - MEASURES.GROUP_PADDING;
+        group.y          = firstNodeY - MEASURES.GROUP_PADDING - MEASURES.NODE_HEADING_HEIGHT;
+        group.width      = lastNodeX - firstNodeX + 2 * MEASURES.GROUP_PADDING;
+        group.height     = lastNodeY - firstNodeY + 2 * MEASURES.GROUP_PADDING + MEASURES.NODE_HEADING_HEIGHT;
+        return {
+            x:      group.displayX,
+            y:      group.y,
+            width:  group.displayWidth,
+            height: group.displayHeight
+        };
+    }
+
+}
+
+interface Rect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 }
 
 enum DraggingElementType {
     NODE,
+    GROUP,
     BACKGROUND,
     LINK_FROM_NODE_OUTPUT,
     LINK_FROM_EXTERNAL_INPUT,
@@ -1408,10 +2045,23 @@ interface CandidateExternalOutput {
 
 interface DraggingNode {
     type: DraggingElementType.NODE,
+    hasMoved: boolean,
     node: ElaborationNode,
     startPosition: Point,
     startDrag: Point,
-    fallBackFurtherNodeX: number,
+    moveToGroup?: NodeGroup,
+    snapPosition?: Point
+}
+
+interface DraggingGroup {
+    type: DraggingElementType.GROUP,
+    hasMoved: boolean,
+    group: NodeGroup,
+    startPosition: Point,
+    nodeStartPositions: Point[],
+    startDrag: Point,
+    moveToGroup?: NodeGroup
+    snapPosition?: Point
 }
 
 interface DraggingBackground {
@@ -1467,5 +2117,269 @@ interface DraggingToExternalOutput {
     datumInfo: DatumInfo;
 }
 
-type DraggingElement = DraggingNode | DraggingBackground | DraggingFromNodeOutput | DraggingToNodeInput | DraggingFromExternalInput | DraggingToExternalOutput;
+type DraggingElement = DraggingNode | DraggingGroup | DraggingBackground | DraggingFromNodeOutput | DraggingToNodeInput | DraggingFromExternalInput | DraggingToExternalOutput;
 
+export class NodeGroup {
+
+    public name: string = 'Group';
+
+    public nodes: ElaborationNode[] = [];
+
+    public subGroups: NodeGroup[] = [];
+
+    public collapsed: boolean      = false;
+    public showConnectors: boolean = true;
+
+    public inputs: { datum: Datum, nodeId: number }[]  = [];
+    public outputs: { datum: Datum, nodeId: number }[] = [];
+
+    public inputAliases: { datumName: string, nodeId: number, alias: string }[]  = [];
+    public outputAliases: { datumName: string, nodeId: number, alias: string }[] = [];
+
+    public parent: NodeGroup | null = null;
+    private _level: number          = 0;
+
+    public x: number      = 0;
+    public y: number      = 0;
+    public width: number  = 0;
+    public height: number = 0;
+
+    constructor() {}
+
+    public get level(): number {
+        return this._level;
+    }
+
+    public set level(level: number) {
+        this.subGroups.forEach(group => {group.level = level + 1;});
+        this._level = level;
+    }
+
+    public containsNode(node: ElaborationNode): boolean {
+        return this.nodes.includes(node) || this.subGroups.some(subGroup => subGroup.containsNode(node));
+    }
+
+    public containsGroup(group: NodeGroup): boolean {
+        return this.subGroups.includes(group) || this.subGroups.some(subGroup => subGroup.containsGroup(group));
+    }
+
+    public elementsAreSiblings(elements: (ElaborationNode | NodeGroup)[]): boolean | null {
+        return NodeGroup.checkElementsAreSiblings(elements, this.nodes, this.subGroups);
+    }
+
+    public get allNodes(): ElaborationNode[] {
+        return this.nodes.concat(...this.subGroups.flatMap(subGroup => subGroup.allNodes));
+    }
+
+    public get allGroups(): NodeGroup[] {
+        return this.subGroups.concat(...this.subGroups.flatMap(subGroup => subGroup.allGroups));
+    }
+
+    public get collapsedNodes(): ElaborationNode[] {
+        if (this.collapsed) {
+            return this.allNodes;
+        } else {
+            return this.subGroups.flatMap(group => group.collapsedNodes);
+        }
+    }
+
+    public get displayHeight(): number {
+        if (this.collapsed) {
+            if (this.showConnectors) {
+                const stacks = Math.max(this.inputs.length, this.outputs.length);
+                return MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
+            } else {
+                return MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT * 2 + MEASURES.NODE_INTERNAL_SPACING * 3;
+            }
+        } else {
+            return this.height;
+        }
+    }
+
+    public get displayWidth(): number {
+        return this.collapsed ? MEASURES.NODE_WIDTH : this.width;
+    }
+
+    public get displayX(): number {
+        return this.collapsed ? this.x + (this.width - MEASURES.NODE_WIDTH) / 2 : this.x;
+    }
+
+    public updateInputs(connections: readonly Connection[]): void {
+        const allNodes = this.allNodes;
+        this.inputs    = [];
+        this.outputs   = [];
+        for (const node of allNodes) {
+            const nodeExternalInConnections = connections.filter((connection): connection is ConnectionSource & ConnectionDrainToNode => {
+                if (connection.drainType != ConnectionDrainType.NODE || connection.drainNodeId != node.id) {
+                    return false;
+                }
+                if (connection.sourceType != ConnectionSourceType.NODE) {
+                    return connection.sourceType != ConnectionSourceType.CONSTANT;
+                }
+                return !allNodes.some(otherNode => otherNode.id == connection.sourceNodeId);
+            });
+            this.inputs.push(...node
+                .inputs
+                .filter(input =>
+                            nodeExternalInConnections.some(connection =>
+                                                               connection.drainNodeInputName == input.name
+                            )
+                )
+                .map(input => ({datum: input, nodeId: node.id}))
+            );
+
+            const nodeExternalOutConnections = connections.filter((connection): connection is ConnectionSourceFromNode & ConnectionDrain => {
+                if (connection.sourceType != ConnectionSourceType.NODE || connection.sourceNodeId != node.id) {
+                    return false;
+                }
+                if (connection.drainType != ConnectionDrainType.NODE) {
+                    return true;
+                }
+                return !allNodes.some(otherNode => otherNode.id == connection.drainNodeId);
+            });
+            this.outputs.push(...node
+                .outputs
+                .filter(output =>
+                            nodeExternalOutConnections.some(connection =>
+                                                                connection.sourceNodeOutputName == output.name
+                            )
+                )
+                .map(output => ({datum: output, nodeId: node.id}))
+            );
+        }
+    }
+
+    public get collapsedGroups(): NodeGroup[] {
+        if (this.collapsed) {
+            return this.allGroups;
+        } else {
+            return this.subGroups.flatMap(group => group.collapsedGroups);
+        }
+    }
+
+    public findParent(element: ElaborationNode | NodeGroup): NodeGroup | null {
+        const result = NodeGroup.findParent(element, this.nodes, this.subGroups);
+        if (result == 'ROOT') {
+            return this;
+        } else {
+            return result;
+        }
+    }
+
+    public changeAlias(datum: { datum: Datum; nodeId: number }, value: string, isInput: boolean): void {
+        const aliases  = isInput ? this.inputAliases : this.outputAliases;
+        const oldAlias = aliases
+            .find(alias =>
+                      alias.datumName == datum.datum.name
+                      && alias.nodeId == datum.nodeId);
+        if (oldAlias != null) {
+            oldAlias.alias = value;
+        } else {
+            aliases.push({
+                             datumName: datum.datum.name,
+                             nodeId:    datum.nodeId,
+                             alias:     value
+                         });
+        }
+    }
+
+    public getAlias(datum: { datum: Datum; nodeId: number }, isInput: boolean): string | null {
+        const aliases = isInput ? this.inputAliases : this.outputAliases;
+        return aliases
+                   .find(alias =>
+                             alias.datumName == datum.datum.name
+                             && alias.nodeId == datum.nodeId)?.alias ?? null;
+    }
+
+    public toJSON(allGroups: NodeGroup[]): NodeGroupJSON {
+        return {
+            name:           this.name,
+            nodeIds:        this.nodes.map(node => node.id),
+            subGroupIds:    this.subGroups.map(subGroup => allGroups.indexOf(subGroup)),
+            collapsed:      this.collapsed,
+            showConnectors: this.showConnectors,
+            inputAliases:   this.inputAliases,
+            outputAliases:  this.outputAliases,
+            parentId:       this.parent != null ? allGroups.indexOf(this.parent) : null,
+            level:          this.level
+        };
+    }
+
+    public fromJSONAdjust(nodeGroupJSON: NodeGroupJSON, allGroups: NodeGroup[]): void {
+        this.subGroups = nodeGroupJSON.subGroupIds.map(subGroupId => allGroups[subGroupId]).filter(subGroup => subGroup != null);
+        this.parent    = nodeGroupJSON.parentId != null ? allGroups[nodeGroupJSON.parentId] ?? null : null;
+    }
+
+    public static fromJSON(nodeGroupJSON: NodeGroupJSON, allNodes: readonly ElaborationNode[]): NodeGroup {
+        const result          = new NodeGroup();
+        result.name           = nodeGroupJSON.name;
+        result.nodes          = nodeGroupJSON
+            .nodeIds
+            .map(nodeId =>
+                     allNodes
+                         .find(node => node.id == nodeId))
+            .filter(node => node != null);
+        result.collapsed      = nodeGroupJSON.collapsed;
+        result.showConnectors = nodeGroupJSON.showConnectors;
+        result.inputAliases   = nodeGroupJSON.inputAliases;
+        result.outputAliases  = nodeGroupJSON.outputAliases;
+        result._level         = nodeGroupJSON.level;
+        return result;
+    }
+
+    public static findParent(element: ElaborationNode | NodeGroup, nodes: ElaborationNode[], subGroups: NodeGroup[]): NodeGroup | null | 'ROOT' {
+        if (element instanceof ElaborationNode) {
+            if (nodes.includes(element)) {
+                return 'ROOT';
+            }
+        } else {
+            if (subGroups.includes(element)) {
+                return 'ROOT';
+            }
+        }
+        for (const subGroup of subGroups) {
+            const parent = subGroup.findParent(element);
+            if (parent != null) {
+                return parent;
+            }
+        }
+        return null;
+    }
+
+    public static checkElementsAreSiblings(elements: (ElaborationNode | NodeGroup)[], nodes: ElaborationNode[], subGroups: NodeGroup[]): boolean | null {
+        const areDirectChildren = elements.map(element => {
+            if (element instanceof ElaborationNode) {
+                return nodes.includes(element);
+            } else {
+                return subGroups.includes(element);
+            }
+        });
+        if (areDirectChildren.every(a => a)) {
+            // If all elements are children of this, they are all siblings
+            return true;
+        } else if (areDirectChildren.every(a => !a)) {
+            // If none of the elements are children of this, they may be siblings in the children groups
+            if (subGroups.length == 0) {
+                // We don't have any subgroup, so we cannot say anything about them being siblings or not.
+                return null;
+            } else {
+                for (const subGroup of subGroups) {
+                    const elementsAreSiblings = subGroup.elementsAreSiblings(elements);
+                    if (elementsAreSiblings === true) {
+                        // If a subgroup definitely has the nodes as siblings, the answer is true and we don't care about anywhere else
+                        return true;
+                    } else if (elementsAreSiblings === false) {
+                        // If in the subgroup the check failed, we are assured they'll never be siblings, so we report back
+                        return false;
+                    }
+                    // Otherwise we don't know, so we keep searching in the other subgroups
+                }
+                // We haven't found evidence either way, we cannot say anything for sure
+                return null;
+            }
+        } else {
+            // Otherwise we have some that are sibling but not all, so there's no way they all are somewhere else. So we stop and return false.
+            return false;
+        }
+    }
+}

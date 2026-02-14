@@ -1334,7 +1334,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         if (mix == null) {
             throw new NotFoundException();
         }
-        return data.layouts.find(layout => layout.mixId == mixId)?.layout ?? new MixLayout({});
+        return data.layouts.find(layout => layout.mixId == mixId)?.layout ?? new MixLayout({}, []);
     }
     
     public async saveMixLayout(mixId: number, layout: MixLayout): Promise<void> {

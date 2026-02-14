@@ -8,7 +8,7 @@ import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixin
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
-import {MixUiManager} from './mix-ui-manager';
+import {MixUiManager, NodeGroup} from './mix-ui-manager';
 import {MatButton} from '@angular/material/button';
 import {DatePipe, Location} from '@angular/common';
 import {ConstantEditDialogComponent} from './constant-edit-dialog/constant-edit-dialog.component';
@@ -28,6 +28,7 @@ import {LocalStorageObject, LocalStorageService} from '../../../services/local-s
 import {BackupDialogComponent} from './backup-dialog/backup-dialog.component';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MixLayout} from '@common/mixing/mix/mix-layout';
+import {StringInputDialogComponent} from '../../dialogs/string-input-dialog/string-input-dialog.component';
 
 
 @Component({
@@ -161,17 +162,17 @@ export class MixComponent implements AfterViewInit {
                         this.mixPosition = mixInfo;
                         const newMix     = new Mix('NEW');
                         if (this.mixBackups != null) {
-                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}), true);
+                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}, []), true);
                         } else {
                             this.mixBackups = new MixBackups(id);
-                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}), true);
+                            this.mixBackups.addBackup(newMix, mixInfo, new MixLayout({}, []), true);
                         }
                         this.localStorageService.setItem<MixBackups | null>(
                             new LocalStorageObject<MixBackups | null>(`mix-save.${id}`, null),
                             this.mixBackups,
                             MixBackups.toJSON
                         );
-                        return [newMix, new MixLayout({})];
+                        return [newMix, new MixLayout({}, [])];
                     } else {
                         return Promise.all(
                             [
@@ -693,7 +694,8 @@ export class MixComponent implements AfterViewInit {
         return (selectedA.type == SelectedElementType.NODE && selectedB.type == SelectedElementType.NODE && selectedA.node == selectedB.node)
                || (selectedA.type == SelectedElementType.INPUT && selectedB.type == SelectedElementType.INPUT && selectedA.exportedDatum == selectedB.exportedDatum)
                || (selectedA.type == SelectedElementType.OUTPUT && selectedB.type == SelectedElementType.OUTPUT && selectedA.datum == selectedB.datum)
-               || (selectedA.type == SelectedElementType.CONNECTION && selectedB.type == SelectedElementType.CONNECTION && selectedA.connection == selectedB.connection);
+               || (selectedA.type == SelectedElementType.CONNECTION && selectedB.type == SelectedElementType.CONNECTION && selectedA.connection == selectedB.connection)
+               || (selectedA.type == SelectedElementType.NODE_GROUP && selectedB.type == SelectedElementType.NODE_GROUP && selectedA.group == selectedB.group);
     }
 
     protected isSelected(selectedElement: SelectedElement): boolean {
@@ -714,6 +716,50 @@ export class MixComponent implements AfterViewInit {
         }
     }
 
+    protected changeConnectorName(
+        group: NodeGroup,
+        datum: { datum: Datum; nodeId: number },
+        isInput: boolean
+    ): void {
+        this.matDialog.open(StringInputDialogComponent, {
+            data: {
+                confirmText:  'Edit',
+                title:        'Edit group input name',
+                defaultValue: group.getAlias(datum, isInput) ?? datum.datum.name,
+                hint:         'Select a name for the input',
+                inputLabel:   'New name'
+            }
+        })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result != null) {
+                    group.changeAlias(datum, result, isInput);
+                    this.doBackup();
+                }
+            });
+    }
+
+    protected changeGroupName(
+        group: NodeGroup
+    ): void {
+        this.matDialog.open(StringInputDialogComponent, {
+            data: {
+                confirmText:  'Edit',
+                title:        'Edit group name',
+                defaultValue: group.name,
+                hint:         'Select a name for the group',
+                inputLabel:   'New name'
+            }
+        })
+            .afterClosed()
+            .subscribe((result) => {
+                if (result != null) {
+                    group.name = result;
+                    this.doBackup();
+                }
+            });
+    }
+
     protected get toolbarElements(): ToolbarElement[] {
         return this.filterToolbar();
     }
@@ -730,6 +776,13 @@ export class MixComponent implements AfterViewInit {
                 } else {
                     return el;
                 }
+            })
+            .filter(element => {
+                if (element.type == ToolBarElementType.BUTTON && element.submenu != null) {
+                    return element.submenu.length > 0;
+                } else {
+                    return true;
+                }
             });
     }
 
@@ -739,6 +792,42 @@ export class MixComponent implements AfterViewInit {
             return (toolbarElement.id as ToolbarAction) == ToolbarAction.BACK;
         }
         switch (toolbarElement.id as ToolbarAction) {
+            case ToolbarAction.UNGROUP:
+                return this.selectedElements.length == 1
+                       && this.selectedElements
+                              .every(
+                                  selectedElement =>
+                                      selectedElement.type == SelectedElementType.NODE_GROUP
+                              );
+            case ToolbarAction.REMOVE_FROM_GROUP:
+                return this.selectedElements.length > 0
+                       && this.selectedElements
+                              .every(
+                                  selectedElement =>
+                                      selectedElement.type == SelectedElementType.NODE
+                                      || selectedElement.type == SelectedElementType.NODE_GROUP
+                              );
+            case ToolbarAction.GROUP: {
+                return this.selectedElements
+                           .every(
+                               selectedElement =>
+                                   selectedElement.type == SelectedElementType.NODE
+                                   || selectedElement.type == SelectedElementType.NODE_GROUP
+                           )
+                       && (this.selectedElements.length > 1)
+                       && this.uiManager.canFormGroup(
+                        this
+                            .selectedElements
+                            .map(element => {
+                                     if (element.type == SelectedElementType.NODE) {
+                                         return element.node;
+                                     } else {
+                                         return element.group;
+                                     }
+                                 }
+                            )
+                    );
+            }
             case ToolbarAction.BACKUPS:
                 return this.mixBackups?.hasUnopenedBackups ?? false;
             case ToolbarAction.BACK:
@@ -750,17 +839,71 @@ export class MixComponent implements AfterViewInit {
                 return true;
             case ToolbarAction.DELETE:
                 return this.selectedElements.length > 0
-                       && (
+                       &&
+                       (
                            this
                                .selectedElements
-                               .every(element => element.type != SelectedElementType.OUTPUT)
-                           || this.exposes == null);
+                               .every(
+                                   element => {
+                                       return (
+                                           (element.type != SelectedElementType.OUTPUT || this.exposes == null)
+                                           && element.type != SelectedElementType.NODE_GROUP
+                                       );
+                                   })
+                       );
         }
     }
 
 
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
+            case ToolbarAction.UNGROUP: {
+                let firstElement = this.selectedElements[0];
+                if (firstElement && firstElement.type == SelectedElementType.NODE_GROUP) {
+                    this.uiManager.deleteGroup(firstElement.group);
+                }
+                break;
+            }
+            case ToolbarAction.REMOVE_FROM_GROUP: {
+                const toDegroup =
+                          this
+                              .selectedElements
+                              .filter(
+                                  (selectedElement): selectedElement is (SelectedElementNode | SelectedElementNodeGroup) =>
+                                      selectedElement.type == SelectedElementType.NODE
+                                      || selectedElement.type == SelectedElementType.NODE_GROUP
+                              )
+                              .map(element => {
+                                       if (element.type == SelectedElementType.NODE) {
+                                           return element.node;
+                                       } else {
+                                           return element.group;
+                                       }
+                                   }
+                              );
+                this.uiManager.degroup(toDegroup);
+                break;
+            }
+            case ToolbarAction.GROUP: {
+                const newGroupNodes =
+                          this
+                              .selectedElements
+                              .filter(
+                                  (selectedElement): selectedElement is (SelectedElementNode | SelectedElementNodeGroup) =>
+                                      selectedElement.type == SelectedElementType.NODE
+                                      || selectedElement.type == SelectedElementType.NODE_GROUP
+                              )
+                              .map(element => {
+                                       if (element.type == SelectedElementType.NODE) {
+                                           return element.node;
+                                       } else {
+                                           return element.group;
+                                       }
+                                   }
+                              );
+                this.uiManager.createGroup(newGroupNodes);
+                break;
+            }
             case ToolbarAction.BACKUPS:
                 if (this.mixBackups == null) {
                     return;
@@ -797,6 +940,7 @@ export class MixComponent implements AfterViewInit {
                             this.mix?.removeNode(selectedElement.node);
                             this.doBackup();
                             this.uiManager.refreshMix();
+                            this.uiManager.nodeDeleted(selectedElement.node);
                             break;
                         case SelectedElementType.OUTPUT:
                             if (this.exposes != null) {
@@ -810,6 +954,8 @@ export class MixComponent implements AfterViewInit {
                             this.mix?.removeConnection(selectedElement.connection);
                             this.doBackup();
                             this.uiManager.removeConnection(selectedElement.connection);
+                            break;
+                        case SelectedElementType.NODE_GROUP:
                             break;
                     }
                 }
@@ -949,6 +1095,8 @@ export class MixComponent implements AfterViewInit {
             this.mixBackups ??= new MixBackups(this.mix.id);
             if (this.mixBackups.editingBackup == null) {
                 this.mixBackups.addBackup(this.mix, this.mixPosition, this.uiManager.exportLayout(), true);
+            } else {
+                this.mixBackups.editingBackup.layout = this.uiManager.exportLayout();
             }
             SAVE_BUTTON.badge = true;
             this.saveBackups();
@@ -988,7 +1136,6 @@ export class MixComponent implements AfterViewInit {
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
-
 }
 
 export interface NodeInputInfo {
@@ -996,35 +1143,52 @@ export interface NodeInputInfo {
     specialInputAddMore: boolean;
 }
 
-type SelectedElement = {
+interface SelectedElementInput {
     type: SelectedElementType.INPUT,
     exportedDatum: ExportedDatum
-} | {
+}
+
+interface SelectedElementNode {
     type: SelectedElementType.NODE,
     node: ElaborationNode
-} | {
+}
+
+interface SelectedElementOutput {
     type: SelectedElementType.OUTPUT,
     datum: Datum
-} | {
+}
+
+interface SelectedElementConnection {
     type: SelectedElementType.CONNECTION,
     connection: Connection
-};
+}
+
+interface SelectedElementNodeGroup {
+    type: SelectedElementType.NODE_GROUP,
+    group: NodeGroup
+}
+
+type SelectedElement = SelectedElementInput | SelectedElementNode | SelectedElementOutput | SelectedElementConnection | SelectedElementNodeGroup;
 
 enum SelectedElementType {
     INPUT      = 'INPUT',
     OUTPUT     = 'OUTPUT',
     NODE       = 'NODE',
-    CONNECTION = 'CONNECTION'
+    CONNECTION = 'CONNECTION',
+    NODE_GROUP = 'NODE_GROUP'
 }
 
 
 enum ToolbarAction {
-    BACK      = 'back',
-    SAVE      = 'save',
-    BACKUPS   = 'backups',
-    ADD       = 'add',
-    DELETE    = 'delete',
-    REARRANGE = 'rearrange'
+    BACK              = 'back',
+    SAVE              = 'save',
+    BACKUPS           = 'backups',
+    ADD               = 'add',
+    DELETE            = 'delete',
+    REARRANGE         = 'rearrange',
+    GROUP             = 'group',
+    UNGROUP           = 'ungroup',
+    REMOVE_FROM_GROUP = 'remove-from-group'
 }
 
 
@@ -1080,6 +1244,36 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         id:    ToolbarAction.ADD,
         hint:  'Add node',
         order: 3
+    },
+    {
+        type:    ToolBarElementType.BUTTON,
+        icon:    'cards',
+        order:   3,
+        id:      'group-menu',
+        hint:    'Grouping',
+        submenu: [
+            {
+                type:  ToolBarElementType.BUTTON,
+                icon:  'add',
+                id:    ToolbarAction.GROUP,
+                hint:  'Group nodes',
+                order: 3
+            },
+            {
+                type:  ToolBarElementType.BUTTON,
+                icon:  'remove_selection',
+                id:    ToolbarAction.UNGROUP,
+                hint:  'Dissolve group',
+                order: 3
+            },
+            {
+                type:  ToolBarElementType.BUTTON,
+                icon:  'output',
+                id:    ToolbarAction.REMOVE_FROM_GROUP,
+                hint:  'Remove from containing group',
+                order: 3
+            }
+        ]
     },
     {
         type:  ToolBarElementType.BUTTON,

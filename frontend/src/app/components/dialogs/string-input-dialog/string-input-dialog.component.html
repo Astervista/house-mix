@@ -1,0 +1,24 @@
+<h2 mat-dialog-title>{{ data.title || 'Change name' }}</h2>
+<div mat-dialog-content>
+    {{ data.message }}
+    <mat-form-field>
+        <mat-label>{{ data.inputLabel || "Value" }}</mat-label>
+        <input matInput [formControl]="stringFormControl">
+        <mat-hint>{{ data.hint }}</mat-hint>
+        @if (stringFormControl.invalid) {
+            <mat-error>Please insert a value</mat-error>
+        }
+    </mat-form-field>
+</div>
+<div mat-dialog-actions>
+    @if (data.cancelText !== null) {
+        <button mat-button (click)="closeDialog(null)">{{ data.cancelText || 'Cancel' }}</button>
+    }
+    @if (data.confirmText !== null) {
+        <button mat-button
+                [disabled]="stringFormControl.invalid"
+                (click)="closeDialog(stringFormControl.value)">
+            {{ data.confirmText || 'Ok' }}
+        </button>
+    }
+</div>

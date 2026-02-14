@@ -719,7 +719,7 @@ export interface ConnectionSourceFromConstant {
     sourceValueType: DatumType
 }
 
-type ConnectionSource = ConnectionSourceFromInput | ConnectionSourceFromNode | ConnectionSourceFromConstant
+export type ConnectionSource = ConnectionSourceFromInput | ConnectionSourceFromNode | ConnectionSourceFromConstant
 
 export enum ConnectionDrainType {
     OUTPUT = "OUTPUT",
@@ -737,7 +737,7 @@ export interface ConnectionDrainToNode {
     drainNodeInputName: string,
 }
 
-type ConnectionDrain = ConnectionDrainToOutput | ConnectionDrainToNode
+export type ConnectionDrain = ConnectionDrainToOutput | ConnectionDrainToNode
 
 export type Connection = ConnectionSource & ConnectionDrain;
 

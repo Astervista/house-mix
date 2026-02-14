@@ -1,14 +1,12 @@
 import {Component, HostBinding, Input} from '@angular/core';
 import {TOOLTIP_TIMEOUT} from '../../../../utils/constants';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
-import {DatePipe} from '@angular/common';
 import {SYSTEM_TIMER_TYPE_DISPLAY} from '../../../system/constants';
 import {MatIcon} from '@angular/material/icon';
 
 @Component({
                selector:    'house-mix-device-monitor-device',
                imports:     [
-                   DatePipe,
                    MatIcon
                ],
                templateUrl: './device-monitor-device.component.html',

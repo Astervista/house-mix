@@ -55,6 +55,7 @@
             class="mix-canvas"
             resizeEvent
             [style.--connector-radius]="MEASURES.CONNECTOR_RADIUS"
+            [style.--heading-height]="MEASURES.NODE_HEADING_HEIGHT + 'px'"
             (onResize)="uiManager.viewSize = $event"
             (wheel)="uiManager.wheel($event)"
             (mousemove)="uiManager.svgElement = canvas; uiManager.mouseMove($event)"
@@ -80,14 +81,37 @@
                     @let keepEnabledExternalInput = uiManager.draggingConnectionExternalInput;
                     @let keepEnabledExternalOutput = uiManager.draggingConnectionExternalOutput;
 
-                    <!--CONNECTIONS-->
+
+                    <!-- GROUP BACKS FOR SELECTION AND MOVING -->
+
+                    <g
+                        [attr.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR / 2}, 0)`">
+                        @for (group of uiManager.visibleGroups; track $index) {
+                            <g
+                                class="node-group-svg-group"
+                                [style.pointer-events]="uiManager.isDraggingGroup(group) ? 'none':'all'"
+                                [attr.transform]="`translate(${group.x + (group.collapsed ? group.width / 2 - MEASURES.NODE_WIDTH / 2 : 0)}, ${group.y})`"
+                                (click)="selectElement({type: SelectedElementType.NODE_GROUP, group}, $event); $event.stopPropagation()"
+                                (mousedown)="$event.stopPropagation(); uiManager.groupMouseDown(group, $event)">
+                                <rect
+                                    class="node-group-back"
+                                    [attr.width]="group.displayWidth"
+                                    [attr.height]="group.displayHeight"
+                                    rx="10px"
+                                    ry="10px">
+                                </rect>
+                            </g>
+                        }
+                    </g>
+
+                    <!-- CONNECTIONS-->
 
                     @let replacingConnection = uiManager.replacingConnection;
                     <g
                         class="connection-group"
                         [style.--connection-width]="MEASURES.CONNECTION_WIDTH">
                         @for (connection of mix.connections; track connection) {
-                            @if ((connection.sourceType != ConnectionSourceType.CONSTANT) && (connection != replacingConnection)) {
+                            @if ((connection.sourceType != ConnectionSourceType.CONSTANT) && (connection != replacingConnection) && (uiManager.hiddenConnections.get(connection) === false)) {
                                 @let connectionPosition = uiManager.getConnectionPosition(connection);
                                 @if (connectionPosition != null) {
                                     @let path = graphConnectionSmoothPath(connectionPosition.from, connectionPosition.to, true);
@@ -130,6 +154,270 @@
                             </path>
                         }
                     </g>
+
+
+                    <!-- GROUPS -->
+
+                    <g
+                        [attr.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR / 2}, 0)`">
+                        @for (group of uiManager.visibleGroups; track $index) {
+                            <g
+                                class="node-group-svg-group"
+                                [style.pointer-events]="uiManager.isDraggingGroup(group) ? 'none':'all'"
+                                [class.selected]="this.isSelected({type: SelectedElementType.NODE_GROUP, group})"
+                                [attr.transform]="`translate(${group.x + (group.collapsed ? group.width / 2 - MEASURES.NODE_WIDTH / 2 : 0)}, ${group.y})`"
+                                (click)="selectElement({type: SelectedElementType.NODE_GROUP, group}, $event); $event.stopPropagation()"
+                                (mousedown)="$event.stopPropagation(); uiManager.groupMouseDown(group, $event)">
+                                <rect
+                                    class="node-group"
+                                    [class.collapsed]="group.collapsed"
+                                    [attr.width]="group.displayWidth"
+                                    [attr.height]="group.displayHeight"
+                                    rx="10px"
+                                    ry="10px">
+                                </rect>
+                                <g
+                                    [attr.transform]="`translate(${((group.collapsed ? MEASURES.NODE_WIDTH : group.width) - MEASURES.NODE_HEADING_WIDTH) / 2}, ${-MEASURES.NODE_HEADING_HEIGHT / 2})`">
+                                    <g
+                                        class="heading-expand"
+                                        (mousedown)="$event.stopPropagation()"
+                                        (click)="$event.stopPropagation(); uiManager.toggleCollapsedGroup(group)">
+                                        <rect
+                                            rx="5"
+                                            ry="5"
+                                            class="node-group-heading"
+                                            [attr.width]="MEASURES.NODE_HEADING_WIDTH"
+                                            [attr.height]="MEASURES.NODE_HEADING_HEIGHT">
+                                        </rect>
+                                        <path
+                                            [attr.transform]="`translate(${MEASURES.NODE_HEADING_WIDTH / 2}, 0)`"
+                                            class="heading-expand-chevron"
+                                            [class.collapsed]="group.collapsed"
+                                            [attr.d]="`M${
+                                            -MEASURES.NODE_HEADING_HEIGHT * .75 * .5 + 10
+                                            },${
+                                            group.collapsed ? MEASURES.NODE_HEADING_HEIGHT - MEASURES.NODE_HEADING_HEIGHT * .75 * .5 + 5 : (MEASURES.NODE_HEADING_HEIGHT - 5)
+                                            }l${
+                                            MEASURES.NODE_HEADING_HEIGHT * .75 * .5 - 10
+                                            },${
+                                            (!group.collapsed ? -1 : 1) * (MEASURES.NODE_HEADING_HEIGHT * .75 * .5 - 10)
+                                            }l${
+                                            MEASURES.NODE_HEADING_HEIGHT * .75 * .5 - 10
+                                            },${
+                                            (!group.collapsed ? -1 : 1) * (-MEASURES.NODE_HEADING_HEIGHT * .75 * .5 + 10)
+                                            }`"></path>
+                                        <text
+                                            [attr.transform]="`translate(${MEASURES.NODE_HEADING_WIDTH / 2}, ${MEASURES.NODE_HEADING_HEIGHT * .75 * .5})`"
+                                            class="heading-expand-text">{{ group.collapsed ? "EXPAND" : "COLLAPSE" }}
+                                        </text>
+                                    </g>
+                                    <g
+                                        (mousemove)="uiManager.groupHeaderMove(group)"
+                                        (mouseleave)="uiManager.groupHeaderLeave()">
+                                        <rect
+                                            rx="5"
+                                            ry="5"
+                                            class="node-group-heading"
+                                            [attr.width]="MEASURES.NODE_HEADING_WIDTH"
+                                            [attr.height]="MEASURES.NODE_HEADING_HEIGHT">
+                                        </rect>
+                                        <text
+                                            class="node-group-heading-text"
+                                            [attr.x]="MEASURES.NODE_HEADING_WIDTH / 2"
+                                            [attr.y]="MEASURES.NODE_HEADING_HEIGHT / 2">
+                                            {{ group.name }}
+                                        </text>
+                                        @if (group.collapsed) {
+                                            <path
+                                                [style.--icon-size]="MEASURES.NODE_HEADING_HEIGHT *.5"
+                                                [style.--icon-pos-x]="MEASURES.NODE_HEADING_HEIGHT / 2 + 'px'"
+                                                [style.--icon-pos-y]="MEASURES.NODE_HEADING_HEIGHT / 2 + 'px'"
+                                                class="mat-icon-svg"
+                                                [attr.d]="group.showConnectors ? 'M480-360q-50 0-85-35t-35-85q0-50 35-85t85-35q50 0 85 35t35 85q0 50-35 85t-85 35ZM324-111.5Q251-143 197-197t-85.5-127Q80-397 80-480t31.5-156Q143-709 197-763t127-85.5Q397-880 480-880t156 31.5Q709-817 763-763t85.5 127Q880-563 880-480t-31.5 156Q817-251 763-197t-127 85.5Q563-80 480-80t-156-31.5ZM480-160q133 0 226.5-93.5T800-480q0-133-93.5-226.5T480-800q-133 0-226.5 93.5T160-480q0 133 93.5 226.5T480-160Zm0-320Zm141.5 141.5Q680-397 680-480t-58.5-141.5Q563-680 480-680t-141.5 58.5Q280-563 280-480t58.5 141.5Q397-280 480-280t141.5-58.5Z' : 'M480-160q-33 0-56.5-23.5T400-240q0-33 23.5-56.5T480-320q33 0 56.5 23.5T560-240q0 33-23.5 56.5T480-160Zm0-240q-33 0-56.5-23.5T400-480q0-33 23.5-56.5T480-560q33 0 56.5 23.5T560-480q0 33-23.5 56.5T480-400Zm0-240q-33 0-56.5-23.5T400-720q0-33 23.5-56.5T480-800q33 0 56.5 23.5T560-720q0 33-23.5 56.5T480-640Z'"/>
+                                            <rect
+                                                [attr.width]="MEASURES.NODE_HEADING_HEIGHT"
+                                                [attr.height]="MEASURES.NODE_HEADING_HEIGHT"
+                                                [style.cursor]="'pointer'"
+                                                fill="transparent"
+                                                (click)="uiManager.toggleShowConnectorsGroup(group)">
+                                            </rect>
+                                        }
+                                        <path
+                                            [style.--icon-size]="MEASURES.NODE_HEADING_HEIGHT *.5"
+                                            [style.--icon-pos-x]="MEASURES.NODE_HEADING_WIDTH - MEASURES.NODE_HEADING_HEIGHT / 2 + 'px'"
+                                            [style.--icon-pos-y]="MEASURES.NODE_HEADING_HEIGHT / 2 + 'px'"
+                                            class="mat-icon-svg"
+                                            d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+                                        <rect
+                                            [attr.x]="MEASURES.NODE_HEADING_WIDTH - MEASURES.NODE_HEADING_HEIGHT"
+                                            [attr.width]="MEASURES.NODE_HEADING_HEIGHT"
+                                            [attr.height]="MEASURES.NODE_HEADING_HEIGHT"
+                                            [style.cursor]="'pointer'"
+                                            fill="transparent"
+                                            (click)="changeGroupName(group)">
+                                        </rect>
+                                    </g>
+                                </g>
+                                @if (group.collapsed) {
+                                    @if (group.showConnectors) {
+                                        @let leftDisplacement = uiManager.getConnectionsDisplacement(group, true);
+                                        @let rightDisplacement = uiManager.getConnectionsDisplacement(group, false);
+                                        @for (input of group.inputs; track input; let inputIndex = $index) {
+                                            @let connectionTop = uiManager.getConnectionTop(inputIndex) + leftDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
+                                            <rect
+                                                class="input-area"
+                                                [attr.width]="MEASURES.NODE_WIDTH / 2"
+                                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
+                                                [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
+                                            </rect>
+                                            <rect
+                                                width="24px"
+                                                height="24px"
+                                                fill="transparent"
+                                                [style.transform]="`translate(${
+                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                        }px, ${
+                                            connectionTop - 12
+                                        }px)`"
+                                                (mousedown)="$event.stopPropagation()"
+                                                (click)="changeConnectorName(group, input, true)">
+                                            </rect>
+                                            <rect></rect>
+                                            <g class="input-tag">
+                                                <text
+                                                    class="group-connection-name group-input-name"
+                                                    [attr.y]="connectionTop"
+                                                    [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                    {{ group.getAlias(input, true) ?? input.datum.name }}
+                                                </text>
+                                            </g>
+
+                                            <path
+                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                [style.--icon-pos-y]="connectionTop + 'px'"
+                                                class="mat-icon-svg"
+                                                d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                                            />
+                                            <circle
+                                                class="connector simple"
+                                                [style.--connector-type-color]="getColorVarNameForType(input.datum.type)"
+                                                [attr.cy]="connectionTop"
+                                                [attr.cx]="0">
+                                            </circle>
+                                            @if (!input.datum.nullable) {
+                                                <circle
+                                                    class="connector-non-null simple"
+                                                    [style.--connector-type-color]="getColorVarNameForType(input.datum.type)"
+                                                    [attr.cy]="connectionTop"
+                                                    [attr.cx]="0"
+                                                    [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                                                </circle>
+                                            }
+                                        }
+                                        @for (output of group.outputs; track output; let outputIndex = $index) {
+                                            @let connectionTop = uiManager.getConnectionTop(outputIndex) + rightDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
+                                            <rect
+                                                class="input-area"
+                                                [attr.width]="MEASURES.NODE_WIDTH / 2"
+                                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
+                                                [style.transform]="`translate(${MEASURES.NODE_WIDTH / 2}px, ${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
+                                            </rect>
+                                            <rect
+                                                width="24px"
+                                                height="24px"
+                                                fill="transparent"
+                                                [style.transform]="`translate(${
+                                            MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) - 12
+                                        }px, ${
+                                            connectionTop - 12
+                                        }px)`"
+                                                (mousedown)="$event.stopPropagation()"
+                                                (click)="changeConnectorName(group, output, false)">
+                                            </rect>
+                                            <rect></rect>
+                                            <g class="input-tag right">
+                                                <text
+                                                    class="group-connection-name group-output-name"
+                                                    [attr.y]="connectionTop"
+                                                    [attr.x]="MEASURES.NODE_WIDTH - MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                    {{ group.getAlias(output, false) ?? output.datum.name }}
+                                                </text>
+                                            </g>
+
+                                            <path
+                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                [style.--icon-pos-x]="MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) + 'px'"
+                                                [style.--icon-pos-y]="connectionTop + 'px'"
+                                                class="mat-icon-svg"
+                                                d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                                            />
+                                            <circle
+                                                class="connector simple"
+                                                [style.--connector-type-color]="getColorVarNameForType(output.datum.type)"
+                                                [attr.cy]="connectionTop"
+                                                [attr.cx]="MEASURES.NODE_WIDTH">
+                                            </circle>
+                                            @if (!output.datum.nullable) {
+                                                <circle
+                                                    class="connector-non-null simple"
+                                                    [style.--connector-type-color]="getColorVarNameForType(output.datum.type)"
+                                                    [attr.cy]="connectionTop"
+                                                    [attr.cx]="MEASURES.NODE_WIDTH"
+                                                    [attr.r]="MEASURES.CONNECTOR_RADIUS / 4">
+
+                                                </circle>
+                                            }
+                                        }
+                                    } @else {
+                                        <circle
+                                            class="connector group-connector"
+                                            [style.--connector-type-color]="'var(--mat-sys-on-background)'"
+                                            [attr.cy]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                            [attr.cx]="0">
+                                        </circle>
+                                        <circle
+                                            class="connector group-connector-center"
+                                            [style.--connector-type-color]="'var(--mat-sys-on-background)'"
+                                            [attr.cy]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                            [attr.cx]="0">
+                                        </circle>
+                                        <circle
+                                            class="connector group-connector"
+                                            [style.--connector-type-color]="'var(--mat-sys-on-background)'"
+                                            [attr.cy]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                            [attr.cx]="MEASURES.NODE_WIDTH">
+                                        </circle>
+                                        <circle
+                                            class="connector group-connector-center"
+                                            [style.--connector-type-color]="'var(--mat-sys-on-background)'"
+                                            [attr.cy]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                            [attr.cx]="MEASURES.NODE_WIDTH">
+                                        </circle>
+                                        <g class="input-tag">
+                                            <text
+                                                class="group-connection-name group-input-name"
+                                                [attr.y]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                                [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                Inputs
+                                            </text>
+                                        </g>
+
+                                        <g class="input-tag right">
+                                            <text
+                                                class="group-connection-name group-output-name"
+                                                [attr.y]="MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 1.5"
+                                                [attr.x]="MEASURES.NODE_WIDTH - MEASURES.NODE_INTERNAL_SPACING * 1.25">
+                                                Outputs
+                                            </text>
+                                        </g>
+                                    }
+                                }
+                            </g>
+                        }
+                    </g>
+
 
                     <!-- INPUTS -->
 
@@ -250,7 +538,7 @@
                             @let constantSource = getConstantSourceForExternalOutput(output);
                             @if (externalOutputCanBeChanged) {
                                 <rect
-                                    class="node-input-area"
+                                    class="input-area"
                                     [attr.width]="MEASURES.NODE_WIDTH / 2"
                                     [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                     [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
@@ -282,7 +570,7 @@
                                 </rect>
 
                             }
-                            <g class="node-input-tag">
+                            <g class="input-tag">
                                 <text
                                     class="node-connection-name node-external-output-name"
                                     [attr.y]="connectionTop - (constantSource != null ? MEASURES.NODE_CONNECTION_CONSTANT_SHIFT : 0)"
@@ -453,13 +741,14 @@
                         @let keepEnabledOutput = uiManager.draggingConnectionOutput;
                         <g
                             [attr.transform]="`translate(${MEASURES.SECTIONS_SEPARATOR / 2}, 0)`">
-                            @for (node of mix.nodes; track node.id) {
+                            @for (node of uiManager.visibleNodes; track node.id) {
                                 @let stacks = Math.max(getAllNodeInputs(node).length, node.outputs.length);
-                                @let leftDisplacement = uiManager.getNodeConnectionsDisplacement(node, true);
-                                @let rightDisplacement = uiManager.getNodeConnectionsDisplacement(node, false);
+                                @let leftDisplacement = uiManager.getConnectionsDisplacement(node, true);
+                                @let rightDisplacement = uiManager.getConnectionsDisplacement(node, false);
                                 @let nodePosition = uiManager.getNodePosition(node);
                                 <g
-                                    class="node-group"
+                                    class="node-svg-group"
+                                    [style.pointer-events]="uiManager.isDraggingNode(node) ? 'none':'all'"
                                     [attr.transform]="`translate(${nodePosition.x}, ${nodePosition.y})`"
                                     [class.selected]="isSelected({type: SelectedElementType.NODE, node: node})"
                                     (mousedown)="$event.stopPropagation(); uiManager.nodeMouseDown(node, $event)"
@@ -487,7 +776,7 @@
                                     </text>
                                     @for (inputInfo of getAllNodeInputs(node); track $index; let inputIndex = $index) {
                                         @let input = inputInfo.datum;
-                                        @let connectionTop = uiManager.getNodeConnectionTop(node, inputIndex) + leftDisplacement;
+                                        @let connectionTop = uiManager.getConnectionTop(inputIndex) + leftDisplacement;
                                         @let disabled = inputsDisabled
                                                         || ((temporaryConnectorDatumInfo != null) && (input.type != temporaryConnectorDatumInfo.type))
                                                         || ((temporaryConnectorDatumInfo != null) && (!input.nullable && temporaryConnectorDatumInfo.nullable))
@@ -497,7 +786,7 @@
                                         @let inputCanBeChanged = this.inputCanBeChanged(node, input);
                                         @if (inputCanBeChanged && !inputInfo.specialInputAddMore) {
                                             <rect
-                                                class="node-input-area"
+                                                class="input-area"
                                                 [attr.width]="MEASURES.NODE_WIDTH / 2"
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
@@ -530,7 +819,7 @@
 
                                         } @else if (inputInfo.specialInputAddMore) {
                                             <rect
-                                                class="node-input-area"
+                                                class="input-area"
                                                 [attr.width]="MEASURES.NODE_WIDTH / 2"
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
@@ -549,7 +838,7 @@
                                             </rect>
                                             <rect></rect>
                                         }
-                                        <g class="node-input-tag">
+                                        <g class="input-tag">
                                             <text
                                                 class="node-connection-name node-input-name"
                                                 [attr.y]="connectionTop - (constantSource != null ? MEASURES.NODE_CONNECTION_CONSTANT_SHIFT : 0)"
@@ -683,7 +972,7 @@
                                         }
                                     }
                                     @for (output of node.outputs; track output; let outputIndex = $index) {
-                                        @let connectionTop = uiManager.getNodeConnectionTop(node, outputIndex) + rightDisplacement;
+                                        @let connectionTop = uiManager.getConnectionTop(outputIndex) + rightDisplacement;
                                         @let disabled = outputsDisabled
                                                         || ((temporaryConnectorDatumInfo != null) && (output.type != temporaryConnectorDatumInfo.type))
                                                         || ((temporaryConnectorDatumInfo != null) && (output.nullable && !temporaryConnectorDatumInfo.nullable));

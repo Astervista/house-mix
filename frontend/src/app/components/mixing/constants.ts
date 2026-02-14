@@ -480,5 +480,6 @@ export const MEASURES = {
     ADD_OUTPUT_HEIGHT:                50,
     OUTPUT_SPACING:                   10,
     UNDERPASS_BORDER_WIDTH:  7.5,
-    COLOR_INPUT_SQUARE_SIZE: 15
+    COLOR_INPUT_SQUARE_SIZE: 15,
+    GROUP_PADDING:           40
 };

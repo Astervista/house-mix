@@ -24,15 +24,31 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
         void this.checkAll();
     }
     
+    private lastResponses: Map<string, number> = new Map<string, number>();
+    
     private async checkAll(): Promise<void> {
         const data                                                                         = await this.data;
         const promises: Promise<{ device: DeviceMonitorDevice | null, result: boolean }>[] = [];
+        const now = Date.now();
         for (const device of data.devices) {
-            if (device.ip != null) {
-                promises.push(this.checkOne(device.ip).then(result => ({device, result})));
+            const deviceIP = device.ip;
+            if (deviceIP != null) {
+                promises.push(this.checkOne(deviceIP).then(result => {
+                    if (result) {
+                        this.lastResponses.set(deviceIP, Date.now());
+                    } else {
+                        const lastResponse = this.lastResponses.get(deviceIP);
+                        if (lastResponse != null) {
+                            result = now - lastResponse <= 1000 * 60 * 5;
+                        } else {
+                            result = true;
+                        }
+                    }
+                    return ({device, result});
+                }));
             }
         }
-        promises.push(this.checkOne().then(result => ({device: null, result})));
+        promises.push(this.checkOne().then(result => { return ({device: null, result}); }));
         const results        = await Promise.all(promises);
         const internetStatus = results.find(result => result.device == null)?.result ?? false;
         if (internetStatus) {
