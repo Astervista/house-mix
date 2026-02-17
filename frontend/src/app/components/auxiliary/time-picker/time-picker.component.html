@@ -1,0 +1,117 @@
+<div class="digital-bar">
+    <span
+        class="digital-bar-digit"
+        [class.selected]="this.phase == Phase.HOURS"
+        (click)="this.phase = Phase.HOURS">
+        {{ this.hour?.toString()?.padStart(2, "0") }}
+    </span>
+    <span class="digital-bar-divider">:</span>
+    <span
+        class="digital-bar-digit"
+        [class.selected]="this.phase == Phase.MINUTES"
+        (click)="this.phase = Phase.MINUTES">
+        {{ this.minute?.toString()?.padStart(2, "0") }}
+    </span>
+    <span class="digital-bar-divider">:</span>
+    <span
+        class="digital-bar-digit"
+        [class.selected]="this.phase == Phase.SECONDS"
+        (click)="this.phase = Phase.SECONDS">
+        {{ this.second?.toString()?.padStart(2, "0") }}
+    </span>
+    <span class="digital-bar-divider"></span>
+    <div class="digital-bar-am-pm">
+        @if (this.isDisabled) {
+            <span>
+                {{ dayHalf }}
+            </span>
+        } @else {
+            <span
+                [class.selected]="dayHalf == 'AM'"
+                mat-ripple
+                (click)="dayHalf = 'AM'">
+                AM
+            </span>
+            <span
+                [class.selected]="dayHalf == 'PM'"
+                mat-ripple
+                (click)="dayHalf = 'PM'">
+                PM
+            </span>
+        }
+    </div>
+</div>
+<svg
+    viewBox="0 0 256 256"
+    (mousedown)="this.mouseDown($event)"
+    (mousemove)="this.mouseMove($event)"
+    (mouseup)="this.mouseUp($event)">
+    <circle
+        class="dial"
+        cx="128"
+        cy="128"
+        r="128">
+    </circle>
+    @let hourPhase = this.phase == Phase.HOURS;
+    @let minutePhase = this.phase == Phase.MINUTES;
+    @let selectedValue = hourPhase ? hour : (minutePhase ? minute : second);
+    @let step = hourPhase ? 12 : 60;
+    @let bias = hourPhase ? 3 : 15;
+    @for (i of (hourPhase ? HOURS : MINUTES); track i) {
+        <text
+            class="hour"
+            [attr.x]="24 + (128 - 24) * (1 + Math.cos(Math.PI * 2 / step * (i - bias)))"
+            [attr.y]="24 + (128 - 24) * (1 + Math.sin(Math.PI * 2 / step * (i - bias)))">
+            {{ i.toString().padStart(2, "0") }}
+        </text>
+    }
+
+    <defs>
+        <clipPath id="selected-circle-clip-path">
+            @if (selectedValue != null) {
+                <circle
+                    class="selected-circle hand-group"
+                    [style.transform]="`rotate(${selectedValue * 360/step}deg)`"
+                    [attr.cx]="128"
+                    [attr.cy]="24"
+                    r="20">
+                </circle>
+            }
+        </clipPath>
+    </defs>
+    @if (selectedValue != null) {
+        <g
+            class="hand-group"
+            [style.transform]="`rotate(${selectedValue * 360/step}deg)`">
+            <circle
+                class="selected-circle"
+                [attr.cx]="128"
+                [attr.cy]="24"
+                r="20">
+            </circle>
+            <circle
+                class="selected-circle"
+                [attr.cx]="128"
+                [attr.cy]="128"
+                r="4">
+            </circle>
+            <line
+                class="hand"
+                x1="128"
+                y1="128"
+                x2="128"
+                y2="24">
+            </line>
+        </g>
+    }
+    <g class="hours-overlay">
+        @for (i of (hourPhase ? HOURS : MINUTES); track i) {
+            <text
+                class="hour selected"
+                [attr.x]="24 + (128 - 24) * (1 + Math.cos(Math.PI * 2 / step * (i - bias)))"
+                [attr.y]="24 + (128 - 24) * (1 + Math.sin(Math.PI * 2 / step * (i - bias)))">
+                {{ i.toString().padStart(2, "0") }}
+            </text>
+        }
+    </g>
+</svg>

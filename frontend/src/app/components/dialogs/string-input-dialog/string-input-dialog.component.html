@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>{{ data.title || 'Change name' }}</h2>
-<div mat-dialog-content>
+<div mat-dialog-content
+     house-mix-input-return-behavior
+     (on-stop)="confirm()">
     {{ data.message }}
     <mat-form-field>
         <mat-label>{{ data.inputLabel || "Value" }}</mat-label>
@@ -17,7 +19,7 @@
     @if (data.confirmText !== null) {
         <button mat-button
                 [disabled]="stringFormControl.invalid"
-                (click)="closeDialog(stringFormControl.value)">
+                (click)="confirm()">
             {{ data.confirmText || 'Ok' }}
         </button>
     }

@@ -54,6 +54,7 @@
             #canvas
             class="mix-canvas"
             resizeEvent
+            tabindex="0"
             [style.--connector-radius]="MEASURES.CONNECTOR_RADIUS"
             [style.--heading-height]="MEASURES.NODE_HEADING_HEIGHT + 'px'"
             (onResize)="uiManager.viewSize = $event"
@@ -270,19 +271,45 @@
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
                                             </rect>
-                                            <rect
-                                                width="24px"
-                                                height="24px"
-                                                fill="transparent"
-                                                [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop - 12
-                                        }px)`"
-                                                (mousedown)="$event.stopPropagation()"
-                                                (click)="changeConnectorName(group, input, true)">
-                                            </rect>
-                                            <rect></rect>
+                                            <g
+                                                class="options-group">
+                                                <rect
+                                                    width="24px"
+                                                    height="15px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                           MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                                        }px, ${
+                                                                            connectionTop - 27
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="uiManager.moveGroupExport(group, input.datum, input.nodeId, false, true)">
+                                                </rect>
+                                                <rect
+                                                    width="24px"
+                                                    height="24px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                        }px, ${
+                                                            connectionTop - 12
+                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="changeConnectorName(group, input, true)">
+                                                </rect>
+                                                <rect
+                                                    width="24px"
+                                                    height="15px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                        }px, ${
+                                                            connectionTop + 12
+                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="uiManager.moveGroupExport(group, input.datum, input.nodeId, true, true)">
+                                                </rect>
+                                            </g>
                                             <g class="input-tag">
                                                 <text
                                                     class="group-connection-name group-input-name"
@@ -291,14 +318,32 @@
                                                     {{ group.getAlias(input, true) ?? input.datum.name }}
                                                 </text>
                                             </g>
-
-                                            <path
-                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
-                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                                [style.--icon-pos-y]="connectionTop + 'px'"
-                                                class="mat-icon-svg"
-                                                d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
-                                            />
+                                            <g
+                                                class="options-icons">
+                                                <path
+                                                    [class.hidden]="inputIndex == 0"
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop - 20 + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"
+                                                />
+                                                <path
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                                                />
+                                                <path
+                                                    [class.hidden]="inputIndex == group.inputs.length - 1"
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + 20 + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+                                                />
+                                            </g>
                                             <circle
                                                 class="connector simple"
                                                 [style.--connector-type-color]="getColorVarNameForType(input.datum.type)"
@@ -324,19 +369,45 @@
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translate(${MEASURES.NODE_WIDTH / 2}px, ${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
                                             </rect>
-                                            <rect
-                                                width="24px"
-                                                height="24px"
-                                                fill="transparent"
-                                                [style.transform]="`translate(${
-                                            MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) - 12
-                                        }px, ${
-                                            connectionTop - 12
-                                        }px)`"
-                                                (mousedown)="$event.stopPropagation()"
-                                                (click)="changeConnectorName(group, output, false)">
-                                            </rect>
-                                            <rect></rect>
+                                            <g
+                                                class="options-group">
+                                                <rect
+                                                    width="24px"
+                                                    height="15px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) - 12
+                                                                        }px, ${
+                                                                            connectionTop - 27
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="uiManager.moveGroupExport(group, output.datum, output.nodeId, false, false)">
+                                                </rect>
+                                                <rect
+                                                    width="24px"
+                                                    height="24px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) - 12
+                                                                        }px, ${
+                                                                            connectionTop - 12
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="changeConnectorName(group, output, false)">
+                                                </rect>
+                                                <rect
+                                                    width="24px"
+                                                    height="15px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) - 12
+                                                                        }px, ${
+                                                                            connectionTop + 12
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="uiManager.moveGroupExport(group, output.datum, output.nodeId, true, false)">
+                                                </rect>
+                                            </g>
                                             <g class="input-tag right">
                                                 <text
                                                     class="group-connection-name group-output-name"
@@ -346,13 +417,32 @@
                                                 </text>
                                             </g>
 
-                                            <path
-                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
-                                                [style.--icon-pos-x]="MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) + 'px'"
-                                                [style.--icon-pos-y]="connectionTop + 'px'"
-                                                class="mat-icon-svg"
-                                                d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
-                                            />
+                                            <g
+                                                class="options-icons">
+                                                <path
+                                                    [class.hidden]="outputIndex == 0"
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop - 20 + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"
+                                                />
+                                                <path
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
+                                                />
+                                                <path
+                                                    [class.hidden]="outputIndex == group.outputs.length - 1"
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_WIDTH - (MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4) + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + 20 + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+                                                />
+                                            </g>
                                             <circle
                                                 class="connector simple"
                                                 [style.--connector-type-color]="getColorVarNameForType(output.datum.type)"
@@ -457,6 +547,44 @@
                                 [attr.y]="MEASURES.INPUT_ORIGIN_NAME_TOP">
                                 {{ getExternalDatumOriginNameDisplay(input) }}
                             </text>
+
+                            <path
+                                class="mat-icon-svg"
+                                [style.display]="inputIndex == 0 ? 'none' : ''"
+                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [style.--icon-pos-x]="MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                [style.--icon-pos-y]="MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"
+                            />
+                            <rect
+                                style="cursor: pointer"
+                                fill="transparent"
+                                [style.display]="inputIndex == 0 ? 'none' : ''"
+                                [attr.x]="MEASURES.NODE_CONNECTION_HEIGHT / 4"
+                                [attr.y]="MEASURES.NODE_CONNECTION_HEIGHT / 4"
+                                [attr.width]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                (click)="this.uiManager.moveImport(input, false)">
+                            </rect>
+                            <path
+                                class="mat-icon-svg"
+                                [style.display]="inputIndex == mix.imports.length - 1 ? 'none' : ''"
+                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [style.--icon-pos-x]="MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                [style.--icon-pos-y]="MEASURES.INPUT_HEIGHT - MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+                            />
+                            <rect
+                                style="cursor: pointer"
+                                fill="transparent"
+                                [style.display]="inputIndex == mix.imports.length - 1 ? 'none' : ''"
+                                [attr.x]="MEASURES.NODE_CONNECTION_HEIGHT / 4"
+                                [attr.y]="MEASURES.INPUT_HEIGHT - MEASURES.NODE_CONNECTION_HEIGHT / 4 * 3 + 'px'"
+                                [attr.width]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                (click)="this.uiManager.moveImport(input, true)">
+
+                            </rect>
                             <path
                                 class="connector-snap"
                                 [class.unselectable]="disabled"
@@ -543,32 +671,35 @@
                                     [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                     [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
                                 </rect>
-                                <rect
-                                    width="24px"
-                                    height="24px"
-                                    fill="transparent"
-                                    [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop + (output.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
-                                        }px)`"
-                                    (mousedown)="$event.stopPropagation()"
-                                    (click)="editExternalOutputConstant(output)">
-                                </rect>
-                                <rect
-                                    width="24px"
-                                    height="24px"
-                                    fill="transparent"
-                                    [class.hidden]="!output.nullable"
-                                    [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
-                                        }px)`"
-                                    (mousedown)="$event.stopPropagation()"
-                                    (click)="clearExternalOutputConstant(output)">
-                                </rect>
+                                <g
+                                    class="options-group">
+                                    <rect
+                                        width="24px"
+                                        height="24px"
+                                        fill="transparent"
+                                        [style.transform]="`translate(${
+                                                                MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                            }px, ${
+                                                                connectionTop + (output.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
+                                                            }px)`"
+                                        (mousedown)="$event.stopPropagation()"
+                                        (click)="editExternalOutputConstant(output)">
+                                    </rect>
+                                    <rect
+                                        width="24px"
+                                        height="24px"
+                                        fill="transparent"
+                                        [class.hidden]="!output.nullable"
+                                        [style.transform]="`translate(${
+                                                                MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                            }px, ${
+                                                                connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
+                                                            }px)`"
+                                        (mousedown)="$event.stopPropagation()"
+                                        (click)="clearExternalOutputConstant(output)">
+                                    </rect>
 
+                                </g>
                             }
                             <g class="input-tag">
                                 <text
@@ -594,6 +725,24 @@
                                                 [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
                                                 [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
                                                 Value: {{ constantSource.sourceValue }}
+                                            </text>
+                                        } @else if (output.type == DatumType.COLOR_TEMP) {
+                                            @let colorTemp = Datum.getValueFromUnknownAndType(constantSource.sourceValue, output.type);
+                                            <rect
+                                                [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.COLOR_INPUT_SQUARE_SIZE / 2"
+                                                [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25"
+                                                [attr.width]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                [attr.height]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                rx="5px"
+                                                ry="5px"
+                                                stroke="var(--mat-sys-on-background)"
+                                                stroke-width="2"
+                                                [style.fill]="kelvinToColor(colorTemp ?? DEFAULT_TEMP).toCSS()"></rect>
+                                            <text
+                                                class="node-external-output-name node-external-output-constant"
+                                                [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.COLOR_INPUT_SQUARE_SIZE  + 7">
+                                                Value: {{ constantSource.sourceValue }} K
                                             </text>
                                         } @else if (output.type == DatumType.COLOR) {
                                             @let color = Datum.getValueFromUnknownAndType(constantSource.sourceValue, output.type);
@@ -650,23 +799,64 @@
                                 }
                             </g>
                             @if (externalOutputCanBeChanged) {
-                                <path
-                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
-                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                    [style.--icon-pos-y]="connectionTop + (output.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
-                                    class="mat-icon-svg"
-                                    d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
-                                />
-                                @if (output.nullable) {
+                                <g
+                                    class="options-icons">
                                     <path
                                         [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
                                         [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                        [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                        [style.--icon-pos-y]="connectionTop + (output.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
                                         class="mat-icon-svg"
-                                        d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                                        d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
                                     />
-                                }
+                                    @if (output.nullable) {
+                                        <path
+                                            [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                            [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                            [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                            class="mat-icon-svg"
+                                            d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                                        />
+                                    }
+                                </g>
                             }
+
+                            <path
+                                class="mat-icon-svg"
+                                [style.display]="outputIndex == 0 ? 'none' : ''"
+                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [style.--icon-pos-x]="MEASURES.OUTPUT_WIDTH - MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                [style.--icon-pos-y]="MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                d="M480-528 296-344l-56-56 240-240 240 240-56 56-184-184Z"
+                            />
+                            <rect
+                                style="cursor: pointer"
+                                fill="transparent"
+                                [style.display]="outputIndex == 0 ? 'none' : ''"
+                                [attr.x]="MEASURES.OUTPUT_WIDTH - MEASURES.NODE_CONNECTION_HEIGHT / 4 * 3"
+                                [attr.y]="MEASURES.NODE_CONNECTION_HEIGHT / 4"
+                                [attr.width]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                (click)="this.uiManager.moveOutput(output, false)">
+                            </rect>
+                            <path
+                                class="mat-icon-svg"
+                                [style.display]="outputIndex == mix.outputs.length - 1 ? 'none' : ''"
+                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [style.--icon-pos-x]="MEASURES.OUTPUT_WIDTH - MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                [style.--icon-pos-y]="MEASURES.OUTPUT_HEIGHT - MEASURES.NODE_CONNECTION_HEIGHT / 2 + 'px'"
+                                d="M480-344 240-584l56-56 184 184 184-184 56 56-240 240Z"
+                            />
+                            <rect
+                                style="cursor: pointer"
+                                fill="transparent"
+                                [style.display]="outputIndex == mix.outputs.length - 1 ? 'none' : ''"
+                                [attr.x]="MEASURES.OUTPUT_WIDTH - MEASURES.NODE_CONNECTION_HEIGHT / 4 * 3"
+                                [attr.y]="MEASURES.OUTPUT_HEIGHT - MEASURES.NODE_CONNECTION_HEIGHT / 4 * 3 + 'px'"
+                                [attr.width]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                (click)="this.uiManager.moveOutput(output, true)">
+
+                            </rect>
                             <path
                                 class="connector-snap"
                                 [class.unselectable]="disabled"
@@ -791,32 +981,35 @@
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
                                             </rect>
-                                            <rect
-                                                width="24px"
-                                                height="24px"
-                                                fill="transparent"
-                                                [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop + (input.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
-                                        }px)`"
-                                                (mousedown)="$event.stopPropagation()"
-                                                (click)="editNodeInputConstant(node, input)">
-                                            </rect>
-                                            <rect
-                                                width="24px"
-                                                height="24px"
-                                                fill="transparent"
-                                                [class.hidden]="!input.nullable"
-                                                [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
-                                        }px)`"
-                                                (mousedown)="$event.stopPropagation()"
-                                                (click)="clearNodeInputConstant(node, input)">
-                                            </rect>
+                                            <g
+                                                class="options-group">
+                                                <rect
+                                                    width="24px"
+                                                    height="24px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                                        }px, ${
+                                                                            connectionTop + (input.nullable ? 1 : 0) * (MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.NODE_CONNECTION_CONSTANT_SPACING) - 12
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="editNodeInputConstant(node, input)">
+                                                </rect>
+                                                <rect
+                                                    width="24px"
+                                                    height="24px"
+                                                    fill="transparent"
+                                                    [class.hidden]="!input.nullable"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                                        }px, ${
+                                                                            connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - 12
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="clearNodeInputConstant(node, input)">
+                                                </rect>
 
+                                            </g>
                                         } @else if (inputInfo.specialInputAddMore) {
                                             <rect
                                                 class="input-area"
@@ -824,19 +1017,21 @@
                                                 [attr.height]="MEASURES.NODE_CONNECTION_HEIGHT * 1.4"
                                                 [style.transform]="`translateY(${connectionTop - MEASURES.NODE_CONNECTION_HEIGHT * 0.7}px)`">
                                             </rect>
-                                            <rect
-                                                width="24px"
-                                                height="24px"
-                                                fill="transparent"
-                                                [style.transform]="`translate(${
-                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
-                                        }px, ${
-                                            connectionTop - 12
-                                        }px)`"
-                                                (mousedown)="$event.stopPropagation()"
-                                                (click)="addArbitraryNodeInput(node)">
-                                            </rect>
-                                            <rect></rect>
+                                            <g
+                                                class="options-group">
+                                                <rect
+                                                    width="24px"
+                                                    height="24px"
+                                                    fill="transparent"
+                                                    [style.transform]="`translate(${
+                                                                            MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 - 12
+                                                                        }px, ${
+                                                                            connectionTop - 12
+                                                                        }px)`"
+                                                    (mousedown)="$event.stopPropagation()"
+                                                    (click)="addArbitraryNodeInput(node)">
+                                                </rect>
+                                            </g>
                                         }
                                         <g class="input-tag">
                                             <text
@@ -862,6 +1057,24 @@
                                                             [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
                                                             [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25">
                                                             Value: {{ constantSource.sourceValue }}
+                                                        </text>
+                                                    } @else if (input.type == DatumType.COLOR_TEMP) {
+                                                        @let colorTemp = Datum.getValueFromUnknownAndType(constantSource.sourceValue, input.type);
+                                                        <rect
+                                                            [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT - MEASURES.COLOR_INPUT_SQUARE_SIZE / 2"
+                                                            [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25"
+                                                            [attr.width]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                            [attr.height]="MEASURES.COLOR_INPUT_SQUARE_SIZE"
+                                                            rx="5px"
+                                                            ry="5px"
+                                                            stroke="var(--mat-sys-on-background)"
+                                                            stroke-width="2"
+                                                            [style.fill]="kelvinToColor(colorTemp ?? DEFAULT_TEMP).toCSS()"></rect>
+                                                        <text
+                                                            class="node-connection-name node-input-constant"
+                                                            [attr.y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT"
+                                                            [attr.x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.COLOR_INPUT_SQUARE_SIZE  + 7">
+                                                            Value: {{ constantSource.sourceValue }} K
                                                         </text>
                                                     } @else if (input.type == DatumType.COLOR) {
                                                         @let color = Datum.getValueFromUnknownAndType(constantSource.sourceValue, input.type);
@@ -918,30 +1131,36 @@
                                             }
                                         </g>
                                         @if (inputCanBeChanged && !inputInfo.specialInputAddMore) {
-                                            <path
-                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
-                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                                [style.--icon-pos-y]="connectionTop + (input.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
-                                                class="mat-icon-svg"
-                                                d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
-                                            />
-                                            @if (input.nullable) {
+                                            <g
+                                                class="options-icons">
                                                 <path
                                                     [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
                                                     [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                                    [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + (input.nullable ? 1 : 0) * (- MEASURES.NODE_CONNECTION_CONSTANT_SPACING + MEASURES.NODE_CONNECTION_CONSTANT_SHIFT) + 'px'"
                                                     class="mat-icon-svg"
-                                                    d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                                                    d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l585-583 167 171-582 582H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"
                                                 />
-                                            }
+                                                @if (input.nullable) {
+                                                    <path
+                                                        [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                        [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                        [style.--icon-pos-y]="connectionTop + MEASURES.NODE_CONNECTION_CONSTANT_SPACING - MEASURES.NODE_CONNECTION_CONSTANT_SHIFT + 'px'"
+                                                        class="mat-icon-svg"
+                                                        d="M690-240h190v80H610l80-80Zm-500 80L48-302l552-572 312 312-392 402H190Zm296-80 314-322-198-198-442 456 64 64h262Zm-6-240Z"
+                                                    />
+                                                }
+                                            </g>
                                         } @else if (inputInfo.specialInputAddMore) {
-                                            <path
-                                                [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
-                                                [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
-                                                [style.--icon-pos-y]="connectionTop + 'px'"
-                                                class="mat-icon-svg"
-                                                d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
-                                            />
+                                            <g
+                                                class="options-icons">
+                                                <path
+                                                    [style.--icon-size]="MEASURES.NODE_CONNECTION_HEIGHT / 2"
+                                                    [style.--icon-pos-x]="MEASURES.NODE_INTERNAL_SPACING * 1.25 + MEASURES.NODE_CONNECTION_HEIGHT / 4 + 'px'"
+                                                    [style.--icon-pos-y]="connectionTop + 'px'"
+                                                    class="mat-icon-svg"
+                                                    d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"
+                                                />
+                                            </g>
                                         }
                                         <path
                                             class="connector-snap"

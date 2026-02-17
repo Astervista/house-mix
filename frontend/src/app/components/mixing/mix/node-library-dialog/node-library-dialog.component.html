@@ -1,5 +1,39 @@
-<h2 mat-dialog-title>Select a node type to add</h2>
+<h2 mat-dialog-title>
+    <span>Select a node type to add</span>
+    <button
+        mat-icon-button
+        matTooltipPosition="above"
+        [tabIndex]="-1"
+        [matTooltip]="expanded ? 'Show compact view' : 'Show detailed view'"
+        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+        (click)="expanded = !expanded">
+        <mat-icon>{{ expanded ? 'collapse_content' : 'expand_content' }}</mat-icon>
+    </button>
+</h2>
 <mat-dialog-content>
+    <mat-form-field>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search for an input..." [formControl]="searchFormControl">
+        @if ((searchFormControl.value?.length ?? 0) > 0) {
+            <button matSuffix matIconButton aria-label="Clear" (click)="searchFormControl.setValue(null)">
+                <mat-icon>close</mat-icon>
+            </button>
+        }
+    </mat-form-field>
+    @if (this.searchResults != null && this.searchResults.length > 0) {
+        <div
+            class="search-results">
+            @for (item of searchResults; track item.code) {
+                <house-mix-node
+                    [library-item]="item"
+                    [selected]="result == item"
+                    [examples]="examples"
+                    [expanded]="false"
+                    (onSelected)="result = item">
+                </house-mix-node>
+            }
+        </div>
+    }
     <mat-accordion>
         @for (section of ELABORATION_NODE_LIBRARY; track section.sectionName) {
             <mat-expansion-panel
@@ -7,12 +41,15 @@
                 <mat-expansion-panel-header>
                     <mat-panel-title>{{ section.sectionName }}</mat-panel-title>
                 </mat-expansion-panel-header>
-                <div class="list">
+                <div
+                    class="list"
+                    [class.collapsed]="!expanded">
                     @for (item of section.nodes; track item.code) {
                         <house-mix-node
                             [library-item]="item"
                             [selected]="result == item"
                             [examples]="examples"
+                            [expanded]="expanded"
                             (onSelected)="result = item">
                         </house-mix-node>
                     }

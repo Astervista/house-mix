@@ -22,8 +22,10 @@ import {UnavailableParents} from '@common/devices/rest-classes';
 import {NgTemplateOutlet} from '@angular/common';
 import {SystemOrigin} from '@common/system/constants';
 import {SystemParameter} from '@common/system/parameter/system-parameter';
+import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {SystemTimer} from '@common/system/timer/system-timer';
 import {SystemService} from '../../../services/system.service';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 @Component({
                selector:    'house-mix-delete-entity-dialog',
@@ -44,7 +46,8 @@ import {SystemService} from '../../../services/system.service';
                    LoadingScrimComponent,
                    MatIcon,
                    NgTemplateOutlet,
-                   MatSelectTrigger
+                   MatSelectTrigger,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './delete-entity-dialog.component.html',
                styleUrl:    './delete-entity-dialog.component.scss'
@@ -172,12 +175,16 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
             case SystemOrigin.PARAMETER:
                 lockPromise = this.systemService.getParameterDeleteLocks({name: data.parameterToDelete.name});
                 break;
+            case SystemOrigin.DEVICE_STATUS:
+                lockPromise = this.systemService.getDeviceMonitorDeviceDeleteLocks({name: data.deviceToDelete.name});
+                break;
         }
         lockPromise
             .then(locks => {
                 this.deleteLocksLoadingStatus = LoadingStatus.LOADED;
                 const selfLocks   = locks.filter(lock => {
                     switch (data.entityType) {
+                        case SystemOrigin.DEVICE_STATUS:
                         case SystemOrigin.TIMER:
                         case SystemOrigin.PARAMETER:
                             return false;
@@ -235,6 +242,12 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
         return this.unavailableParents?.names.includes(this.parentGroupFormControl.value) ?? false;
     }
 
+    protected confirm(): void {
+        if (this.canDelete && !this.confirmDisabled) {
+            this.closeDialog(this.result);
+        }
+    }
+
     protected readonly DeleteGroupChildFate = DeleteGroupChildFate;
     protected readonly EntityType    = EntityType;
     protected readonly LoadingStatus = LoadingStatus;
@@ -260,4 +273,7 @@ export type DeleteEntityDialogData = {
 } | {
     entityType: SystemOrigin.PARAMETER;
     parameterToDelete: SystemParameter
+} | {
+    entityType: SystemOrigin.DEVICE_STATUS;
+    deviceToDelete: DeviceMonitorDevice
 }

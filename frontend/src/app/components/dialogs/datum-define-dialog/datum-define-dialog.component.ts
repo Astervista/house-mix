@@ -6,10 +6,11 @@ import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors, Val
 import {DatumInputComponent} from '../../mixing/datum/datum-input/datum-input.component';
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
 import {MatDialogComponent} from '../../../utils/better-mat-dialog';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 @Component({
                selector:    'house-mix-output-define-dialog',
-               imports:     [
+               imports: [
                    MatButton,
                    MatDialogActions,
                    MatDialogContent,
@@ -21,7 +22,8 @@ import {MatDialogComponent} from '../../../utils/better-mat-dialog';
                    MatHint,
                    MatInput,
                    MatLabel,
-                   MatError
+                   MatError,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './datum-define-dialog.component.html',
                styleUrl:    './datum-define-dialog.component.scss'
@@ -71,6 +73,16 @@ export class DatumDefineDialogComponent extends MatDialogComponent<OutputDefineD
             this.result = null;
         } else {
             this.result = new Datum(name, type, nullable);
+        }
+    }
+
+    protected get canClose(): boolean {
+        return this.result != null && this.nameFormControl.valid;
+    }
+
+    protected confirm(): void {
+        if (this.canClose) {
+            this.closeDialog(this.result);
         }
     }
 

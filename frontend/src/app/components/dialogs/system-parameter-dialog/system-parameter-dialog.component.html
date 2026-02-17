@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>Add a system parameter</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <house-mix-entity-names-inputs
         [forbiddenNames]="data.forbiddenNames"
         nameHint="A codename for the parameter"

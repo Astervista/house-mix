@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>Monitor a new device</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <mat-form-field>
         <mat-label>Name</mat-label>
         <input matInput [formControl]="nameFormControl">

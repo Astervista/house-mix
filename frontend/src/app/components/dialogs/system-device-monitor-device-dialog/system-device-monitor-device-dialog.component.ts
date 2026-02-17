@@ -5,11 +5,12 @@ import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDi
 import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors} from '@angular/forms';
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 
 @Component({
                selector:    'house-mix-system-device-monitor-device-dialog',
-               imports:     [
+               imports: [
                    MatButton,
                    MatDialogActions,
                    MatDialogContent,
@@ -19,7 +20,8 @@ import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-
                    MatLabel,
                    MatInput,
                    MatHint,
-                   MatError
+                   MatError,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './system-device-monitor-device-dialog.component.html',
                styleUrl:    './system-device-monitor-device-dialog.component.scss'
@@ -34,6 +36,9 @@ export class SystemDeviceMonitorDeviceDialogComponent extends MatDialogComponent
         dialogRef: MatDialogRef<SystemDeviceMonitorDeviceDialogComponent, DeviceMonitorDevice>
     ) {
         super(data, dialogRef);
+        if (data.edit != null) {
+            this.nameFormControl.disable();
+        }
     }
 
     public ngAfterViewInit(): void {

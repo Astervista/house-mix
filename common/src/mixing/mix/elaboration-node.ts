@@ -13,17 +13,26 @@ import {MixingStorage} from "./mix";
  *      - Subtraction: (number, number) => number
  *      - Multiplication: (number, number) => number
  *      - Division: (number, number) => number
+ *      - Modulo: (number, number) => number
  *      - Maximum: (number, number) => number
  *      - Minimum: (number, number) => number
- *      - Clamp: (number, number*, number*) => number
- *      - Lerp: (number, number, number) => number
- *   Control flow
- *      - Null guard: (T*, T) => T
- *      - Equality check (T*, T*) => boolean
  *      - Greater than (number, number, boolean) => boolean
  *      - Less than (number, number, boolean) => boolean
+ *      - Cycle: (number, number, boolean, boolean, boolean) => number
+ *      - Clamp: (number, number*, number*) => number
+ *      - Lerp: (number, number, number) => number
+ *   Boolean
+ *      - And: (boolean?...) => boolean
+ *      - Or: (boolean?...) => boolean
+ *      - Exclusive or: (boolean?...) => boolean
+ *      - Not: (boolean) => boolean
+ *   Control flow
+ *      - Buffer: (T*?) => T*?
+ *      - Null guard: (T*, T) => T
+ *      - Equality check (T*, T*) => boolean
  *      - Binary choice (T*?, T*?, boolean) => T*
- *      - Choice (T*?..., number) => T*?
+ *      - Multiple choice (T*?..., number) => T*?
+ *      L Encoder: (boolean, boolean...) => (number, boolean)
  *   Color
  *      - Extract RGB: Color => (number, number, number)
  *      - Extract HSL: Color => (number, number, number)
@@ -40,6 +49,9 @@ import {MixingStorage} from "./mix";
  *      - Date from values: (number, number, number) => Date
  *      - Time from values: (number, number, number) => Time
  *      - Date Time from values: (number, number, number, number, number, number) => Date Time
+ *      L Date compare: (Date, Date) => (boolean, boolean, boolean)
+ *      L Time compare: (Time, Time) => (boolean, boolean, boolean)
+ *      L Date time compare: (Date Time, Date Time) => (boolean, boolean, boolean)
  *      - Combine Date and Time: (Date, Time) => Date Time
  *      - Epoch: Date Time => number
  *      - Sun events: Date => (Time [...x14])
@@ -55,16 +67,24 @@ export enum ElaborationNodeCode {
     SUBTRACTION           = "SUBTRACTION",
     MULTIPLICATION        = "MULTIPLICATION",
     DIVISION              = "DIVISION",
+    MODULO            = "MODULO",
     MAX                   = "MAX",
     MIN                   = "MIN",
     CLAMP                 = "CLAMP",
     LERP                  = "LERP",
+    AND               = "AND",
+    OR                = "OR",
+    XOR               = "XOR",
+    NOT               = "NOT",
+    BUFFER            = "BUFFER",
     NULL_GUARD            = "NULL_GUARD",
     EQUALITY_CHECK        = "EQUALITY_CHECK",
     GREATER_THAN          = "GREATER_THAN",
     LESS_THAN             = "LESS_THAN",
+    CYCLE             = "CYCLE",
     BINARY_CHOICE         = "BINARY_CHOICE",
-    MULTIPLE_CHOICE = "MULTIPLE_CHOICE",
+    MULTIPLE_CHOICE   = "MULTIPLE_CHOICE",
+    ENCODER           = "ENCODER",
     EXTRACT_RGB           = "EXTRACT_RGB",
     EXTRACT_HSL           = "EXTRACT_HSL",
     EXTRACT_HSV           = "EXTRACT_HSV",
@@ -79,6 +99,9 @@ export enum ElaborationNodeCode {
     DATE_FROM_VALUES      = "DATE_FROM_VALUES",
     TIME_FROM_VALUES      = "TIME_FROM_VALUES",
     DATE_TIME_FROM_VALUES = "DATE_TIME_FROM_VALUES",
+    DATE_COMPARE      = "DATE_COMPARE",
+    TIME_COMPARE      = "TIME_COMPARE",
+    DATE_TIME_COMPARE = "DATE_TIME_COMPARE",
     COMBINE_DATE_TIME     = "COMBINE_DATE_TIME",
     EPOCH                 = "EPOCH",
     SUN_EVENTS            = "SUN_EVENTS",
@@ -160,6 +183,8 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeMultiplication(id);
             case ElaborationNodeCode.DIVISION:
                 return new ElaborationNodeDivision(id);
+            case ElaborationNodeCode.MODULO:
+                return new ElaborationNodeModulo(id);
             case ElaborationNodeCode.MAX:
                 return new ElaborationNodeMax(id);
             case ElaborationNodeCode.MIN:
@@ -168,18 +193,32 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeClamp(id);
             case ElaborationNodeCode.LERP:
                 return new ElaborationNodeLerp(id);
+            case ElaborationNodeCode.AND:
+                return new ElaborationNodeAnd(id, options as ArbitraryInputsElaborationNodeOptions);
+            case ElaborationNodeCode.OR:
+                return new ElaborationNodeOr(id, options as ArbitraryInputsElaborationNodeOptions);
+            case ElaborationNodeCode.XOR:
+                return new ElaborationNodeXor(id, options as ArbitraryInputsElaborationNodeOptions);
+            case ElaborationNodeCode.NOT:
+                return new ElaborationNodeNot(id);
+            case ElaborationNodeCode.BUFFER:
+                return new ElaborationNodeBuffer(id, options as TypedNullMarkedElaborationNodeOptions);
             case ElaborationNodeCode.NULL_GUARD:
                 return new ElaborationNodeNullGuard(id, options as TypedElaborationNodeOptions);
             case ElaborationNodeCode.EQUALITY_CHECK:
-                return new ElaborationNodeEqualityCheck(id, options as TypedNullMarkedElaborationNodeOptions);
+                return new ElaborationNodeEqualityCheck(id, options as TypedElaborationNodeOptions);
             case ElaborationNodeCode.GREATER_THAN:
                 return new ElaborationNodeGreaterThan(id);
             case ElaborationNodeCode.LESS_THAN:
                 return new ElaborationNodeLessThan(id);
+            case ElaborationNodeCode.CYCLE:
+                return new ElaborationNodeCycle(id);
             case ElaborationNodeCode.BINARY_CHOICE:
                 return new ElaborationNodeBinaryChoice(id, options as TypedNullMarkedElaborationNodeOptions);
             case ElaborationNodeCode.MULTIPLE_CHOICE:
                 return new ElaborationNodeMultipleChoice(id, options as ArbitraryInputsElaborationNodeOptions);
+            case ElaborationNodeCode.ENCODER:
+                return new ElaborationNodeEncoder(id, options as ArbitraryInputsElaborationNodeOptions);
             case ElaborationNodeCode.EXTRACT_RGB:
                 return new ElaborationNodeExtractRGB(id);
             case ElaborationNodeCode.EXTRACT_HSL:
@@ -208,6 +247,12 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeTimeFromValues(id);
             case ElaborationNodeCode.DATE_TIME_FROM_VALUES:
                 return new ElaborationNodeDateTimeFromValues(id);
+            case ElaborationNodeCode.DATE_COMPARE:
+                return new ElaborationNodeDateCompare(id);
+            case ElaborationNodeCode.TIME_COMPARE:
+                return new ElaborationNodeTimeCompare(id);
+            case ElaborationNodeCode.DATE_TIME_COMPARE:
+                return new ElaborationNodeDateTimeCompare(id);
             case ElaborationNodeCode.COMBINE_DATE_TIME:
                 return new ElaborationNodeCombineDateTime(id);
             case ElaborationNodeCode.EPOCH:
@@ -246,6 +291,109 @@ export class ElaborationNodeJSON {
     constructor(id: number, code: ElaborationNodeCode) {
         this.id   = id;
         this.code = code;
+    }
+    
+}
+
+export abstract class ElaborationNodeMathOperation extends ElaborationNode {
+    
+    protected static readonly FIRST_NUMBER_INPUT: string  = "First number";
+    protected static readonly SECOND_NUMBER_INPUT: string = "Second number";
+    
+    public readonly inputs: readonly Datum[] = [
+        new Datum(ElaborationNodeMathOperation.FIRST_NUMBER_INPUT, DatumType.NUMBER, false),
+        new Datum(ElaborationNodeMathOperation.SECOND_NUMBER_INPUT, DatumType.NUMBER, false)
+    ];
+    
+    public readonly outputs: readonly Datum[];
+    
+    protected constructor(id: number, code: ElaborationNodeCode, public operationName: string) {
+        super(id, code);
+        this.outputs = [
+            new Datum(this.operationName, DatumType.NUMBER, false)
+        ];
+    }
+    
+}
+
+export interface TypedElaborationNodeOptions {
+    dataType: DatumType;
+}
+
+export interface TypedNullMarkedElaborationNodeOptions {
+    dataType: DatumType;
+    nullable: boolean;
+}
+
+export abstract class TypedElaborationNode extends ElaborationNode {
+    
+    
+    protected constructor(id: number, code: ElaborationNodeCode, public options: TypedElaborationNodeOptions) {
+        super(id, code);
+    }
+    
+    public override toJSON(): ElaborationNodeJSON {
+        const result   = super.toJSON();
+        result.options = this.options;
+        return result;
+    }
+    
+}
+
+export abstract class TypedNullMarkedElaborationNode extends ElaborationNode {
+    
+    protected constructor(id: number, code: ElaborationNodeCode, public options: TypedNullMarkedElaborationNodeOptions) {
+        super(id, code);
+    }
+    
+    public override toJSON(): ElaborationNodeJSON {
+        const result   = super.toJSON();
+        result.options = this.options;
+        return result;
+    }
+    
+}
+
+export interface ArbitraryInputsElaborationNodeOptions {
+    dataType: DatumType;
+    nullable: boolean;
+    inputNumber: number;
+}
+
+export abstract class ArbitraryInputsElaborationNode extends TypedNullMarkedElaborationNode {
+    
+    public readonly inputs: Datum[] = [];
+    
+    public override options: ArbitraryInputsElaborationNodeOptions;
+    
+    protected constructor(id: number, code: ElaborationNodeCode, options: ArbitraryInputsElaborationNodeOptions) {
+        super(id, code, options);
+        options.inputNumber = Math.max(1, options.inputNumber);
+        for (let i = 0; i < options.inputNumber; i++) {
+            this.inputs.push(new Datum(ArbitraryInputsElaborationNode.getInputName(i), options.dataType, options.nullable));
+        }
+        this.options = options;
+    }
+    
+    public addInput(): void {
+        const input = new Datum(ArbitraryInputsElaborationNode.getInputName(this.options.inputNumber), this.options.dataType, this.options.nullable);
+        this.inputs.push(input);
+        this.options.inputNumber++;
+    }
+    
+    public removeLastInput(): void {
+        this.inputs.pop();
+        this.options.inputNumber--;
+    }
+    
+    public static getInputName(index: number): string {
+        return `Input ${index + 1}`;
+    }
+    
+    public override toJSON(): ElaborationNodeJSON {
+        const result   = super.toJSON();
+        result.options = this.options;
+        return result;
     }
     
 }
@@ -291,27 +439,6 @@ export class ElaborationNodeAllTypesTest extends ElaborationNode {
     
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         return new Map(inputValues);
-    }
-    
-}
-
-export abstract class ElaborationNodeMathOperation extends ElaborationNode {
-    
-    protected static readonly FIRST_NUMBER_INPUT: string  = "First number";
-    protected static readonly SECOND_NUMBER_INPUT: string = "Second number";
-    
-    public readonly inputs: readonly Datum[] = [
-        new Datum(ElaborationNodeMathOperation.FIRST_NUMBER_INPUT, DatumType.NUMBER, false),
-        new Datum(ElaborationNodeMathOperation.SECOND_NUMBER_INPUT, DatumType.NUMBER, false)
-    ];
-    
-    public readonly outputs: readonly Datum[];
-    
-    protected constructor(id: number, code: ElaborationNodeCode, public operationName: string) {
-        super(id, code);
-        this.outputs = [
-            new Datum(this.operationName, DatumType.NUMBER, false)
-        ];
     }
     
 }
@@ -380,6 +507,23 @@ export class ElaborationNodeDivision extends ElaborationNodeMathOperation {
         const secondNumber = inputValues.get(ElaborationNodeDivision.SECOND_NUMBER_INPUT) as number;
         const result       = firstNumber / secondNumber;
         return new Map([[ElaborationNodeDivision.OUTPUT_NAME, result]]);
+    }
+    
+}
+
+export class ElaborationNodeModulo extends ElaborationNodeMathOperation {
+    
+    private static readonly OUTPUT_NAME = "Modulo";
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.MODULO, ElaborationNodeModulo.OUTPUT_NAME);
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const firstNumber  = inputValues.get(ElaborationNodeModulo.FIRST_NUMBER_INPUT) as number;
+        const secondNumber = inputValues.get(ElaborationNodeModulo.SECOND_NUMBER_INPUT) as number;
+        const result       = (firstNumber % secondNumber + secondNumber) % secondNumber;
+        return new Map([[ElaborationNodeModulo.OUTPUT_NAME, result]]);
     }
     
 }
@@ -509,41 +653,154 @@ export class ElaborationNodeLerp extends ElaborationNode {
     
 }
 
-
-export interface TypedElaborationNodeOptions {
-    dataType: DatumType;
-}
-
-export interface TypedNullMarkedElaborationNodeOptions {
-    dataType: DatumType;
-    nullable: boolean;
-}
-
-export abstract class TypedElaborationNode extends ElaborationNode {
+export class ElaborationNodeAnd extends ArbitraryInputsElaborationNode {
     
+    private static readonly OUTPUT: string = "And";
     
-    protected constructor(id: number, code: ElaborationNodeCode, public options: TypedElaborationNodeOptions) {
-        super(id, code);
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: ArbitraryInputsElaborationNodeOptions) {
+        options.dataType = DatumType.BOOLEAN;
+        options.nullable = false;
+        super(id, ElaborationNodeCode.AND, options);
+        this.outputs = [
+            new Datum(ElaborationNodeAnd.OUTPUT, options.dataType, options.nullable)
+        ];
     }
     
-    public override toJSON(): ElaborationNodeJSON {
-        const result   = super.toJSON();
-        result.options = this.options;
-        return result;
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const values: boolean[] = [];
+        for (const input of this.inputs) {
+            values.push(inputValues.get(input.name) as boolean);
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeAnd.OUTPUT, values.every(value => value)
+                ]
+            ]);
+    }
+}
+
+
+export class ElaborationNodeOr extends ArbitraryInputsElaborationNode {
+    
+    private static readonly OUTPUT: string = "Or";
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: ArbitraryInputsElaborationNodeOptions) {
+        options.dataType = DatumType.BOOLEAN;
+        options.nullable = false;
+        super(id, ElaborationNodeCode.OR, options);
+        this.outputs = [
+            new Datum(ElaborationNodeOr.OUTPUT, options.dataType, options.nullable)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const values: boolean[] = [];
+        for (const input of this.inputs) {
+            values.push(inputValues.get(input.name) as boolean);
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeOr.OUTPUT, values.some(value => value)
+                ]
+            ]);
+    }
+}
+
+export class ElaborationNodeXor extends ArbitraryInputsElaborationNode {
+    
+    private static readonly OUTPUT: string = "Or";
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: ArbitraryInputsElaborationNodeOptions) {
+        options.dataType = DatumType.BOOLEAN;
+        options.nullable = false;
+        super(id, ElaborationNodeCode.XOR, options);
+        this.outputs = [
+            new Datum(ElaborationNodeXor.OUTPUT, options.dataType, options.nullable)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const values: boolean[] = [];
+        for (const input of this.inputs) {
+            values.push(inputValues.get(input.name) as boolean);
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeXor.OUTPUT, values.filter(value => value).length == 0
+                ]
+            ]);
+    }
+}
+
+export class ElaborationNodeNot extends ElaborationNode {
+    
+    private static readonly INPUT: string = "Value";
+    
+    private static readonly OUTPUT: string = "Not";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.NOT);
+        this.inputs  = [
+            new Datum(ElaborationNodeNot.INPUT, DatumType.BOOLEAN, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeNot.OUTPUT, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        let value = inputValues.get(ElaborationNodeNot.INPUT) as boolean;
+        value     = !value;
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeNot.OUTPUT, value
+                ]
+            ]);
     }
     
 }
 
-export abstract class TypedNullMarkedElaborationNode extends ElaborationNode {
+export class ElaborationNodeBuffer extends TypedNullMarkedElaborationNode {
     
-    protected constructor(id: number, code: ElaborationNodeCode, public options: TypedNullMarkedElaborationNodeOptions) {
-        super(id, code);
+    private static readonly VALUE: string = "Value";
+    
+    private static readonly OUTPUT: string = "Buffered";
+    
+    public readonly inputs: readonly Datum[];
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: TypedNullMarkedElaborationNodeOptions) {
+        super(id, ElaborationNodeCode.BUFFER, options);
+        this.inputs  = [
+            new Datum(ElaborationNodeBuffer.VALUE, options.dataType, options.nullable)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeBuffer.OUTPUT, options.dataType, options.nullable)
+        ];
     }
     
-    public override toJSON(): ElaborationNodeJSON {
-        const result   = super.toJSON();
-        result.options = this.options;
-        return result;
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const value = inputValues.get(ElaborationNodeBuffer.VALUE);
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeBuffer.OUTPUT, value
+                ]
+            ]);
     }
     
 }
@@ -715,6 +972,69 @@ export class ElaborationNodeLessThan extends ElaborationNode {
     
 }
 
+export class ElaborationNodeCycle extends ElaborationNode {
+    
+    private static readonly VALUE: string      = "Value";
+    private static readonly CYCLE: string      = "Cycle length";
+    private static readonly START_ZERO: string = "Start from 0";
+    private static readonly FORWARD: string    = "Forward";
+    private static readonly ENABLED: string    = "Enabled";
+    
+    private static readonly OUTPUT: string = "Next";
+    
+    public readonly inputs: readonly Datum[];
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.CYCLE);
+        this.inputs  = [
+            new Datum(ElaborationNodeCycle.VALUE, DatumType.NUMBER, false),
+            new Datum(ElaborationNodeCycle.CYCLE, DatumType.NUMBER, false),
+            new Datum(ElaborationNodeCycle.START_ZERO, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeCycle.FORWARD, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeCycle.ENABLED, DatumType.BOOLEAN, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeCycle.OUTPUT, DatumType.NUMBER, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        let value = inputValues.get(ElaborationNodeCycle.VALUE) as number;
+        let cycle = inputValues.get(ElaborationNodeCycle.CYCLE) as number;
+        if (cycle <= 0) {
+            cycle = 1;
+        }
+        const startZero = inputValues.get(ElaborationNodeCycle.START_ZERO) as boolean;
+        const forward   = inputValues.get(ElaborationNodeCycle.FORWARD) as boolean;
+        const enabled   = inputValues.get(ElaborationNodeCycle.ENABLED) as boolean;
+        if (!startZero) {
+            value--;
+        }
+        value = ((value % cycle) + cycle) % cycle;
+        if (enabled) {
+            if (forward) {
+                value++;
+            } else {
+                value--;
+            }
+        }
+        value = value % cycle;
+        if (!startZero) {
+            value++;
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeCycle.OUTPUT, value
+                ]
+            ]);
+    }
+    
+}
+
+
 export class ElaborationNodeBinaryChoice extends TypedNullMarkedElaborationNode {
     
     private static readonly FIRST: string   = "First choice";
@@ -753,50 +1073,6 @@ export class ElaborationNodeBinaryChoice extends TypedNullMarkedElaborationNode 
     
 }
 
-export interface ArbitraryInputsElaborationNodeOptions {
-    dataType: DatumType;
-    nullable: boolean;
-    inputNumber: number;
-}
-
-export abstract class ArbitraryInputsElaborationNode extends TypedNullMarkedElaborationNode {
-    
-    public readonly inputs: Datum[] = [];
-    
-    public override options: ArbitraryInputsElaborationNodeOptions;
-    
-    protected constructor(id: number, code: ElaborationNodeCode, options: ArbitraryInputsElaborationNodeOptions) {
-        super(id, code, options);
-        options.inputNumber = Math.max(1, options.inputNumber);
-        for (let i = 0; i < options.inputNumber; i++) {
-            this.inputs.push(new Datum(ArbitraryInputsElaborationNode.getInputName(i), options.dataType, options.nullable));
-        }
-        this.options = options;
-    }
-    
-    public addInput(): void {
-        const input = new Datum(ArbitraryInputsElaborationNode.getInputName(this.options.inputNumber), this.options.dataType, this.options.nullable);
-        this.inputs.push(input);
-        this.options.inputNumber++;
-    }
-    
-    public removeLastInput(): void {
-        this.inputs.pop();
-        this.options.inputNumber--;
-    }
-    
-    public static getInputName(index: number): string {
-        return `Input ${index + 1}`;
-    }
-    
-    public override toJSON(): ElaborationNodeJSON {
-        const result   = super.toJSON();
-        result.options = this.options;
-        return result;
-    }
-    
-}
-
 export class ElaborationNodeMultipleChoice extends ArbitraryInputsElaborationNode {
     
     private static readonly INDEX: string = "Choose index?";
@@ -822,6 +1098,69 @@ export class ElaborationNodeMultipleChoice extends ArbitraryInputsElaborationNod
             [
                 [
                     ElaborationNodeMultipleChoice.OUTPUT, chosenValue
+                ]
+            ]);
+    }
+}
+
+export class ElaborationNodeEncoder extends ArbitraryInputsElaborationNode {
+    
+    private static readonly DOMINANCE: string = "Highest dominance";
+    
+    private static readonly ENCODED: string  = "Encoded";
+    private static readonly CONFLICT: string = "Conflict";
+    private static readonly UNSET: string    = "Unset";
+    
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number, options: ArbitraryInputsElaborationNodeOptions) {
+        options.dataType = DatumType.BOOLEAN;
+        options.nullable = false;
+        super(id, ElaborationNodeCode.ENCODER, options);
+        this.inputs.splice(0, 0, new Datum(ElaborationNodeEncoder.DOMINANCE, DatumType.BOOLEAN, false));
+        this.outputs = [
+            new Datum(ElaborationNodeEncoder.ENCODED, DatumType.NUMBER, false),
+            new Datum(ElaborationNodeEncoder.CONFLICT, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeEncoder.UNSET, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const dominance              = inputValues.get(ElaborationNodeEncoder.DOMINANCE) as number;
+        let firstTrue: number | null = null;
+        let lastTrue: number | null  = null;
+        for (let i = 0; i < this.options.inputNumber; i++) {
+            if (inputValues.get(ArbitraryInputsElaborationNode.getInputName(i)) as boolean) {
+                firstTrue = firstTrue ?? i;
+                lastTrue  = i;
+            }
+        }
+        let conflict: boolean;
+        let unset: boolean;
+        let result: number;
+        if (firstTrue == null) {
+            unset    = true;
+            conflict = false;
+            result   = -1;
+        } else if (firstTrue == lastTrue) {
+            unset    = false;
+            conflict = false;
+            result   = firstTrue;
+        } else {
+            unset    = false;
+            conflict = true;
+            result   = (dominance ? lastTrue : firstTrue) ?? -1;
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeEncoder.ENCODED, result
+                ],
+                [
+                    ElaborationNodeEncoder.CONFLICT, conflict
+                ],
+                [
+                    ElaborationNodeEncoder.UNSET, unset
                 ]
             ]);
     }
@@ -1406,10 +1745,11 @@ export class ElaborationNodeTimeFromValues extends ElaborationNode {
         const minute = inputValues.get(ElaborationNodeTimeFromValues.MINUTE) as number;
         const second = inputValues.get(ElaborationNodeTimeFromValues.SECOND) as number;
         
+        const date = new Date(2000, 0, 1, hour, minute, second);
         return new Map<string, unknown>(
             [
                 [
-                    ElaborationNodeTimeFromValues.TIME, new Date(2000, 0, 1, hour, minute, second)
+                    ElaborationNodeTimeFromValues.TIME, new Date(2000, 0, 1, date.getHours(), date.getMinutes(), date.getSeconds())
                 ]
             ]);
     }
@@ -1456,6 +1796,154 @@ export class ElaborationNodeDateTimeFromValues extends ElaborationNode {
             [
                 [
                     ElaborationNodeDateTimeFromValues.DATE_TIME, new Date(year, month - 1, dayDate, hour, minute, second)
+                ]
+            ]);
+    }
+}
+
+
+export class ElaborationNodeDateCompare extends ElaborationNode {
+    
+    private static readonly DATE_FIRST  = "First value";
+    private static readonly DATE_SECOND = "Second value";
+    
+    private static readonly FIRST_LESS    = "First is less";
+    private static readonly EQUAL         = "Equal";
+    private static readonly FIRST_GREATER = "First is greater";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.DATE_COMPARE);
+        this.inputs  = [
+            new Datum(ElaborationNodeDateCompare.DATE_FIRST, DatumType.DATE, false),
+            new Datum(ElaborationNodeDateCompare.DATE_SECOND, DatumType.DATE, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeDateCompare.FIRST_LESS, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeDateCompare.EQUAL, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeDateCompare.FIRST_GREATER, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const dateFirst  = inputValues.get(ElaborationNodeDateCompare.DATE_FIRST) as Date;
+        const dateSecond = inputValues.get(ElaborationNodeDateCompare.DATE_SECOND) as Date;
+        
+        const compareFirst  = new Date(dateFirst.getFullYear(), dateFirst.getMonth(), dateFirst.getDate()).getTime();
+        const compareSecond = new Date(dateSecond.getFullYear(), dateSecond.getMonth(), dateSecond.getDate()).getTime();
+        
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeDateCompare.FIRST_LESS, compareFirst < compareSecond
+                ],
+                [
+                    ElaborationNodeDateCompare.EQUAL, compareFirst == compareSecond
+                ],
+                [
+                    ElaborationNodeDateCompare.FIRST_GREATER, compareFirst > compareSecond
+                ]
+            ]);
+    }
+}
+
+export class ElaborationNodeTimeCompare extends ElaborationNode {
+    
+    private static readonly TIME_FIRST  = "First value";
+    private static readonly TIME_SECOND = "Second value";
+    
+    private static readonly FIRST_LESS    = "First is less";
+    private static readonly EQUAL         = "Equal";
+    private static readonly FIRST_GREATER = "First is greater";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.TIME_COMPARE);
+        this.inputs  = [
+            new Datum(ElaborationNodeTimeCompare.TIME_FIRST, DatumType.TIME, false),
+            new Datum(ElaborationNodeTimeCompare.TIME_SECOND, DatumType.TIME, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeTimeCompare.FIRST_LESS, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeTimeCompare.EQUAL, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeTimeCompare.FIRST_GREATER, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const timeFirst  = inputValues.get(ElaborationNodeTimeCompare.TIME_FIRST) as Date;
+        const timeSecond = inputValues.get(ElaborationNodeTimeCompare.TIME_SECOND) as Date;
+        
+        const compareFirst  = new Date(2000, 0, 1, timeFirst.getHours(), timeFirst.getMinutes(), timeFirst.getSeconds()).getTime();
+        const compareSecond = new Date(2000, 0, 1, timeSecond.getHours(), timeSecond.getMinutes(), timeSecond.getSeconds()).getTime();
+        
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeTimeCompare.FIRST_LESS, compareFirst < compareSecond
+                ],
+                [
+                    ElaborationNodeTimeCompare.EQUAL, compareFirst == compareSecond
+                ],
+                [
+                    ElaborationNodeTimeCompare.FIRST_GREATER, compareFirst > compareSecond
+                ]
+            ]);
+    }
+}
+
+export class ElaborationNodeDateTimeCompare extends ElaborationNode {
+    
+    private static readonly DATE_TIME_FIRST  = "First value";
+    private static readonly DATE_TIME_SECOND = "Second value";
+    
+    private static readonly FIRST_LESS    = "First is less";
+    private static readonly EQUAL         = "Equal";
+    private static readonly FIRST_GREATER = "First is greater";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.DATE_TIME_COMPARE);
+        this.inputs  = [
+            new Datum(ElaborationNodeDateTimeCompare.DATE_TIME_FIRST, DatumType.DATE_TIME, false),
+            new Datum(ElaborationNodeDateTimeCompare.DATE_TIME_SECOND, DatumType.DATE_TIME, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeDateTimeCompare.FIRST_LESS, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeDateTimeCompare.EQUAL, DatumType.BOOLEAN, false),
+            new Datum(ElaborationNodeDateTimeCompare.FIRST_GREATER, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const dateTimeFirst  = inputValues.get(ElaborationNodeDateTimeCompare.DATE_TIME_FIRST) as Date;
+        const dateTimeSecond = inputValues.get(ElaborationNodeDateTimeCompare.DATE_TIME_SECOND) as Date;
+        
+        const compareFirst  = new Date(
+            dateTimeFirst.getFullYear(), dateTimeFirst.getMonth(), dateTimeFirst.getDate(),
+            dateTimeFirst.getHours(), dateTimeFirst.getMinutes(), dateTimeFirst.getSeconds()
+        ).getTime();
+        const compareSecond = new Date(
+            dateTimeSecond.getFullYear(), dateTimeSecond.getMonth(), dateTimeSecond.getDate(),
+            dateTimeSecond.getHours(), dateTimeSecond.getMinutes(), dateTimeSecond.getSeconds()
+        ).getTime();
+        
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeDateTimeCompare.FIRST_LESS, compareFirst < compareSecond
+                ],
+                [
+                    ElaborationNodeDateTimeCompare.EQUAL, compareFirst == compareSecond
+                ],
+                [
+                    ElaborationNodeDateTimeCompare.FIRST_GREATER, compareFirst > compareSecond
                 ]
             ]);
     }
@@ -1536,22 +2024,22 @@ export class ElaborationNodeEpoch extends ElaborationNode {
 
 export class ElaborationNodeSunEvents extends ElaborationNode {
     
-    private static readonly DATE = "Date Time";
+    private static readonly DATE = "Date";
     
-    private static readonly DAWN            = "Dawn";
-    private static readonly DUSK            = "Dusk";
-    private static readonly GOLDEN_HOUR     = "Golden  hour";
-    private static readonly GOLDEN_HOUR_END = "Golden hour end";
-    private static readonly NADIR           = "Nadir";
     private static readonly NAUTICAL_DAWN   = "Nautical dawn";
-    private static readonly NAUTICAL_DUSK   = "Nautical dusk";
-    private static readonly NIGHT           = "Night";
-    private static readonly NIGHT_END       = "Night end";
-    private static readonly SOLAR_NOON      = "Solar noon";
+    private static readonly DAWN            = "Dawn";
     private static readonly SUNRISE         = "Sunrise";
     private static readonly SUNRISE_END     = "Sunrise end";
-    private static readonly SUNSET          = "Sunset";
+    private static readonly GOLDEN_HOUR_END = "Golden hour end";
+    private static readonly SOLAR_NOON      = "Solar noon";
+    private static readonly GOLDEN_HOUR     = "Golden  hour";
     private static readonly SUNSET_START    = "Sunset start";
+    private static readonly SUNSET          = "Sunset";
+    private static readonly DUSK            = "Dusk";
+    private static readonly NAUTICAL_DUSK   = "Nautical dusk";
+    private static readonly NIGHT           = "Night";
+    private static readonly NADIR           = "Nadir";
+    private static readonly NIGHT_END       = "Night end";
     
     public readonly inputs: readonly Datum[];
     public readonly outputs: readonly Datum[];
@@ -1562,20 +2050,20 @@ export class ElaborationNodeSunEvents extends ElaborationNode {
             new Datum(ElaborationNodeSunEvents.DATE, DatumType.DATE, false)
         ];
         this.outputs = [
-            new Datum(ElaborationNodeSunEvents.DAWN, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.DUSK, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.GOLDEN_HOUR, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.GOLDEN_HOUR_END, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.NADIR, DatumType.TIME, false),
             new Datum(ElaborationNodeSunEvents.NAUTICAL_DAWN, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.NAUTICAL_DUSK, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.NIGHT, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.NIGHT_END, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.SOLAR_NOON, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.DAWN, DatumType.TIME, false),
             new Datum(ElaborationNodeSunEvents.SUNRISE, DatumType.TIME, false),
             new Datum(ElaborationNodeSunEvents.SUNRISE_END, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.GOLDEN_HOUR_END, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.SOLAR_NOON, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.GOLDEN_HOUR, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.SUNSET_START, DatumType.TIME, false),
             new Datum(ElaborationNodeSunEvents.SUNSET, DatumType.TIME, false),
-            new Datum(ElaborationNodeSunEvents.SUNSET_START, DatumType.TIME, false)
+            new Datum(ElaborationNodeSunEvents.DUSK, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.NAUTICAL_DUSK, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.NIGHT, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.NADIR, DatumType.TIME, false),
+            new Datum(ElaborationNodeSunEvents.NIGHT_END, DatumType.TIME, false)
         ];
     }
     

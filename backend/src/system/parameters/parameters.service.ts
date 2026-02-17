@@ -3,7 +3,7 @@ import {PersistentDataService} from "../../helpers/file/persistent-data-service"
 import {SystemParameter, SystemParameterJSON} from "@common/system/parameter/system-parameter";
 import {FileService} from "../../helpers/file/file.service";
 import MixService from "../../mixing/mix/mix.service";
-import {DatumOrigin} from "@common/mixing/mix/datum";
+import {Datum, DatumOrigin} from "@common/mixing/mix/datum";
 import {SystemOrigin} from "@common/system/constants";
 import {EngineService} from "../../engine/engine.service";
 
@@ -59,7 +59,7 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
         if (parameter == null) {
             throw new NotFoundException("Parameter does not exist");
         }
-        return parameter.value;
+        return Datum.valueToJSON(parameter.value, parameter.datum.type);
     }
     
     public async setValue(parameterName: string, value: unknown): Promise<void> {
@@ -68,6 +68,7 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
         if (parameter == null) {
             throw new NotFoundException("Parameter does not exist");
         }
+        value = Datum.valueFromJSON(value, parameter.datum.type);
         if (!parameter.datum.checkValue(value)) {
             throw new BadRequestException("The provided value is not valid for the chosen parameter")
         }

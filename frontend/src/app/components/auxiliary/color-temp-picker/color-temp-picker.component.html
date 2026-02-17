@@ -1,0 +1,42 @@
+<div class="drag-scrim"
+     [style.display]="dragging == null ? 'none' : 'block'"
+     (mousemove)="scrimMouseMove($event); $event.stopPropagation();"
+     (mouseup)="scrimMouseUp($event); $event.stopPropagation();">
+
+</div>
+<span class="color-display"
+      [style.background-color]="this.getStyleColor()"></span>
+<div class="canvas-container">
+    <div
+        class="horizontal-container"
+        tabindex="0"
+        [style.pointer-events]="disabled ? 'none' : 'all'"
+        (mousedown)="mouseDown($event); $event.stopPropagation();"
+        (keyup)="key($event)">
+        <canvas
+            #canvas
+            class="horizontal-canvas">
+        </canvas>
+        <span class="horizontal-selector"
+              [class.dragging]="dragging == 'HORZ'"
+              [style.background-color]="this.getStyleColor()"
+              [style.border-color]="'var(--mat-sys-background)'"
+              [style.left.%]="currentSliderPos * 100">
+        </span>
+    </div>
+</div>
+<div class="inputs">
+    <mat-form-field>
+        <mat-label>Color temperature</mat-label>
+        <input
+            matInput
+            type="number"
+            min="0"
+            [step]="100"
+            [max]="MAX_ALLOWED_TEMP"
+            [min]="MIN_ALLOWED_TEMP"
+            [formControl]="this._formControl">
+        <span matTextSuffix>K</span>
+        <mat-error>{{ MIN_ALLOWED_TEMP }}&nbsp;~&nbsp;{{ MAX_ALLOWED_TEMP }}</mat-error>
+    </mat-form-field>
+</div>

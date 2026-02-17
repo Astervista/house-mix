@@ -7,6 +7,7 @@ import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDi
 import {AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
 import {MatRadioButton, MatRadioGroup} from '@angular/material/radio';
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 interface FormGroupValue {
     name: string | null
@@ -31,7 +32,8 @@ interface FormGroupValue {
                    MatFormField,
                    MatLabel,
                    MatInput,
-                   MatHint
+                   MatHint,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './system-timer-dialog.component.html',
                styleUrl:    './system-timer-dialog.component.scss'

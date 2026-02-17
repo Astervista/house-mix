@@ -1,0 +1,147 @@
+@use "dimensions";
+
+:host {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    margin-top: 24px;
+
+    &.disabled {
+        pointer-events: none;
+
+        svg .selected-circle {
+            fill: var(--mat-sys-outline);
+        }
+
+        svg .hand {
+            stroke: var(--mat-sys-outline);
+        }
+
+        .digital-bar .digital-bar-digit {
+            background-color: transparent;
+            color: var(--mat-sys-outline);
+        }
+
+        .digital-bar .digital-bar-am-pm {
+            outline: none;
+
+            > span {
+                background-color: transparent;
+                font-size: 35px;
+                font-weight: 300;
+                color: var(--mat-sys-outline);
+
+                &:first-child {
+                    border-bottom: none;
+                }
+            }
+        }
+    }
+}
+
+.digital-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .digital-bar-digit, .digital-bar-divider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 45px;
+        font-weight: 300;
+        height: 60px;
+        color: var(--mat-sys-on-surface);
+    }
+
+    .digital-bar-digit {
+        cursor: pointer;
+        width: 70px;
+        border-radius: 10px;
+        background-color: var(--mat-sys-surface-container-highest);
+
+        &.selected {
+            background-color: var(--mat-sys-primary-container);
+            fill: var(--mat-sys-on-primary-container);
+        }
+    }
+
+    .digital-bar-divider {
+        width: 24px;
+    }
+
+    .digital-bar-am-pm {
+        width: 52px;
+        height: 60px;
+        outline: solid 1px var(--mat-sys-outline);
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        overflow: hidden;
+
+        > span {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: 300;
+            font-size: 16px;
+            color: var(--mat-sys-on-surface);
+
+            &.selected {
+                background-color: var(--mat-sys-tertiary-container);
+                color: var(--mat-sys-on-tertiary-container);
+            }
+
+            &:first-child {
+                border-bottom: solid 1px var(--mat-sys-outline);
+            }
+        }
+    }
+}
+
+svg {
+    padding: dimensions.$indent-medium;
+    aspect-ratio: 1;
+    width: 256px;
+
+    * {
+        pointer-events: none;
+    }
+
+    .dial {
+        fill: var(--mat-sys-surface-container-highest)
+    }
+
+    .hour {
+        text-anchor: middle;
+        dominant-baseline: middle;
+        fill: var(--mat-sys-on-surface);
+        font-size: 24px;
+
+        &.selected {
+            fill: var(--mat-sys-on-primary);
+        }
+    }
+
+    .selected-circle {
+        fill: var(--mat-sys-primary)
+    }
+
+    .hand-group {
+        transform-origin: 128px 128px;
+        transition: transform .3s ease-in-out;
+    }
+
+    .hand {
+        stroke: var(--mat-sys-primary);
+        stroke-width: 3px;
+    }
+
+    .hours-overlay {
+        clip-path: url(#selected-circle-clip-path);
+    }
+}

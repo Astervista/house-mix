@@ -40,11 +40,12 @@ export class SystemParameter {
     }
     
     public toJSON(): SystemParameterJSON {
-        return new SystemParameterJSON(this.displayName, this._datum.toJSON(), this._value);
+        return new SystemParameterJSON(this.displayName, this._datum.toJSON(), Datum.valueToJSON(this._value, this.datum.type));
     }
     
     public static fromJSON(json: SystemParameterJSON): SystemParameter {
-        return new SystemParameter(json.displayName, Datum.fromJSON(json.datum), json.value);
+        const datum = Datum.fromJSON(json.datum);
+        return new SystemParameter(json.displayName, datum, Datum.valueFromJSON(json.value, datum.type));
     }
     
 }

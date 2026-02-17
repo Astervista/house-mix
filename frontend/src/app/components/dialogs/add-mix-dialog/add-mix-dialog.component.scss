@@ -8,7 +8,16 @@
     margin: dimensions.$indent-msmall;
     --highlight-color: var(--house-mix-text-color-30);
     --stroke-color-animation-duration: 0.2s;
+    --selected-border-width: 3px;
 
+    &:focus {
+        outline: none;
+        border: none;
+    }
+
+    &:focus-visible {
+        --selected-border-width: 5px;
+    }
     house-mix-dynamic-svg {
         width: 50px;
         height: 50px;
@@ -48,7 +57,7 @@
 
         border-top-left-radius: 5px;
         border-bottom-left-radius: 5px;
-        border: solid 3px transparent;
+        border: solid var(--selected-border-width) transparent;
         border-right-width: 0;
 
         &.selected {
@@ -57,11 +66,12 @@
             border-bottom-color: var(--mat-sys-primary);
         }
 
+
     }
 
     .center-container {
 
-        border: solid 3px transparent;
+        border: solid var(--selected-border-width) transparent;
         border-top-color: var(--mat-sys-primary);
         border-bottom-color: var(--mat-sys-primary);
         border-left-width: 0;
@@ -74,7 +84,7 @@
 
         &.selected-left {
             border-right-color: var(--mat-sys-primary);
-            border-right-width: 3px;
+            border-right-width: var(--selected-border-width);
             border-top-right-radius: 5px;
             border-bottom-right-radius: 5px;
             padding-left: 3px;
@@ -82,7 +92,7 @@
 
         &.selected-right {
             border-left-color: var(--mat-sys-primary);
-            border-left-width: 3px;
+            border-left-width: var(--selected-border-width);
             border-top-left-radius: 5px;
             border-bottom-left-radius: 5px;
             padding-right: 3px;
@@ -99,7 +109,7 @@
 
         border-top-right-radius: 5px;
         border-bottom-right-radius: 5px;
-        border: solid 3px transparent;
+        border: solid var(--selected-border-width) transparent;
         border-left-width: 0;
 
         &.selected {
@@ -129,9 +139,19 @@
     justify-content: center;
     gap: 40px;
     margin: dimensions.$margin-xlarge 0;
+    --selected-border-width: 3px;
 
     --highlight-color: var(--house-mix-text-color-30);
     --stroke-color-animation-duration: 0.2s;
+
+    &:focus {
+        outline: none;
+        border: none;
+    }
+
+    &:focus-visible {
+        --selected-border-width: 5px;
+    }
 
     .box {
 
@@ -148,7 +168,7 @@
         }
 
         &.selected {
-            outline: solid 3px var(--mat-sys-primary);
+            outline: solid var(--selected-border-width) var(--mat-sys-primary);
         }
 
         house-mix-dynamic-svg {
@@ -175,47 +195,66 @@
     min-height: 80px;
     justify-content: space-around;
     flex-wrap: wrap;
-}
 
-.device-display {
-    @include entity.container;
+    --selected-border-width: 3px;
+    --selected-border-width-light: 1px;
 
-    cursor: pointer;
-    flex-direction: row;
-    align-items: center;
-    padding: dimensions.$margin-medium dimensions.$margin-mlarge;
-    gap: dimensions.$margin-medium;
-
-    --highlight-color: var(--house-mix-text-color-30);
-    --stroke-color-animation-duration: 0.2s;
-
-    &.group {
-        padding: dimensions.$margin-xlarge;
+    &:focus {
+        outline: none;
+        border: none;
     }
 
-    .device-icon {
-        width: 30px;
-        height: 30px;
+    &:focus-visible {
+        --selected-border-width: 5px;
+        --selected-border-width-light: 3px;
     }
 
-    .device-info {
-        display: flex;
-        flex-direction: column;
-        gap: dimensions.$margin-msmall;
-        padding: dimensions.$margin-msmall;
+    .device-display {
+        @include entity.container;
 
-        .name {
-            font-size: 17px;
-            font-weight: 300;
+        cursor: pointer;
+        flex-direction: row;
+        align-items: center;
+        padding: dimensions.$margin-medium dimensions.$margin-mlarge;
+        gap: dimensions.$margin-medium;
+
+        outline-width: var(--selected-border-width-light);
+
+        &.selected {
+            outline-width: var(--selected-border-width);
         }
 
-        .type {
-            font-size: 14px;
-            font-weight: 200;
+        --highlight-color: var(--house-mix-text-color-30);
+        --stroke-color-animation-duration: 0.2s;
+
+        &.group {
+            padding: dimensions.$margin-xlarge;
+        }
+
+        .device-icon {
+            width: 30px;
+            height: 30px;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: dimensions.$margin-msmall;
+            padding: dimensions.$margin-msmall;
+
+            .name {
+                font-size: 17px;
+                font-weight: 300;
+            }
+
+            .type {
+                font-size: 14px;
+                font-weight: 200;
+            }
         }
     }
-}
 
+}
 .loading-container {
     position: relative;
     height: 60px;

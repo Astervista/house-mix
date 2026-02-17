@@ -28,7 +28,8 @@
                     <house-mix-parameter
                         [parameter]="parameter"
                         [selected]="this.selected == parameter"
-                        (click)="this.selected = parameter; $event.stopPropagation()">
+                        (click)="this.selected = parameter; $event.stopPropagation()"
+                        (dblclick)="this.toolbarClick(ToolbarAction.CHANGE_PARAMETER_VALUE)">
 
                     </house-mix-parameter>
                 }
@@ -37,7 +38,8 @@
             }
         } @else {
             <house-mix-loading-scrim
-                [loadingStatus]="parametersLoadingStatus">
+                [loadingStatus]="parametersLoadingStatus"
+                (reload)="loadParameters()">
 
             </house-mix-loading-scrim>
         }
@@ -64,7 +66,8 @@
                     <house-mix-timer
                         [timer]="timer"
                         [selected]="this.selected == timer"
-                        (click)="this.selected = timer; $event.stopPropagation()">
+                        (click)="this.selected = timer; $event.stopPropagation()"
+                        (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
 
                     </house-mix-timer>
                 }
@@ -73,7 +76,8 @@
             }
         } @else {
             <house-mix-loading-scrim
-                [loadingStatus]="timersLoadingStatus">
+                [loadingStatus]="timersLoadingStatus"
+                (reload)="loadTimers()">
 
             </house-mix-loading-scrim>
         }
@@ -100,7 +104,8 @@
                     <house-mix-device-monitor-device
                             [device]="device"
                             [selected]="this.selected == device"
-                            (click)="this.selected = device; $event.stopPropagation()">
+                            (click)="this.selected = device; $event.stopPropagation()"
+                            (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
 
                     </house-mix-device-monitor-device>
                 }
@@ -109,7 +114,8 @@
             }
         } @else {
             <house-mix-loading-scrim
-                    [loadingStatus]="devicesLoadingStatus">
+                [loadingStatus]="devicesLoadingStatus"
+                (reload)="loadDeviceMonitors()">
 
             </house-mix-loading-scrim>
         }

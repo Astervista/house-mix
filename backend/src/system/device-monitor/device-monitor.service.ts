@@ -18,6 +18,7 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
         fileService: FileService,
         @Inject(forwardRef(() => MixService))
         private mixService: MixService,
+        @Inject(forwardRef(() => EngineService))
         private engineService: EngineService
     ) {
         super(fileService, SAVE_FILE, DeviceMonitorServiceData);
@@ -25,6 +26,7 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
     }
     
     private lastResponses: Map<string, number> = new Map<string, number>();
+    private _internetAccess: boolean | null = null;
     
     private async checkAll(): Promise<void> {
         const data                                                                         = await this.data;
@@ -41,14 +43,17 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
                         if (lastResponse != null) {
                             result = now - lastResponse <= 1000 * 60 * 5;
                         } else {
-                            result = true;
+                            result = false;
                         }
                     }
                     return ({device, result});
                 }));
             }
         }
-        promises.push(this.checkOne().then(result => { return ({device: null, result}); }));
+        promises.push(this.checkOne().then(result => {
+            this._internetAccess = result;
+            return ({device: null, result});
+        }));
         const results        = await Promise.all(promises);
         const internetStatus = results.find(result => result.device == null)?.result ?? false;
         if (internetStatus) {
@@ -129,6 +134,10 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
         }
         device.ip = edit.ip;
         this.saveData();
+    }
+    
+    public get internetAccess(): boolean | null {
+        return this._internetAccess;
     }
 }
 

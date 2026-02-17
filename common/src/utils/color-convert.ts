@@ -967,3 +967,4 @@ export class ColorSpace {
                                                             0.0270, 0.0707, 0.9911
                                                         ]), new NoGammaCorrection());
 }
+

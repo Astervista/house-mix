@@ -1,6 +1,11 @@
 <h2 mat-dialog-title>Create a new mix</h2>
-<mat-dialog-content>
-    <div class="phase-selection">
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
+    <div
+        class="phase-selection"
+        tabindex="0"
+        (keyup)="phaseKey($event)">
         <div
             class="first-half-container"
             [class.selected]="selectedPhase == MixPhase.SENSORS"
@@ -50,7 +55,9 @@
         }
     </p>
     @if (selectedPhase != MixPhase.CENTER) {
-        <div class="entity-selection">
+        <div class="entity-selection"
+             tabindex="0"
+             (keyup)="targetKey($event)">
             <div class="box"
                  [class.disabled]="selectedPhase != MixPhase.SENSORS"
                  [class.selected]="selectedPhase == MixPhase.SENSORS && selectedTarget == MixTarget.DEVICE"
@@ -89,7 +96,9 @@
                 Available groups
             }
         </span>
-        <div class="choice-list">
+        <div class="choice-list"
+             tabindex="0"
+             (keyup)="elementsListKey($event)">
             @if (showActuators) {
                 @if (actuatorsLoadingStatus != LoadingStatus.LOADED) {
                     <house-mix-loading-scrim

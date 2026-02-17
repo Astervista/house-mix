@@ -1,9 +1,9 @@
 import {Component, Inject} from '@angular/core';
-import {MatButton} from '@angular/material/button';
+import {MatButton, MatIconButton} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {Datum, DatumType, DatumTypeColor, DatumTypeColorBase} from '@common/mixing/mix/datum';
-import {MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
-import {FormControl, ReactiveFormsModule} from '@angular/forms';
+import {MatError, MatFormField, MatHint, MatInput, MatInputModule, MatLabel} from '@angular/material/input';
+import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors} from '@angular/forms';
 import {MatTimepicker, MatTimepickerInput, MatTimepickerToggle} from '@angular/material/timepicker';
 import {MatNativeDateModule} from '@angular/material/core';
 import {MatDatepickerModule} from '@angular/material/datepicker';
@@ -13,6 +13,11 @@ import {DateTime} from 'luxon';
 import {MatDialogComponent} from '../../../../utils/better-mat-dialog';
 import {MatCheckbox} from '@angular/material/checkbox';
 import {ColorPickerComponent} from '../../../auxiliary/color-picker/color-picker.component';
+import {InputReturnBehaviorDirective} from '../../../../directives/input-return-behavior/input-return-behavior.directive';
+import {ColorTempPickerComponent} from '../../../auxiliary/color-temp-picker/color-temp-picker.component';
+import {MatFormFieldModule} from '@angular/material/form-field';
+import {MatCard, MatCardModule} from '@angular/material/card';
+import {TimePickerComponent} from '../../../auxiliary/time-picker/time-picker.component';
 
 export const DATE_FORMAT = {
     parse:   {
@@ -48,7 +53,17 @@ export const DATE_FORMAT = {
                    MatHint,
                    MatIcon,
                    MatCheckbox,
-                   ColorPickerComponent
+                   ColorPickerComponent,
+                   InputReturnBehaviorDirective,
+                   ColorTempPickerComponent,
+                   MatError,
+                   MatFormFieldModule,
+                   MatInputModule,
+                   MatCardModule,
+                   MatDatepickerModule,
+                   MatCard,
+                   MatIconButton,
+                   TimePickerComponent
                ],
                providers:   [
                    // Luxon can be provided globally to your app by adding `provideLuxonDateAdapter`
@@ -60,6 +75,23 @@ export const DATE_FORMAT = {
                styleUrl:    './constant-edit-dialog.component.scss'
            })
 export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEditDialogData, ConstantEditDialogResponse> {
+
+    protected selectedValue: unknown = null;
+
+    protected booleanFormControl: FormControl<boolean | null>      = new FormControl<boolean>(false);
+    protected numberFormControl: FormControl<number | null>        = new FormControl<number>(0);
+    protected stringFormControl: FormControl<string | null>        = new FormControl<string>('');
+    protected colorFormControl: FormControl<DatumTypeColor | null> = new FormControl<DatumTypeColor>(new DatumTypeColor(DatumTypeColorBase.RGB, 255, 255, 255));
+    protected timeFormControl: FormControl<DateTime | null>        = new FormControl<DateTime>(DateTime.fromJSDate(new Date()), this.validateDateTime.bind(this));
+    protected dateFormControl: FormControl<DateTime | null>        = new FormControl<DateTime>(DateTime.fromJSDate(new Date()), this.validateDateTime.bind(this));
+
+    private dateTimeTempTime: Date | null = null;
+    private dateTimeTempDate: Date | null = null;
+
+    protected calendarVisible: boolean = true;
+    protected clockVisible: boolean    = true;
+
+    protected readonly DatumType = DatumType;
 
     constructor(
         @Inject(MAT_DIALOG_DATA) data: ConstantEditDialogData,
@@ -86,6 +118,7 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 });
                 break;
             }
+            case DatumType.COLOR_TEMP:
             case DatumType.NUMBER: {
                 const number       = (data.value as number | null) ?? Datum.getDefaultForType(data.type) as number;
                 this.selectedValue = number;
@@ -109,7 +142,11 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 this.selectedValue = date;
                 this.timeFormControl.setValue(DateTime.fromJSDate(date));
                 this.timeFormControl.valueChanges.subscribe(value => {
-                    this.selectedValue = value?.toJSDate();
+                    if (value?.isValid !== true) {
+                        this.selectedValue = null;
+                        return;
+                    }
+                    this.selectedValue = value.toJSDate();
                 });
                 break;
             }
@@ -118,7 +155,7 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 this.selectedValue = date;
                 this.dateFormControl.setValue(DateTime.fromJSDate(date));
                 this.dateFormControl.valueChanges.subscribe((value: DateTime | null) => {
-                    if (value == null) {
+                    if (value?.isValid !== true) {
                         this.selectedValue = null;
                         return;
                     }
@@ -127,7 +164,8 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 break;
             }
             case DatumType.DATE_TIME: {
-
+                this.calendarVisible = false;
+                this.clockVisible    = false;
                 this.dateTimeTempDate = data.value == null ? new Date() : new Date(data.value as Date);
                 this.dateTimeTempTime = data.value == null ? new Date() : new Date(data.value as Date);
 
@@ -180,20 +218,6 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
         }
     }
 
-    protected selectedValue: unknown = null;
-
-    protected booleanFormControl: FormControl<boolean | null> = new FormControl<boolean>(false);
-    protected numberFormControl: FormControl<number | null> = new FormControl<number>(0);
-    protected stringFormControl: FormControl<string | null> = new FormControl<string>("");
-    protected colorFormControl: FormControl<DatumTypeColor | null> = new FormControl<DatumTypeColor>(new DatumTypeColor(DatumTypeColorBase.RGB, 255, 255, 255));
-    protected timeFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
-    protected dateFormControl: FormControl<DateTime | null> = new FormControl<DateTime>(DateTime.fromJSDate(new Date()));
-
-    private dateTimeTempTime: Date | null = null;
-    private dateTimeTempDate: Date | null = null;
-
-    protected readonly DatumType = DatumType;
-
     protected getTitle(): string {
         switch (this.data.type) {
             case DatumType.STRING: {
@@ -201,6 +225,9 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
             }
             case DatumType.COLOR: {
                 return 'Set color';
+            }
+            case DatumType.COLOR_TEMP: {
+                return 'Set color temperature';
             }
             case DatumType.NUMBER: {
                 return 'Set numerical value';
@@ -226,6 +253,19 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
         } else {
             return null;
         }
+    }
+
+    protected confirm(): void {
+        if (this.selectedValue != null) {
+            this.closeDialog({successful: true, value: this.selectedValue});
+        }
+    }
+
+    private validateDateTime(control: AbstractControl): ValidationErrors | null {
+        if ((control as FormControl<DateTime | null>).value?.isValid !== true) {
+            return {invalidDate: true};
+        }
+        return null;
     }
 
     protected readonly DatumTypeColorBase = DatumTypeColorBase;

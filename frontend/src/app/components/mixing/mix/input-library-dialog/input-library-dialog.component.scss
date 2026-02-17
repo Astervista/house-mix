@@ -3,6 +3,26 @@
 @use "../../../entities/entity";
 @use "../connectors";
 
+:host {
+    @include colors.datum-type-colors();
+}
+
+.search-results {
+    display: flex;
+    gap: dimensions.$indent-mlarge;
+    padding: dimensions.$margin-msmall;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: center;
+    flex-shrink: 0;
+
+    .input-preview {
+        flex-shrink: 0;
+        max-width: 150px;
+        white-space: normal;
+    }
+}
+
 .option-list {
     display: flex;
     flex-wrap: wrap;
@@ -10,7 +30,6 @@
     padding: dimensions.$margin-msmall;
     justify-content: space-around;
 
-    @include colors.datum-type-colors();
 }
 
 

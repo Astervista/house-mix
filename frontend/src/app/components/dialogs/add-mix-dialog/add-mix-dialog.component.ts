@@ -18,6 +18,7 @@ import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-clas
 import {ReactiveFormsModule} from '@angular/forms';
 import {MixingService} from '../../mixing/mixing.service';
 import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/entity-names-inputs.component';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 
 interface AddMixDialogDefaults {
@@ -27,7 +28,7 @@ interface AddMixDialogDefaults {
 
 @Component({
                selector:    'house-mix-add-mix-dialog',
-               imports:     [
+               imports: [
                    MatButton,
                    MatDialogActions,
                    MatDialogContent,
@@ -36,7 +37,8 @@ interface AddMixDialogDefaults {
                    LoadingScrimComponent,
                    MatTooltip,
                    ReactiveFormsModule,
-                   EntityNamesInputsComponent
+                   EntityNamesInputsComponent,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './add-mix-dialog.component.html',
                styleUrl:    './add-mix-dialog.component.scss'
@@ -106,6 +108,18 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         this.selectedElement = null;
     }
 
+    public phaseKey(event: KeyboardEvent): void {
+        if (event.key == 'ArrowLeft') {
+            const phases       = Object.values(MixPhase);
+            const index        = phases.indexOf(this._selectedPhase);
+            this.selectedPhase = phases[(index - 1 + phases.length) % phases.length] ?? MixPhase.SENSORS;
+        } else if (event.key == 'ArrowRight' || event.key == 'Space') {
+            const phases       = Object.values(MixPhase);
+            const index        = phases.indexOf(this._selectedPhase);
+            this.selectedPhase = phases[(index + 1) % phases.length] ?? MixPhase.SENSORS;
+        }
+    }
+
     public get selectedTarget(): MixTarget {
         return this._selectedTarget;
     }
@@ -125,6 +139,41 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
                 break;
         }
         this.selectedElement = null;
+    }
+
+    public targetKey(event: KeyboardEvent): void {
+
+        if (event.key == 'ArrowLeft' || event.key == 'ArrowRight' || event.key == 'Space') {
+            if (this._selectedTarget == MixTarget.DEVICE) {
+                this.selectedTarget = MixTarget.GROUP;
+            } else if (this._selectedTarget == MixTarget.GROUP) {
+                this.selectedTarget = MixTarget.DEVICE;
+            }
+        }
+    }
+
+    public elementsListKey(event: KeyboardEvent): void {
+        let list: (Group | Sensor | Actuator)[] = [];
+        if (this._selectedPhase == MixPhase.SENSORS) {
+            if (this.selectedTarget == MixTarget.DEVICE) {
+                list = this.sensors ?? [];
+            } else {
+                list = this.leftGroups ?? [];
+            }
+        } else {
+            if (this.selectedTarget == MixTarget.DEVICE) {
+                list = this.actuators ?? [];
+            } else {
+                list = this.rightGroups ?? [];
+            }
+        }
+        if (event.key == 'ArrowLeft') {
+            const index          = this.selectedElement == null ? list.length : list.indexOf(this.selectedElement);
+            this.selectedElement = list[(index - 1 + list.length) % list.length] ?? null;
+        } else if (event.key == 'ArrowRight' || event.key == 'Space') {
+            const index          = this.selectedElement == null ? -1 : list.indexOf(this.selectedElement);
+            this.selectedElement = list[(index + 1) % list.length] ?? null;
+        }
     }
 
     protected loadActuators(invalidate: boolean = false): void {

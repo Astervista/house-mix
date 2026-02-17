@@ -17,9 +17,14 @@
 <div class="canvas-container">
     <div
         class="square-container"
+        tabindex="0"
         [style.pointer-events]="disabled ? 'none' : 'all'"
-        (mousedown)="squareMouseDown($event); $event.stopPropagation();">
-        <canvas #squareCanvas class="square-canvas"></canvas>
+        (mousedown)="squareMouseDown($event); $event.stopPropagation();"
+        (keyup)="squareKey($event)">
+        <canvas
+            #squareCanvas
+            class="square-canvas">
+        </canvas>
         @if (this._base == DatumTypeColorBase.XY) {
             <svg viewBox="0 0 100 100">
                 <defs>
@@ -44,10 +49,12 @@
     </div>
     <div
         class="vertical-container"
+        [tabIndex]="this._base == DatumTypeColorBase.RGB ? 0 : -1"
         [style.position]="this._base == DatumTypeColorBase.RGB ? '' : 'absolute'"
         [style.visibility]="this._base == DatumTypeColorBase.RGB ? 'visible' : 'hidden'"
         [style.pointer-events]="this._base == DatumTypeColorBase.RGB && !disabled ? 'all' : 'none'"
-        (mousedown)="verticalMouseDown($event); $event.stopPropagation();">
+        (mousedown)="verticalMouseDown($event); $event.stopPropagation();"
+        (keyup)="verticalKey($event)">
         <canvas #verticalCanvas
                 class="vertical-canvas">
 
@@ -79,7 +86,8 @@
                 [step]="firstInputMax == 1 ? 0.01 : 1"
                 [max]="firstInputMax"
                 [formControl]="firstInputFormControl">
-            <mat-error>0&nbsp;~&nbsp;{{firstInputMax}}</mat-error>
+            <span matTextSuffix>{{ firstInputSuffix }}</span>
+            <mat-error>0&nbsp;~&nbsp;{{ firstInputMax }}</mat-error>
         </mat-form-field>
     }
     @if (secondInputLabel != null) {
@@ -92,7 +100,8 @@
                 [max]="secondInputMax"
                 [step]="secondInputMax == 1 ? 0.01 : 1"
                 [formControl]="secondInputFormControl">
-            <mat-error>0&nbsp;~&nbsp;{{secondInputMax}}</mat-error>
+            <span matTextSuffix>{{ secondInputSuffix }}</span>
+            <mat-error>0&nbsp;~&nbsp;{{ secondInputMax }}</mat-error>
         </mat-form-field>
     }
     @if (thirdInputLabel != null) {
@@ -104,12 +113,14 @@
                 min="0"
                 [max]="thirdInputMax"
                 [formControl]="thirdInputFormControl">
-            <mat-error>0&nbsp;~&nbsp;{{thirdInputMax}}</mat-error>
+            <span matTextSuffix>{{ thirdInputSuffix }}</span>
+            <mat-error>0&nbsp;~&nbsp;{{ thirdInputMax }}</mat-error>
         </mat-form-field>
     }
     @if (stringInputLabel != null) {
         <mat-form-field class="wide">
             <mat-label>{{ stringInputLabel }}</mat-label>
+            <span matTextPrefix>#</span>
             <input
                 matInput
                 [formControl]="stringInputFormControl">

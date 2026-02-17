@@ -37,6 +37,11 @@
 .mix-canvas {
     flex-grow: 1;
 
+    &:focus {
+        outline: none;
+        border: none;
+    }
+
     .output-group,
     .input-group {
 
@@ -301,18 +306,18 @@
         transition: transform 0.5s ease-in-out;
     }
 
-    .input-area + rect + rect.hidden {
-        pointer-events: none;
+    .input-area + .options-group {
+        .hidden {
+            pointer-events: none;
+        }
     }
 
-    .input-area + rect + rect,
-    .input-area + rect {
+    .input-area + .options-group {
         cursor: pointer;
     }
 
-    .input-area:hover + rect + rect + .input-tag,
-    .input-area + rect:hover + rect + .input-tag,
-    .input-area + rect + rect:hover + .input-tag {
+    .input-area:hover + .options-group + .input-tag,
+    .input-area + .options-group:hover + .input-tag {
         transform: translateX(30px);
 
         &.right {
@@ -320,21 +325,20 @@
         }
     }
 
-    .input-area + rect + rect + .input-tag + .mat-icon-svg + .mat-icon-svg,
-    .input-area + rect + rect + .input-tag + .mat-icon-svg {
+    .input-area + .options-group + .input-tag + .options-icons {
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
         pointer-events: none;
     }
 
-    .input-area:hover + rect + rect + .input-tag + .mat-icon-svg + .mat-icon-svg,
-    .input-area + rect:hover + rect + .input-tag + .mat-icon-svg + .mat-icon-svg,
-    .input-area + rect + rect:hover + .input-tag + .mat-icon-svg + .mat-icon-svg,
-    .input-area:hover + rect + rect + .input-tag + .mat-icon-svg,
-    .input-area + rect:hover + rect + .input-tag + .mat-icon-svg,
-    .input-area + rect + rect:hover + .input-tag + .mat-icon-svg {
+    .input-area:hover + .options-group + .input-tag + .options-icons,
+    .input-area + .options-group:hover + .input-tag + .options-icons {
         opacity: 1;
         transition: opacity 0.3s 0.25s ease-in-out;
+    }
+
+    .options-icons .hidden {
+        display: none;
     }
 
     .input-area {

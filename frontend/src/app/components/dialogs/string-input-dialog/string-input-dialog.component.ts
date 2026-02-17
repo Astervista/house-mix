@@ -5,6 +5,7 @@ import {MatButton} from '@angular/material/button';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {FormControl, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatError, MatFormField, MatHint, MatInput, MatLabel} from '@angular/material/input';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 export type StringInputDialogData = DefaultDialogData & {
     defaultValue?: string;
@@ -14,7 +15,7 @@ export type StringInputDialogData = DefaultDialogData & {
 
 @Component({
                selector:    'house-mix-string-input-dialog',
-               imports:     [
+               imports: [
                    MatButton,
                    MatDialogActions,
                    MatDialogContent,
@@ -24,7 +25,8 @@ export type StringInputDialogData = DefaultDialogData & {
                    MatHint,
                    ReactiveFormsModule,
                    MatInput,
-                   MatError
+                   MatError,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './string-input-dialog.component.html',
                styleUrl:    './string-input-dialog.component.scss'
@@ -40,6 +42,12 @@ export class StringInputDialogComponent extends MatDialogComponent<StringInputDi
         super(data, dialogRef);
         if (data.defaultValue != null) {
             this.stringFormControl.setValue(data.defaultValue);
+        }
+    }
+
+    protected confirm(): void {
+        if (this.stringFormControl.valid) {
+            this.closeDialog(this.stringFormControl.value);
         }
     }
 

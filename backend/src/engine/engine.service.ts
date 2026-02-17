@@ -6,7 +6,7 @@ import {StatusUpdate, ZigbeeService} from "../zigbee/zigbee.service";
 import {ParametersService} from "../system/parameters/parameters.service";
 import {TimersService} from "../system/timers/timers.service";
 import {Datum, DatumOrigin, DatumType, DatumTypeColor, DatumTypeColorBase, ExportedDatum} from "@common/mixing/mix/datum";
-import {SystemOrigin} from "@common/system/constants";
+import {EnvironmentInput, SystemOrigin} from "@common/system/constants";
 import {
     Mix,
     MixCalculationError,
@@ -24,12 +24,15 @@ import {Sensor} from "@common/devices/sensor/sensor";
 import {SystemParameter} from "@common/system/parameter/system-parameter";
 import {GroupService} from "../devices/group/group.service";
 import {Group} from "@common/devices/group/group";
-import {MixingGraphCenter} from "@common/mixing/mixing-graph";
+import {MixingGraph, MixingGraphCenter} from "@common/mixing/mixing-graph";
 import {PersistentDataService} from "../helpers/file/persistent-data-service";
 import {FileService} from "../helpers/file/file.service";
 import {ActuatorService} from "../devices/actuator/actuator.service";
 import * as Schedule from "node-schedule";
 import {DeviceMonitorDevice} from "@common/system/device-monitor/device-monitor-device";
+import {DeviceMonitorService} from "../system/device-monitor/device-monitor.service";
+import {Actuator} from "@common/devices/actuator/actuator";
+import {ElaborationNodeSunEvents} from "@common/mixing/mix/elaboration-node";
 
 const SAVE_FILE = "engine/engine.json";
 
@@ -54,10 +57,32 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         private parametersService: ParametersService,
         @Inject(forwardRef(() => TimersService))
         private timersService: TimersService,
+        @Inject(forwardRef(() => DeviceMonitorService))
+        private deviceMonitorService: DeviceMonitorService,
         private zigbeeService: ZigbeeService,
         fileService: FileService
     ) {
         super(fileService, SAVE_FILE, EngineServiceData);
+        this.doAfterLoad(async (data): Promise<void> => {
+            if (data.location == null) {
+                try {
+                    const ipRes = await fetch("https://api.ipify.org?format=json");
+                    const {ip}  = await ipRes.json() as { ip?: string };
+                    
+                    const geoRes = await fetch(`http://ip-api.com/json/${ip}`);
+                    const geo    = await geoRes.json() as { lat?: number, lon?: number, status?: string };
+                    if (geo.status == "success") {
+                        data.location = {latitude: geo.lat ?? 0, longitude: geo.lon ?? 0};
+                        this.saveData();
+                    } else {
+                        return;
+                    }
+                } catch {
+                    return;
+                }
+            }
+            ElaborationNodeSunEvents.coordinates = data.location;
+        });
     }
     
     public onModuleInit(): void {
@@ -110,18 +135,19 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
     }
     
     private async asyncTick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange, updateDeviceStatuses: DeviceMonitorDevice[] = []): Promise<void> {
-        const data                                             = await this.data;
-        const storage                                          = data.storage;
-        const mixingGraph                                      = await this.mixService.getGraph();
+        const data: EngineServiceData                         = await this.data;
+        const storage: MixingStorage                          = data.storage;
+        const mixingGraph: MixingGraph                        = await this.mixService.getGraph();
         const {sensorGroupLevels, actuatorGroupLevels}         = mixingGraph.generateGroupLevels();
-        const mixes                                            = await this.mixService.getAllMixes();
-        const parameters                                       = await this.parametersService.getAllParameters();
-        const sensorStatusCache                                = this.zigbeeService.deviceStatusCache;
-        const sensors                                          = await this.sensorService.getAllSensors();
-        const groups                                           = await this.groupService.getAllGroups();
-        const actuators                                        = await this.actuatorService.getAllActuators();
+        const mixes: Mix[]                                    = await this.mixService.getAllMixes();
+        const parameters: SystemParameter[]                   = await this.parametersService.getAllParameters();
+        const sensorStatusCache: ReadonlyMap<string, unknown> = this.zigbeeService.deviceStatusCache;
+        const sensors: Sensor[]                               = await this.sensorService.getAllSensors();
+        const groups: Group[]                                 = await this.groupService.getAllGroups();
+        const actuators: Actuator[]                           = await this.actuatorService.getAllActuators();
         const mixResults: Map<number, MixingCalculationResult> = new Map<number, MixingCalculationResult>();
         const orderedStorageUpdate: StorageUpdate[]            = [];
+        const now                                             = new Date();
         for (const mixingGraphSensor of mixingGraph.sensors) {
             const mix = mixes.find(otherMix => otherMix.id == mixingGraphSensor.mix);
             if (mix == null) {
@@ -139,7 +165,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                         break;
                     }
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses, now));
                         break;
                     }
                     case DatumOrigin.GROUP:
@@ -178,7 +204,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                             break;
                         }
                         case DatumOrigin.SYSTEM: {
-                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
+                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses, now));
                             break;
                         }
                         case DatumOrigin.SENSOR: {
@@ -223,7 +249,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                         break;
                     }
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses, now));
                         break;
                     }
                     case DatumOrigin.SENSOR: {
@@ -260,7 +286,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 for (const imp of mix.imports) {
                     switch (imp.origin) {
                         case DatumOrigin.SYSTEM: {
-                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
+                            inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses, now));
                             break;
                         }
                         case DatumOrigin.GROUP: {
@@ -300,7 +326,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             for (const imp of mix.imports) {
                 switch (imp.origin) {
                     case DatumOrigin.SYSTEM: {
-                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses));
+                        inputs.set(imp.uniqueName, this.getSystemValueForImport(imp, parameters, mix, timerDataChange, updateDeviceStatuses, now));
                         break;
                     }
                     case DatumOrigin.GROUP: {
@@ -364,6 +390,8 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                         };
                     }
                     update[outputName] = setColor;
+                } else if (output.type == DatumType.COLOR_TEMP) {
+                    update[outputName] = Math.round(1000000 / (value as number));
                 } else {
                     update[outputName] = value;
                 }
@@ -422,6 +450,8 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 } else {
                     value = null;
                 }
+            } else if (value != null && imp.type == DatumType.COLOR_TEMP) {
+                value = 1000000 / (value as number);
             }
             return value;
         }
@@ -453,7 +483,8 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         parameters: SystemParameter[],
         mix: Mix,
         timerChanged?: TimerDataChange,
-        updateDeviceStatuses: DeviceMonitorDevice[] = []): unknown {
+        updateDeviceStatuses: DeviceMonitorDevice[] = [],
+        consistentDate: Date                        = new Date()): unknown {
         const originType = imp.originName as SystemOrigin;
         switch (originType) {
             case SystemOrigin.PARAMETER: {
@@ -464,11 +495,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 return parameter.value;
             }
             case SystemOrigin.TIMER: {
-                if (imp.name == timerChanged?.name) {
-                    return timerChanged.time;
-                } else {
-                    return null;
-                }
+                return imp.name == timerChanged?.name;
             }
             case SystemOrigin.DEVICE_STATUS: {
                 const device = updateDeviceStatuses.find(update => update.name == imp.name);
@@ -476,6 +503,29 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                     return device.connected;
                 } else {
                     return null;
+                }
+            }
+            case SystemOrigin.ENVIRONMENT: {
+                switch (imp.name as EnvironmentInput) {
+                    case EnvironmentInput.TIME: {
+                        return new Date(2000, 0, 1, consistentDate.getHours(), consistentDate.getMinutes(), consistentDate.getSeconds());
+                    }
+                    case EnvironmentInput.DATE: {
+                        return new Date(consistentDate.getFullYear(), consistentDate.getMonth(), consistentDate.getDate());
+                    }
+                    case EnvironmentInput.DATE_TIME: {
+                        return new Date(
+                            consistentDate.getFullYear(),
+                            consistentDate.getMonth(),
+                            consistentDate.getDate(),
+                            consistentDate.getHours(),
+                            consistentDate.getMinutes(),
+                            consistentDate.getSeconds()
+                        );
+                    }
+                    case EnvironmentInput.INTERNET_ACCESS: {
+                        return this.deviceMonitorService.internetAccess ?? false;
+                    }
                 }
             }
         }
@@ -719,15 +769,18 @@ export class EngineServiceData {
     
     public executions: EngineExecution[];
     
+    public location?: { latitude: number, longitude: number };
+    
     constructor(engineServiceDataJSON?: EngineServiceDataJSON) {
         this.storage    = {
-            [DatumType.BOOLEAN]:   new Map<string, unknown>(),
-            [DatumType.COLOR]:     new Map<string, unknown>(),
-            [DatumType.DATE]:      new Map<string, unknown>(),
-            [DatumType.DATE_TIME]: new Map<string, unknown>(),
-            [DatumType.TIME]:      new Map<string, unknown>(),
-            [DatumType.NUMBER]:    new Map<string, unknown>(),
-            [DatumType.STRING]:    new Map<string, unknown>()
+            [DatumType.BOOLEAN]:    new Map<string, unknown>(),
+            [DatumType.COLOR]:      new Map<string, unknown>(),
+            [DatumType.COLOR_TEMP]: new Map<string, unknown>(),
+            [DatumType.DATE]:       new Map<string, unknown>(),
+            [DatumType.DATE_TIME]:  new Map<string, unknown>(),
+            [DatumType.TIME]:       new Map<string, unknown>(),
+            [DatumType.NUMBER]:     new Map<string, unknown>(),
+            [DatumType.STRING]:     new Map<string, unknown>()
         };
         this.executions = [];
         if (engineServiceDataJSON != null) {
@@ -739,6 +792,7 @@ export class EngineServiceData {
                 }
             }
             this.executions = engineServiceDataJSON.executions.map(execution => EngineExecution.fromJSON(execution));
+            this.location = engineServiceDataJSON.location;
         }
     }
     
@@ -749,7 +803,8 @@ export class EngineServiceData {
         }
         return {
             storage:    result,
-            executions: this.executions.map(execution => execution.toJSON())
+            executions: this.executions.map(execution => execution.toJSON()),
+            location:   this.location
         };
     }
     
@@ -758,4 +813,5 @@ export class EngineServiceData {
 export interface EngineServiceDataJSON {
     storage: Partial<Record<DatumType, Record<string, unknown>>>;
     executions: EngineExecutionJSON[];
+    location?: { latitude: number, longitude: number };
 }

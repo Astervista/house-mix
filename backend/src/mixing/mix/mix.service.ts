@@ -6,7 +6,7 @@ import {MixPhase, MixPositionInfo, MixTarget, PutMixShowableError, PutMixShowabl
 import {Datum, DatumOrigin, DatumType, ExportedDatum} from "@common/mixing/mix/datum";
 import {ParametersService} from "../../system/parameters/parameters.service";
 import {TimersService} from "src/system/timers/timers.service";
-import {SystemOrigin} from "@common/system/constants";
+import {SYSTEM_ENVIRONMENT_INPUTS, SystemOrigin} from "@common/system/constants";
 import {SensorService} from "../../devices/sensor/sensor.service";
 import {GroupService} from "../../devices/group/group.service";
 import {ActuatorService} from "../../devices/actuator/actuator.service";
@@ -401,8 +401,8 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                       .map((timer): ExportedDatum => {
                           return new ExportedDatum(
                               timer.name,
-                              DatumType.DATE_TIME,
-                              true,
+                              DatumType.BOOLEAN,
+                              false,
                               DatumOrigin.SYSTEM,
                               SystemOrigin.TIMER,
                               timer.displayName
@@ -430,6 +430,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...SYSTEM_ENVIRONMENT_INPUTS,
                     ...deviceMonitorData,
                     ...sensor
                         .exposes
@@ -464,6 +465,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...SYSTEM_ENVIRONMENT_INPUTS,
                     ...deviceMonitorData,
                     ...await this.getGroupImportsInSensorPhase(group)
                 ];
@@ -472,6 +474,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             return [
                 ...parameterData,
                 ...timerData,
+                ...SYSTEM_ENVIRONMENT_INPUTS,
                 ...deviceMonitorData,
                 ...await this.getGroupImportsInSensorPhase(null)
             ];
@@ -503,6 +506,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...SYSTEM_ENVIRONMENT_INPUTS,
                     ...deviceMonitorData,
                     ...centerMixOutputs,
                     ...await this.getGroupImportsInActuatorPhase(group)
@@ -516,6 +520,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                 return [
                     ...parameterData,
                     ...timerData,
+                    ...SYSTEM_ENVIRONMENT_INPUTS,
                     ...deviceMonitorData,
                     ...centerMixOutputs,
                     ...(group != null ? await this.getGroupImportsInActuatorPhase(group, true) : [])
@@ -1127,7 +1132,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
-    public async getDeleteLocks(entityType: EntityType | SystemOrigin, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
+    public async getDeleteLocks(entityType: EntityType | Exclude<SystemOrigin, SystemOrigin.ENVIRONMENT>, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
         const data = await this.data;
         let mixes: Mix[];
         switch (entityType) {

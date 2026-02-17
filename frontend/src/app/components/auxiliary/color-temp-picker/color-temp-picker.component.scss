@@ -7,21 +7,13 @@
     gap: dimensions.$margin-large;
 }
 
-.square-container,
-.square-container>svg,
-.square-canvas {
+.horizontal-container,
+.horizontal-canvas {
     width: 200px;
-    height: 200px;
+    height: 20px;
 }
 
-.vertical-container,
-.vertical-canvas {
-    width: 20px;
-    height: 200px;
-}
-
-.vertical-container,
-.square-container {
+.horizontal-container {
 
     &:focus {
         outline: none;
@@ -30,28 +22,17 @@
 
     &:focus-visible {
 
-        .vertical-selector,
-        .square-selector {
+        .horizontal-selector {
             border-width: 4px;
-        }
-
-        .square-selector {
-            width: 20px;
-            height: 20px;
-        }
-
-        .vertical-selector {
-            width: 27px;
-            height: 12px;
+            width: 12px;
+            height: 27px;
         }
     }
 
     position: relative;
 }
 
-.square-container>svg,
-.vertical-canvas,
-.square-canvas {
+.horizontal-canvas {
     position: absolute;
     x: 0;
     y: 0;
@@ -59,31 +40,14 @@
     pointer-events: none;
 }
 
-.square-selector {
+.horizontal-selector {
     position: absolute;
-    width: 15px;
-    height: 15px;
-    border: solid 2px var(--mat-sys-on-background);
-    border-radius: 50px;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    transition: transform 0.25s ease-in-out, width 0.25s ease-in-out, height 0.25s ease-in-out;
-
-    &.dragging {
-        transform: translate(-50%, -120%);
-        width: 40px;
-        height: 40px;
-    }
-}
-
-.vertical-selector {
-    position: absolute;
-    width: 27px;
-    height: 8px;
+    width: 8px;
+    height: 27px;
     border: solid 2px var(--mat-sys-on-background);
     border-radius: 10px;
     transform: translate(-50%, -50%);
-    left: 50%;
+    top: 50%;
     pointer-events: none;
     transition: transform 0.25s ease-in-out, width 0.25s ease-in-out, height 0.25s ease-in-out;
 
@@ -127,16 +91,11 @@
     gap: dimensions.$margin-medium;
     justify-content: space-around;
 
-    >* {
+    > * {
         flex-grow: 1;
-        max-width: 80px;
 
         &.wide {
             max-width: initial;
         }
     }
-}
-
-mat-chip-listbox {
-    justify-content: center;
 }

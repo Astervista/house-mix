@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>Move to another group</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     @if (this.unavailableLoading == LoadingStatus.LOADED) {
         <mat-form-field>
             <mat-label>New location</mat-label>
@@ -122,8 +124,8 @@
     </button>
     <button
         mat-button
-        (click)="closeDialog(parentGroupFormControl.value)"
-        [disabled]="(parentGroupFormControl.value == this.data.sonOfGroup) || (parentGroupFormControl.value == null) || (unavailableLoading != LoadingStatus.LOADED) || (selectedUnavailable)">
+        (click)="confirm()"
+        [disabled]="!canClose">
         Move
     </button>
 </mat-dialog-actions>

@@ -254,7 +254,7 @@ export class MixUiManager {
                         y
                     }
                 );
-                const stacks = Math.max(treeNode.node.inputs.length, treeNode.node.outputs.length);
+                const stacks = Math.max(this.getNodeInputCount(treeNode.node), treeNode.node.outputs.length);
                 y += MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1) + MEASURES.NODE_HEADING_HEIGHT;
             }
             levelHeights.set(lastLevel, y - MEASURES.NODE_HEADING_HEIGHT);
@@ -341,7 +341,7 @@ export class MixUiManager {
         }
 
         let centerY;
-        let topShift: number | null                               = null;
+        let topShift: number | null       = null;
         let bottomShift: number | null = null;
         let shift: 'CENTER' | 'TOP' | 'BOTTOM';
         if ((maxHeight == null) || (tree.length == 0)) {
@@ -355,7 +355,7 @@ export class MixUiManager {
             let nextMaxHeight = 0;
             let x         = 0;
             for (const node of cluster.cluster) {
-                const stacks = Math.max(node.node.inputs.length, node.node.outputs.length);
+                const stacks = Math.max(this.getNodeInputCount(node.node), node.node.outputs.length);
                 const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
                 nextMaxHeight = Math.max(nextMaxHeight, height);
                 this.nodePositions.set(node.node, {
@@ -478,7 +478,7 @@ export class MixUiManager {
         } else {
             maxX += MEASURES.NODE_WIDTH + MEASURES.NODE_SPACING;
         }
-        const stacks = Math.max(node.inputs.length + (node instanceof ArbitraryInputsElaborationNode ? 1 : 0), node.outputs.length);
+        const stacks = Math.max(this.getNodeInputCount(node), node.outputs.length);
         const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
         this.nodePositions.set(node, {x: maxX, y: -height / 2 + MEASURES.NODE_HEADING_HEIGHT / 2});
         this.maxNodeXPosition = Math.max(this.maxNodeXPosition, maxX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
@@ -522,10 +522,13 @@ export class MixUiManager {
         }
     }
 
-    public updateNode(): void {
+    public updateNode(node: ElaborationNode): void {
         this._mix
             ?.connections
-            .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT)
+            .filter(connection =>
+                        (connection.drainType == ConnectionDrainType.NODE && connection.drainNodeId == node.id && connection.sourceType != ConnectionSourceType.CONSTANT)
+                        || (connection.sourceType == ConnectionSourceType.NODE && connection.sourceNodeId == node.id)
+            )
             .forEach(connection => {this.updateConnection(connection);});
     }
 
@@ -537,10 +540,12 @@ export class MixUiManager {
         if (this._mix == null) {
             return;
         }
-        let from: Point = {x: 0, y: 0};
-        let to: Point   = {x: 0, y: 0};
-        let fromHidden = false;
-        let toHidden   = false;
+        let from: Point                 = {x: 0, y: 0};
+        let to: Point                   = {x: 0, y: 0};
+        let fromHidden                  = false;
+        let toHidden                    = false;
+        let fromGroup: NodeGroup | null = null;
+        let toGroup: NodeGroup | null   = null;
         if (connection.sourceType === ConnectionSourceType.NODE) {
             const node = this._mix.nodes.find(a => a.id === connection.sourceNodeId);
             if (node == null) {
@@ -553,6 +558,7 @@ export class MixUiManager {
             from = this.getNodeConnectorPosition(node, datum, true);
             if (!this.visibleNodes.includes(node)) {
                 fromHidden = true;
+                fromGroup = this.invisibleNodeCollapsedGroup.get(node) ?? null;
             }
         } else if (connection.sourceType === ConnectionSourceType.INPUT) {
             const datum = this._mix.imports.find(a => a.uniqueName == connection.inputName);
@@ -585,6 +591,7 @@ export class MixUiManager {
                 }
             } else {
                 toHidden = true;
+                toGroup = this.invisibleNodeCollapsedGroup.get(node) ?? null;
             }
         }
         if (connection.drainType === ConnectionDrainType.OUTPUT) {
@@ -597,7 +604,7 @@ export class MixUiManager {
                 this.lockedExternalOutputs.push(datum);
             }
         }
-        if (fromHidden && toHidden) {
+        if (fromHidden && toHidden && fromGroup == toGroup) {
             this.hiddenConnections.set(connection, true);
         } else {
             this.hiddenConnections.set(connection, false);
@@ -741,13 +748,13 @@ export class MixUiManager {
                 y: -this.inputsHeight / 2 + (MEASURES.INPUT_HEIGHT + MEASURES.INPUT_SPACING) * inputIndex + MEASURES.INPUT_HEIGHT / 2
             };
         } else {
-            const inputIndex = this._mix?.outputs.indexOf(connector);
-            if (inputIndex == null) {
+            const outputIndex = this._mix?.outputs.indexOf(connector);
+            if (outputIndex == null) {
                 return {x: 0, y: 0};
             }
             return {
                 x: this.outputsPosition,
-                y: -this.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * inputIndex + MEASURES.OUTPUT_HEIGHT / 2
+                y: -this.outputsHeight / 2 + (MEASURES.OUTPUT_HEIGHT + MEASURES.OUTPUT_SPACING) * outputIndex + MEASURES.OUTPUT_HEIGHT / 2
             };
         }
     }
@@ -800,7 +807,9 @@ export class MixUiManager {
     }
 
     public getConnectionsDisplacement(node: ElaborationNode | NodeGroup, left: boolean): number {
-        const leftHeight  = MEASURES.NODE_CONNECTION_HEIGHT * node.inputs.length + MEASURES.NODE_INTERNAL_SPACING * (node.inputs.length - 1);
+
+        const inputCount = this.getNodeInputCount(node);
+        const leftHeight = MEASURES.NODE_CONNECTION_HEIGHT * inputCount + MEASURES.NODE_INTERNAL_SPACING * (inputCount - 1);
         const rightHeight = MEASURES.NODE_CONNECTION_HEIGHT * node.outputs.length + MEASURES.NODE_INTERNAL_SPACING * (node.outputs.length - 1);
         if (left) {
             return Math.max(0, (rightHeight - leftHeight) / 2);
@@ -811,6 +820,14 @@ export class MixUiManager {
 
     public getConnectionTop(index: number): number {
         return MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_INTERNAL_SPACING * (index + 1) + MEASURES.NODE_CONNECTION_HEIGHT * (index + 0.5);
+    }
+
+    public getNodeInputCount(node: ElaborationNode | NodeGroup): number {
+        if (node instanceof ArbitraryInputsElaborationNode) {
+            return node.inputs.length + 1;
+        } else {
+            return node.inputs.length;
+        }
     }
 
     public get inputsHeight(): number {
@@ -856,6 +873,26 @@ export class MixUiManager {
 
     public get outputsPosition(): number {
         return this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR;
+    }
+
+    public moveImport(datum: ExportedDatum, forwards: boolean): void {
+        if (this._mix != null) {
+            this._mix.moveImport(datum, forwards);
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
+    }
+
+    public moveOutput(datum: Datum, forwards: boolean): void {
+        if (this._mix != null) {
+            this._mix.moveOutput(datum, forwards);
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
     }
 
     private currentDragging: DraggingElement | null = null;
@@ -1663,7 +1700,7 @@ export class MixUiManager {
             this.firstLevelGroups = groups.filter(group => group.parent == null);
 
             this.allGroups.forEach(group => {
-                group.updateInputs(mix.connections);
+                group.updateExports(mix.connections);
             });
 
             this.calculateVisibleElements();
@@ -1772,7 +1809,7 @@ export class MixUiManager {
                 }
                 toGroup.nodes.push(element);
                 const oldPosition = this.nodePositions.get(element);
-                const stacks      = Math.max(element.inputs.length, element.outputs.length);
+                const stacks = Math.max(this.getNodeInputCount(element), element.outputs.length);
                 if (oldPosition != null) {
                     this.nodePositions.set(element, {
                         x: oldPosition.x,
@@ -1938,7 +1975,7 @@ export class MixUiManager {
         group.collapsed = !group.collapsed;
         this.calculateVisibleElements();
         if (this._mix != null) {
-            group.updateInputs(this._mix.connections);
+            group.updateExports(this._mix.connections);
             for (const connection of this._mix.connections) {
                 this.updateConnection(connection);
             }
@@ -1951,12 +1988,22 @@ export class MixUiManager {
         }
     }
 
+    public moveGroupExport(group: NodeGroup, datum: Datum, inputId: number, forwards: boolean, isInput: boolean): void {
+        group.moveExport(datum, inputId, forwards, isInput);
+        if (this._mix != null) {
+            for (const connection of this._mix.connections) {
+                this.updateConnection(connection);
+            }
+            this.emitChanges();
+        }
+    }
+
     public toggleShowConnectorsGroup(group: NodeGroup): void {
         group.showConnectors = !group.showConnectors;
         this.calculateVisibleElements();
         this.recalculateMaxX();
         if (this._mix != null) {
-            group.updateInputs(this._mix.connections);
+            group.updateExports(this._mix.connections);
             for (const connection of this._mix.connections) {
                 this.updateConnection(connection);
             }
@@ -1970,7 +2017,7 @@ export class MixUiManager {
     private recalculateGroupBounds(group: NodeGroup): Rect {
         const positions: Rect[] = group.nodes
                                        .map(node => {
-                                           const stacks = Math.max(node.inputs.length, node.outputs.length);
+                                           const stacks = Math.max(this.getNodeInputCount(node), node.outputs.length);
                                            const height = MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
                                            return ({
                                                x:     this.nodePositions.get(node)?.x ?? 0,
@@ -2136,6 +2183,9 @@ export class NodeGroup {
     public inputAliases: { datumName: string, nodeId: number, alias: string }[]  = [];
     public outputAliases: { datumName: string, nodeId: number, alias: string }[] = [];
 
+    public inputPositions: { datumName: string, nodeId: number, order: number }[]  = [];
+    public outputPositions: { datumName: string, nodeId: number, order: number }[] = [];
+
     public parent: NodeGroup | null = null;
     private _level: number          = 0;
 
@@ -2143,8 +2193,6 @@ export class NodeGroup {
     public y: number      = 0;
     public width: number  = 0;
     public height: number = 0;
-
-    constructor() {}
 
     public get level(): number {
         return this._level;
@@ -2204,7 +2252,7 @@ export class NodeGroup {
         return this.collapsed ? this.x + (this.width - MEASURES.NODE_WIDTH) / 2 : this.x;
     }
 
-    public updateInputs(connections: readonly Connection[]): void {
+    public updateExports(connections: readonly Connection[]): void {
         const allNodes = this.allNodes;
         this.inputs    = [];
         this.outputs   = [];
@@ -2246,6 +2294,77 @@ export class NodeGroup {
                 )
                 .map(output => ({datum: output, nodeId: node.id}))
             );
+        }
+        let maxOrderInput  = Math.max(...this.inputPositions.map(position => position.order), 0);
+        let maxOrderOutput = Math.max(...this.outputPositions.map(position => position.order), 0);
+        for (const input of this.inputs) {
+            if (!this.inputPositions.some(position => position.datumName == input.datum.name && position.nodeId == input.nodeId)) {
+                this.inputPositions.push({
+                                             datumName: input.datum.name,
+                                             nodeId:    input.nodeId,
+                                             order:     ++maxOrderInput
+                                         });
+            }
+        }
+        for (const output of this.outputs) {
+            if (!this.outputPositions.some(position => position.datumName == output.datum.name && position.nodeId == output.nodeId)) {
+                this.outputPositions.push({
+                                              datumName: output.datum.name,
+                                              nodeId:    output.nodeId,
+                                              order:     ++maxOrderOutput
+                                          });
+            }
+        }
+        this.inputs.sort((a, b) => {
+            const inputAPosition = this.inputPositions.find(position => position.datumName == a.datum.name && position.nodeId == a.nodeId)?.order ?? 0;
+            const inputBPosition = this.inputPositions.find(position => position.datumName == b.datum.name && position.nodeId == b.nodeId)?.order ?? 0;
+            return inputAPosition - inputBPosition;
+        });
+        this.outputs.sort((a, b) => {
+            const outputAPosition = this.outputPositions.find(position => position.datumName == a.datum.name && position.nodeId == a.nodeId)?.order ?? 0;
+            const outputBPosition = this.outputPositions.find(position => position.datumName == b.datum.name && position.nodeId == b.nodeId)?.order ?? 0;
+            return outputAPosition - outputBPosition;
+        });
+        this.inputPositions  = this.inputs.map((input, index) => {
+            return {
+                datumName: input.datum.name,
+                nodeId:    input.nodeId,
+                order:     index
+            };
+        });
+        this.outputPositions = this.outputs.map((output, index) => {
+            return {
+                datumName: output.datum.name,
+                nodeId:    output.nodeId,
+                order:     index
+            };
+        });
+    }
+
+    public moveExport(datum: Datum, nodeId: number, forwards: boolean, isInput: boolean): void {
+        const positions = isInput ? this.inputPositions : this.outputPositions;
+        const all       = isInput ? this.inputs : this.outputs;
+        const oldIndex  = all.findIndex(other => other.datum.name == datum.name && other.nodeId == nodeId);
+        if (oldIndex != -1) {
+            const newIndex       = forwards ? oldIndex + 1 : oldIndex - 1;
+            const swapOtherDatum = all[newIndex];
+            const swapThisDatum  = all[oldIndex];
+            if ((swapOtherDatum != null) && (swapThisDatum != null)) {
+                const oldPosition =
+                          positions.find(position =>
+                                             position.datumName == datum.name && position.nodeId == nodeId);
+                const newPosition =
+                          positions
+                              .find(position =>
+                                        position.datumName == swapOtherDatum.datum.name && position.nodeId == swapOtherDatum.nodeId);
+                if (oldPosition != null && newPosition != null) {
+                    const temp        = oldPosition.order;
+                    oldPosition.order = newPosition.order;
+                    newPosition.order = temp;
+                    all.splice(oldIndex, 1, swapOtherDatum);
+                    all.splice(newIndex, 1, swapThisDatum);
+                }
+            }
         }
     }
 
@@ -2293,15 +2412,17 @@ export class NodeGroup {
 
     public toJSON(allGroups: NodeGroup[]): NodeGroupJSON {
         return {
-            name:           this.name,
-            nodeIds:        this.nodes.map(node => node.id),
-            subGroupIds:    this.subGroups.map(subGroup => allGroups.indexOf(subGroup)),
-            collapsed:      this.collapsed,
-            showConnectors: this.showConnectors,
-            inputAliases:   this.inputAliases,
-            outputAliases:  this.outputAliases,
-            parentId:       this.parent != null ? allGroups.indexOf(this.parent) : null,
-            level:          this.level
+            name:            this.name,
+            nodeIds:         this.nodes.map(node => node.id),
+            subGroupIds:     this.subGroups.map(subGroup => allGroups.indexOf(subGroup)),
+            collapsed:       this.collapsed,
+            showConnectors:  this.showConnectors,
+            inputAliases:    this.inputAliases,
+            outputAliases:   this.outputAliases,
+            inputPositions:  this.inputPositions,
+            outputPositions: this.outputPositions,
+            parentId:        this.parent != null ? allGroups.indexOf(this.parent) : null,
+            level:           this.level
         };
     }
 
@@ -2311,19 +2432,21 @@ export class NodeGroup {
     }
 
     public static fromJSON(nodeGroupJSON: NodeGroupJSON, allNodes: readonly ElaborationNode[]): NodeGroup {
-        const result          = new NodeGroup();
-        result.name           = nodeGroupJSON.name;
-        result.nodes          = nodeGroupJSON
+        const result           = new NodeGroup();
+        result.name            = nodeGroupJSON.name;
+        result.nodes           = nodeGroupJSON
             .nodeIds
             .map(nodeId =>
                      allNodes
                          .find(node => node.id == nodeId))
             .filter(node => node != null);
-        result.collapsed      = nodeGroupJSON.collapsed;
-        result.showConnectors = nodeGroupJSON.showConnectors;
-        result.inputAliases   = nodeGroupJSON.inputAliases;
-        result.outputAliases  = nodeGroupJSON.outputAliases;
-        result._level         = nodeGroupJSON.level;
+        result.collapsed       = nodeGroupJSON.collapsed;
+        result.showConnectors  = nodeGroupJSON.showConnectors;
+        result.inputAliases    = nodeGroupJSON.inputAliases;
+        result.outputAliases   = nodeGroupJSON.outputAliases;
+        result._level          = nodeGroupJSON.level;
+        result.inputPositions  = nodeGroupJSON.inputPositions;
+        result.outputPositions = nodeGroupJSON.outputPositions;
         return result;
     }
 

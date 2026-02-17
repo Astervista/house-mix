@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>Delete group</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     @if (this.deleteLocksLoadingStatus != LoadingStatus.LOADED) {
         <house-mix-loading-scrim
             [loadingStatus]="deleteLocksLoadingStatus"
@@ -42,6 +44,9 @@
                 }
                 @case (SystemOrigin.PARAMETER) {
                     <p>Are you sure you want to delete the parameter <i>{{ data.parameterToDelete.displayName }}</i>?</p>
+                }
+                @case (SystemOrigin.DEVICE_STATUS) {
+                    <p>Are you sure you want to stop monitoring the device <i>{{ data.deviceToDelete.name }}</i>?</p>
                 }
                 @case (EntityType.SENSOR) {
                     <p>Are you sure you want to delete the sensor <i>{{ data.sensorToDelete.displayName }}</i>?</p>
@@ -167,7 +172,7 @@
                 mat-button
                 class="confirm"
                 [disabled]="confirmDisabled"
-                (click)="closeDialog(result)">
+                (click)="confirm()">
                 Delete
             </button>
         }

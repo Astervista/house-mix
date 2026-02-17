@@ -26,7 +26,6 @@ import {DeviceMonitorDeviceComponent} from '../entities/system/device-monitor-de
 import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device-monitor-device-dialog/system-device-monitor-device-dialog.component';
 
 
-
 @Component({
                selector:    'house-mix-system',
                imports: [
@@ -61,16 +60,25 @@ export class SystemComponent {
         private matDialog: BetterMatDialog,
         private snackBar: MatSnackBar
     ) {
-        systemService
-            .getParameters()
-            .then(parameters => {
-                this.parameters              = parameters;
-                this.parametersLoadingStatus = LoadingStatus.LOADED;
+        this.loadParameters();
+        this.loadTimers();
+        this.loadDeviceMonitors();
+    }
+
+    protected loadDeviceMonitors(): void {
+        this.systemService
+            .getDeviceMonitorDevices()
+            .then(devices => {
+                this.devices              = devices;
+                this.devicesLoadingStatus = LoadingStatus.LOADED;
             })
             .catch(() => {
-                this.parametersLoadingStatus = LoadingStatus.ERROR;
+                this.devicesLoadingStatus = LoadingStatus.ERROR;
             });
-        systemService
+    }
+
+    protected loadTimers(): void {
+        this.systemService
             .getTimers()
             .then(timers => {
                 this.timers              = timers;
@@ -79,14 +87,17 @@ export class SystemComponent {
             .catch(() => {
                 this.timersLoadingStatus = LoadingStatus.ERROR;
             });
-        systemService
-            .getDeviceMonitorDevices()
-            .then(devices => {
-                this.devices              = devices;
-                this.devicesLoadingStatus = LoadingStatus.LOADED;
+    }
+
+    protected loadParameters(): void {
+        this.systemService
+            .getParameters()
+            .then(parameters => {
+                this.parameters              = parameters;
+                this.parametersLoadingStatus = LoadingStatus.LOADED;
             })
             .catch(() => {
-                this.devicesLoadingStatus = LoadingStatus.ERROR;
+                this.parametersLoadingStatus = LoadingStatus.ERROR;
             });
     }
 
@@ -180,6 +191,36 @@ export class SystemComponent {
                                     });
                             }
                         });
+                } else if (selected != null && (selected instanceof DeviceMonitorDevice)) {
+                    this.matDialog
+                        .open(
+                            SystemDeviceMonitorDeviceDialogComponent,
+                            {
+                                data: {
+                                    forbiddenNames: this.devices.map(param => param.name),
+                                    edit:           selected
+                                }
+                            }
+                        )
+                        .afterClosed()
+                        .subscribe((result: DeviceMonitorDevice | undefined) => {
+                            if (result != null) {
+                                this.systemService
+                                    .editDeviceMonitorDevice(result, {name: selected.name})
+                                    .then(() => {
+                                        selected.ip = result.ip;
+                                    })
+                                    .catch(() => {
+                                        this.snackBar.open(
+                                            'There has been an error while editing the device monitoring info',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
+                        });
                 }
                 break;
             }
@@ -201,9 +242,12 @@ export class SystemComponent {
                         .subscribe(
                             value => {
                                 if (value?.successful == true) {
-                                    this.systemService.setParameterValue({
-                                                                             value: value.value
-                                                                         }, {name: selected.name})
+                                    this.systemService.setParameterValue(
+                                        {
+                                            value: Datum.valueToJSON(value.value, selected.datum.type)
+                                        },
+                                        {name: selected.name}
+                                    )
                                         .then(() => {
                                             selected.value = value.value;
                                         })
@@ -247,6 +291,12 @@ export class SystemComponent {
                     data = {
                         entityType:    SystemOrigin.TIMER,
                         timerToDelete: selected
+                    };
+                }
+                if (selected instanceof DeviceMonitorDevice) {
+                    data = {
+                        entityType:     SystemOrigin.DEVICE_STATUS,
+                        deviceToDelete: selected
                     };
                 }
                 if (data == null) {
@@ -429,6 +479,7 @@ export class SystemComponent {
 
     protected readonly LoadingStatus   = LoadingStatus;
     protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
+    protected readonly ToolbarAction = ToolbarAction;
 }
 
 enum ToolbarAction {

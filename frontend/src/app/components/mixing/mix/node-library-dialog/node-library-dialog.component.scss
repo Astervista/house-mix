@@ -3,10 +3,51 @@
 @use "../../../entities/entity";
 @use "../connectors";
 
+h2 {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+
+    > span {
+        flex-grow: 1;
+    }
+}
+
 .list {
     display: flex;
     gap: dimensions.$margin-xxlarge;
     flex-direction: column;
 
     @include colors.datum-type-colors();
+
+    &.collapsed {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: space-around;
+
+        house-mix-node {
+            flex-shrink: 1;
+            max-width: 200px;
+        }
+    }
+}
+
+
+.search-results {
+    display: flex;
+    gap: dimensions.$indent-mlarge;
+    padding: dimensions.$margin-msmall;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: center;
+    justify-content: space-around;
+    flex-shrink: 0;
+
+    @include colors.datum-type-colors();
+
+    house-mix-node {
+        flex-shrink: 0;
+        max-width: 300px;
+        white-space: normal;
+    }
 }

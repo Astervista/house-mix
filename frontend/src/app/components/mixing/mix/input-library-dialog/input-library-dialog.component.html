@@ -1,5 +1,24 @@
 <h2 mat-dialog-title>Select an input</h2>
 <mat-dialog-content>
+    <mat-form-field>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput placeholder="Search for an input..." [formControl]="searchFormControl">
+        @if ((searchFormControl.value?.length ?? 0) > 0) {
+            <button matSuffix matIconButton aria-label="Clear" (click)="searchFormControl.setValue(null)">
+                <mat-icon>close</mat-icon>
+            </button>
+        }
+    </mat-form-field>
+    @if (this.searchResults != null && this.searchResults.length > 0) {
+        <div
+            class="search-results">
+            @for (input of searchResults; track input.uniqueName) {
+                <ng-container
+                    *ngTemplateOutlet="inputTemplate; context: { input: input }">
+                </ng-container>
+            }
+        </div>
+    }
     <mat-accordion>
         @for (origin of Object.values(DatumOrigin); track origin) {
             @let inputs = getInputsFromOrigin(origin);
@@ -11,31 +30,9 @@
                     </mat-expansion-panel-header>
                     <div class="option-list">
                         @for (input of inputs; track input.uniqueName) {
-                            <div
-                                class="input-preview"
-                                [class.selected]="selectedInput == input"
-                                matTooltipPosition="above"
-                                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
-                                [matTooltip]="input.name == input.displayName ? null : `Codename: ${input.name}`"
-                                (click)="this.selectedInput = input">
-                                <span class="origin-name">
-                                    {{ getExternalDatumOriginDisplay(input)}}
-                                </span>
-                                <div
-                                    class="input-group">
-                                    <span class="connector-output-circle"
-                                          [style.--type-color]="getColorVarNameForType(input.type)"></span>
-                                    @if (!input.nullable) {
-                                        <span class="connector-output-circle-non-null"
-                                              [style.--type-color]="getColorVarNameForType(input.type)"></span>
-                                    }
-                                    <span class="input-name">{{ input.displayName ?? input.name }}</span>
-                                    <span class="input-type">{{ DATUM_TYPE_DISPLAY[input.type] }}</span>
-                                    @if (input.nullable) {
-                                        <span class="input-type">Nullable</span>
-                                    }
-                                </div>
-                            </div>
+                            <ng-container
+                                *ngTemplateOutlet="inputTemplate; context: { input: input }">
+                            </ng-container>
                         }
                     </div>
                 </mat-expansion-panel>
@@ -54,3 +51,33 @@
         Select
     </button>
 </mat-dialog-actions>
+<ng-template #inputTemplate let-input="input">
+    @let typedInput = asExportedDatum(input);
+    @if (typedInput) {
+        <div
+            class="input-preview"
+            [class.selected]="selectedInput == typedInput"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+            [matTooltip]="typedInput.name == typedInput.displayName ? null : `Codename: ${typedInput.name}`"
+            (click)="this.selectedInput = typedInput">
+            <span class="origin-name">
+                {{ getExternalDatumOriginDisplay(typedInput) }}
+            </span>
+            <div
+                class="input-group">
+                                    <span class="connector-output-circle"
+                                          [style.--type-color]="getColorVarNameForType(typedInput.type)"></span>
+                @if (!typedInput.nullable) {
+                    <span class="connector-output-circle-non-null"
+                          [style.--type-color]="getColorVarNameForType(typedInput.type)"></span>
+                }
+                <span class="input-name">{{ typedInput.displayName ?? typedInput.name }}</span>
+                <span class="input-type">{{ DATUM_TYPE_DISPLAY[typedInput.type] }}</span>
+                @if (typedInput.nullable) {
+                    <span class="input-type">Nullable</span>
+                }
+            </div>
+        </div>
+    }
+</ng-template>

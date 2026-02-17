@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>{{ data.title ?? 'Define a new output' }}</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <mat-form-field >
         <mat-label>Name</mat-label>
         <input matInput [formControl]="nameFormControl">
@@ -20,8 +22,8 @@
         Cancel
     </button>
     <button mat-button
-            (click)="closeDialog(result)"
-            [disabled]="result == null || nameFormControl.invalid">
+            (click)="confirm()"
+            [disabled]="!canClose">
         Define
     </button>
 </mat-dialog-actions>

@@ -7,17 +7,19 @@ import {SystemParameter} from '@common/system/parameter/system-parameter';
 import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/entity-names-inputs.component';
 import {FormGroup} from '@angular/forms';
 import {Datum, DatumType} from '@common/mixing/mix/datum';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 
 @Component({
                selector:    'house-mix-system-parameter-dialog',
-               imports:     [
+               imports: [
                    MatDialogContent,
                    MatDialogActions,
                    MatButton,
                    MatDialogTitle,
                    DatumInputComponent,
-                   EntityNamesInputsComponent
+                   EntityNamesInputsComponent,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './system-parameter-dialog.component.html',
                styleUrl:    './system-parameter-dialog.component.scss'

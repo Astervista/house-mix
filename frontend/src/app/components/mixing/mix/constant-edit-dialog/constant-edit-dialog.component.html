@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>{{ getTitle() }}</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <p>Change value{{ this.data.datumName == null ? '' : ` of "${this.data.datumName}"` }}</p>
     @if (this.data.type == DatumType.NUMBER) {
         <mat-form-field>
@@ -19,6 +21,12 @@
 
         </house-mix-color-picker>
     }
+    @if (this.data.type == DatumType.COLOR_TEMP) {
+        <house-mix-color-temp-picker
+            [formControl]="numberFormControl">
+
+        </house-mix-color-temp-picker>
+    }
     @if (this.data.type == DatumType.BOOLEAN) {
         <mat-checkbox
             style="margin-bottom: 5px"
@@ -27,24 +35,79 @@
         </mat-checkbox>
     }
     @if (this.data.type == DatumType.TIME || this.data.type == DatumType.DATE_TIME) {
-        <mat-form-field>
-            <mat-label>Pick a time</mat-label>
-            <input matInput [matTimepicker]="picker" [formControl]="timeFormControl">
-            <mat-hint>HH:MM:SS</mat-hint>
-            <mat-timepicker-toggle matIconSuffix [for]="picker"/>
-            <mat-timepicker #picker/>
-        </mat-form-field>
+        @if (!clockVisible) {
+            <mat-form-field>
+                <mat-label>Pick a time</mat-label>
+                <input matInput [matTimepicker]="picker" [formControl]="timeFormControl">
+                <button
+                    mat-icon-button
+                    matIconSuffix
+                    (click)="clockVisible = !clockVisible">
+                    <mat-icon>
+                        schedule
+                    </mat-icon>
+                </button>
+                <mat-hint>HH:MM:SS</mat-hint>
+                @if (timeFormControl.invalid) {
+                    <mat-error>Input a valid time</mat-error>
+                }
+                <mat-timepicker #picker/>
+            </mat-form-field>
+        } @else {
+            <div
+                class="date-time-header">
+                <mat-label>Pick a time</mat-label>
+                <button
+                    mat-icon-button
+                    (click)="clockVisible = !clockVisible">
+                    <mat-icon>
+                        keyboard
+                    </mat-icon>
+                </button>
+            </div>
+            <house-mix-time-picker
+                [formControl]="timeFormControl">
+
+            </house-mix-time-picker>
+        }
     }
     @if (this.data.type == DatumType.DATE || this.data.type == DatumType.DATE_TIME) {
-        <mat-form-field>
-            <mat-label>Choose a date</mat-label>
-            <input matInput [matDatepicker]="picker" [formControl]="dateFormControl">
-            <mat-hint>YYYY-MM-DD</mat-hint>
-            <mat-datepicker-toggle matIconSuffix [for]="picker">
-                <mat-icon matDatepickerToggleIcon>keyboard_arrow_down</mat-icon>
-            </mat-datepicker-toggle>
-            <mat-datepicker #picker></mat-datepicker>
-        </mat-form-field>
+        @if (!calendarVisible) {
+            <mat-form-field>
+                <mat-label>Choose a date</mat-label>
+                <input matInput [matDatepicker]="picker" [formControl]="dateFormControl">
+                <button
+                    mat-icon-button
+                    matIconSuffix
+                    (click)="calendarVisible = !calendarVisible">
+                    <mat-icon>
+                        calendar_month
+                    </mat-icon>
+                </button>
+                <mat-hint>YYYY-MM-DD</mat-hint>
+                @if (dateFormControl.invalid) {
+                    <mat-error>Input a valid date</mat-error>
+                }
+                <mat-datepicker #picker></mat-datepicker>
+            </mat-form-field>
+        } @else {
+            <div
+                class="date-time-header">
+                <mat-label>Choose a date</mat-label>
+                <button
+                    mat-icon-button
+                    (click)="calendarVisible = !calendarVisible">
+                    <mat-icon>
+                        keyboard
+                    </mat-icon>
+                </button>
+            </div>
+            <mat-card class="inline-calendar">
+                <mat-calendar
+                    [selected]="dateFormControl.value"
+                    (selectedChange)="dateFormControl.setValue($event)"></mat-calendar>
+            </mat-card>
+        }
     }
 </mat-dialog-content>
 <mat-dialog-actions>

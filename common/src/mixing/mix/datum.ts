@@ -1,6 +1,7 @@
 import {IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Type, ValidateNested} from "rest-decorators";
 import {ElaborationNode} from "./elaboration-node";
 import {Color, ColorSpace} from "../../utils/color-convert";
+import {DEFAULT_TEMP, MAX_ALLOWED_TEMP, MIN_ALLOWED_TEMP} from "../../utils/constants";
 
 export class Datum {
     
@@ -49,11 +50,14 @@ export class Datum {
             case DatumType.DATE_TIME: {
                 return new Date();
             }
+            case DatumType.COLOR_TEMP: {
+                return DEFAULT_TEMP;
+            }
         }
     }
     
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.BOOLEAN): boolean | null;
-    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.NUMBER): number | null;
+    public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.NUMBER | DatumType.COLOR_TEMP): number | null;
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.TIME | DatumType.DATE | DatumType.DATE_TIME): Date | null;
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.COLOR): DatumTypeColor | null;
     public static getValueFromUnknownAndType(sourceValue: unknown, type: DatumType.STRING): string | null;
@@ -70,6 +74,7 @@ export class Datum {
             case DatumType.BOOLEAN: {
                 return sourceValue as boolean;
             }
+            case DatumType.COLOR_TEMP:
             case DatumType.NUMBER: {
                 return sourceValue as number;
             }
@@ -92,6 +97,7 @@ export class Datum {
                 return DatumTypeColor.checkObject(value);
             case DatumType.BOOLEAN:
                 return typeof value === "boolean";
+            case DatumType.COLOR_TEMP:
             case DatumType.NUMBER:
                 return typeof value === "number" && isFinite(value);
             case DatumType.TIME:
@@ -112,6 +118,7 @@ export class Datum {
                 return DatumTypeColor.checkObject(value);
             case DatumType.BOOLEAN:
                 return typeof value === "boolean";
+            case DatumType.COLOR_TEMP:
             case DatumType.NUMBER:
                 return typeof value === "number" && isFinite(value);
             case DatumType.TIME:
@@ -131,6 +138,7 @@ export class Datum {
         switch (dataType) {
             case DatumType.BOOLEAN:
             case DatumType.NUMBER:
+            case DatumType.COLOR_TEMP:
             case DatumType.STRING:
                 return firstValue === secondValue;
             case DatumType.COLOR:
@@ -172,10 +180,22 @@ export class Datum {
             case DatumType.NUMBER: {
                 return value as number;
             }
-            case DatumType.TIME:
-            case DatumType.DATE:
+            case DatumType.COLOR_TEMP: {
+                return Math.min(MAX_ALLOWED_TEMP, Math.max(MIN_ALLOWED_TEMP, value as number));
+            }
+            case DatumType.TIME: {
+                const date = new Date(value as number);
+                date.setFullYear(2000, 0, 1);
+                return date;
+            }
+            case DatumType.DATE: {
+                const date = new Date(value as number);
+                date.setHours(0, 0, 0, 0);
+                return date;
+            }
             case DatumType.DATE_TIME: {
-                return new Date(value as number);
+                const date = new Date(value as number);
+                return date;
             }
         }
     }
@@ -195,13 +215,23 @@ export class Datum {
             case DatumType.BOOLEAN: {
                 return value as boolean;
             }
+            case DatumType.COLOR_TEMP:
             case DatumType.NUMBER: {
                 return value as number;
             }
-            case DatumType.TIME:
-            case DatumType.DATE:
+            case DatumType.TIME: {
+                const date = value as Date;
+                date.setFullYear(2000, 0, 1);
+                return date.getTime();
+            }
+            case DatumType.DATE: {
+                const date = value as Date;
+                date.setHours(0, 0, 0, 0);
+                return date.getTime();
+            }
             case DatumType.DATE_TIME: {
-                return (value as Date).getTime();
+                const date = value as Date;
+                return date.getTime();
             }
         }
     }
@@ -274,6 +304,7 @@ export enum DatumType {
     NUMBER    = "NUMBER",
     STRING    = "STRING",
     COLOR     = "COLOR",
+    COLOR_TEMP = "COLOR_TEMP",
     TIME      = "TIME",
     DATE      = "DATE",
     DATE_TIME = "DATE_TIME"

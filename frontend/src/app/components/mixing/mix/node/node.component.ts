@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Input, OnInit, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {MatFormField, MatLabel} from '@angular/material/input';
 import {MatOption} from '@angular/material/core';
 import {MatSelect} from '@angular/material/select';
@@ -21,11 +21,27 @@ import {MatCheckbox} from '@angular/material/checkbox';
                templateUrl: './node.component.html',
                styleUrl:    './node.component.scss'
            })
-export class NodeComponent implements OnInit {
+export class NodeComponent {
 
-    @Input({alias: 'library-item', required: true}) public item!: ElaborationNodeLibraryItem;
+    public item?: ElaborationNodeLibraryItem;
     @Input({required: true}) public examples!: Record<ElaborationNodeCode, ElaborationNode>;
     @Input() public selected: boolean = false;
+    @Input() public expanded: boolean = true;
+
+    @Input({alias: 'library-item', required: true}) public set libraryItem(value: ElaborationNodeLibraryItem) {
+        if (value.special) {
+            this.datumTypeFormControl.setValue(value.datumType);
+            if (value.nullMarked) {
+                this.nullMarkFormControl.setValue(value.nullableMark);
+            } else {
+                this.nullMarkFormControl.setValue(null);
+            }
+        } else {
+            this.datumTypeFormControl.setValue(null);
+            this.nullMarkFormControl.setValue(null);
+        }
+        this.item = value;
+    }
 
     @Output('onSelected') public selectedEmitter: EventEmitter<void> = new EventEmitter<void>();
 
@@ -34,6 +50,9 @@ export class NodeComponent implements OnInit {
 
     constructor() {
         this.datumTypeFormControl.valueChanges.subscribe(value => {
+            if (this.item == null) {
+                return;
+            }
             if (value != null) {
                 if (!this.item.special) {
                     this.examples[this.item.code] = new this.item.constructor(0);
@@ -55,6 +74,9 @@ export class NodeComponent implements OnInit {
             }
         });
         this.nullMarkFormControl.valueChanges.subscribe(value => {
+            if (this.item == null) {
+                return;
+            }
             if (value != null) {
                 if (!this.item.special) {
                     this.examples[this.item.code] = new this.item.constructor(0);
@@ -74,12 +96,6 @@ export class NodeComponent implements OnInit {
                 }
             }
         });
-    }
-
-    public ngOnInit(): void {
-        if (this.item.special) {
-            this.datumTypeFormControl.setValue(this.item.datumType);
-        }
     }
 
     protected isArbitraryInputsNode(example: ElaborationNode): example is ArbitraryInputsElaborationNode {

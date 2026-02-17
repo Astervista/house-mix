@@ -1,92 +1,137 @@
-<div
-    class="node-preview"
-    [class.selected]="selected"
-    (click)="selectedEmitter.emit()">
+@if (item) {
+    <div
+        class="node-preview"
+        [class.selected]="selected"
+        (click)="selectedEmitter.emit()">
                             <span
                                 class="node-preview-title">
                                 {{ ELABORATION_NODE_DISPLAY_NAME[item.code] }}
                             </span>
-    <span
-        class="node-preview-description">
-                                {{ item.description }}
-                            </span>
-    @if (item.special && item.isTyped) {
-        <mat-form-field class="null-guard-input">
-            <mat-label>Data type</mat-label>
-            <mat-select [formControl]="datumTypeFormControl">
-                @for (type of Object.values(DatumType); track type) {
-                    <mat-option [value]="type">
-                        <div
-                            class="type-container">
+        @if (expanded) {
+            <span
+                class="node-preview-description">
+            {{ item.description }}
+        </span>
+        }
+        @if (item.special && item.isTyped && item.forceDatumType != true) {
+            <mat-form-field class="null-guard-input">
+                <mat-label>Data type</mat-label>
+                <mat-select [formControl]="datumTypeFormControl">
+                    @for (type of Object.values(DatumType); track type) {
+                        <mat-option [value]="type">
+                            <div
+                                class="type-container">
                                                 <span class="type-circle"
                                                       [class.selected]="datumTypeFormControl.value == type"
                                                       [style.--type-color]="getColorVarNameForType(type)"></span>
-                            {{ DATUM_TYPE_DISPLAY[type] }}
+                                {{ DATUM_TYPE_DISPLAY[type] }}
+                            </div>
+                        </mat-option>
+                    }
+                </mat-select>
+            </mat-form-field>
+        }
+        @if (item.special && item.isTyped && item.nullMarked && item.forceNullable != true) {
+            <mat-checkbox [formControl]="nullMarkFormControl">Allow nullable values</mat-checkbox>
+        }
+        @if (expanded) {
+            <div
+                class="node-preview-exposed-container">
+                <div
+                    class="node-preview-exposed-side">
+                    @for (input of examples[item.code].inputs; track $index) {
+                        <div
+                            class="input-group">
+                                                <span class="connector-input-circle"
+                                                      [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                            @if (!input.nullable) {
+                                <span class="connector-input-circle-non-null"
+                                      [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                            }
+                            <span class="input-name">{{ input.name }}</span>
+                            <span class="input-type">{{ DATUM_TYPE_DISPLAY[input.type] }}</span>
+                            @if (input.nullable) {
+                                <span class="input-type">Nullable</span>
+                            }
                         </div>
-                    </mat-option>
-                }
-            </mat-select>
-        </mat-form-field>
-    }
-    @if (item.special && item.isTyped && item.nullMarked) {
-        <mat-checkbox [formControl]="nullMarkFormControl">Allow nullable values</mat-checkbox>
-    }
-    <div
-        class="node-preview-exposed-container">
-        <div
-            class="node-preview-exposed-side">
-            @for (input of examples[item.code].inputs; track $index) {
+                    }
+                    @let example = examples[item.code];
+                    @if (isArbitraryInputsNode(example)) {
+                        <div
+                            class="input-group">
+                                                <span class="connector-input-circle"
+                                                      [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
+                            @if (!example.options.nullable) {
+                                <span class="connector-input-circle-non-null"
+                                      [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
+                            }
+                            <span class="input-name">...Additional inputs</span>
+                            <span class="input-type">{{ DATUM_TYPE_DISPLAY[example.options.dataType] }}</span>
+                            @if (example.options.nullable) {
+                                <span class="input-type">Nullable</span>
+                            }
+                        </div>
+                    }
+                </div>
                 <div
-                    class="input-group">
-                                            <span class="connector-input-circle"
-                                                  [style.--type-color]="getColorVarNameForType(input.type)"></span>
-                    @if (!input.nullable) {
-                        <span class="connector-input-circle-non-null"
+                    class="node-preview-exposed-side">
+                    @for (output of examples[item.code].outputs; track $index) {
+                        <div
+                            class="output-group">
+                                                <span class="connector-output-circle"
+                                                      [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                            @if (!output.nullable) {
+                                <span class="connector-output-circle-non-null"
+                                      [style.--type-color]="getColorVarNameForType(output.type)"></span>
+                            }
+                            <span class="output-name">{{ output.name }}</span>
+                            <span class="output-type">{{ DATUM_TYPE_DISPLAY[output.type] }}</span>
+                            @if (output.nullable) {
+                                <span class="output-type">Nullable</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        } @else {
+            @if (examples[item.code].inputs.length != 0) {
+                <div class="node-preview-exposed-container-collapsed">
+                    <span class="title">Inputs:</span>
+                    @for (input of examples[item.code].inputs; track $index) {
+                        <div
+                            class="exposed-collapsed">
+                        <span class="connector-circle-small"
+                              [class.nullable]="input.nullable"
                               [style.--type-color]="getColorVarNameForType(input.type)"></span>
+                            <span class="input-name">{{ input.name }}</span>
+                        </div>
                     }
-                    <span class="input-name">{{ input.name }}</span>
-                    <span class="input-type">{{ DATUM_TYPE_DISPLAY[input.type] }}</span>
-                    @if (input.nullable) {
-                        <span class="input-type">Nullable</span>
-                    }
-                </div>
-            }
-            @let example = examples[item.code];
-            @if (isArbitraryInputsNode(example)) {
-                <div
-                    class="input-group">
-                                            <span class="connector-input-circle"
-                                                  [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
-                    @if (!example.options.nullable) {
-                        <span class="connector-input-circle-non-null"
+                    @let example = examples[item.code];
+                    @if (isArbitraryInputsNode(example)) {
+                        <div
+                            class="exposed-collapsed">
+                        <span class="connector-circle-small"
+                              [class.nullable]="example.options.nullable"
                               [style.--type-color]="getColorVarNameForType(example.options.dataType)"></span>
-                    }
-                    <span class="input-name">...Additional inputs</span>
-                    <span class="input-type">{{ DATUM_TYPE_DISPLAY[example.options.dataType] }}</span>
-                    @if (example.options.nullable) {
-                        <span class="input-type">Nullable</span>
+                            <span class="input-name">...Additional inputs</span>
+                        </div>
                     }
                 </div>
             }
-        </div>
-        <div
-            class="node-preview-exposed-side">
-            @for (output of examples[item.code].outputs; track $index) {
-                <div
-                    class="output-group">
-                                            <span class="connector-output-circle"
-                                                  [style.--type-color]="getColorVarNameForType(output.type)"></span>
-                    @if (!output.nullable) {
-                        <span class="connector-output-circle-non-null"
+            @if (examples[item.code].outputs.length != 0) {
+                <div class="node-preview-exposed-container-collapsed">
+                    <span class="title">Outputs:</span>
+                    @for (output of examples[item.code].outputs; track $index) {
+                        <div
+                            class="exposed-collapsed">
+                        <span class="connector-circle-small"
+                              [class.nullable]="output.nullable"
                               [style.--type-color]="getColorVarNameForType(output.type)"></span>
-                    }
-                    <span class="output-name">{{ output.name }}</span>
-                    <span class="output-type">{{ DATUM_TYPE_DISPLAY[output.type] }}</span>
-                    @if (output.nullable) {
-                        <span class="output-type">Nullable</span>
+                            <span class="output-name">{{ output.name }}</span>
+                        </div>
                     }
                 </div>
             }
-        </div>
+        }
     </div>
-</div>
+}

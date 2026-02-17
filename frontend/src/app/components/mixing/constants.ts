@@ -3,15 +3,21 @@ import {
     ArbitraryInputsElaborationNodeImplementationConstructor,
     ElaborationNodeAddition,
     ElaborationNodeAllTypesTest,
+    ElaborationNodeAnd,
     ElaborationNodeBinaryChoice,
+    ElaborationNodeBuffer,
     ElaborationNodeClamp,
     ElaborationNodeCode,
     ElaborationNodeCombineDateTime,
+    ElaborationNodeCycle,
+    ElaborationNodeDateCompare,
     ElaborationNodeDateFromValues,
+    ElaborationNodeDateTimeCompare,
     ElaborationNodeDateTimeFromValues,
     ElaborationNodeDateTimeValues,
     ElaborationNodeDateValues,
     ElaborationNodeDivision,
+    ElaborationNodeEncoder,
     ElaborationNodeEpoch,
     ElaborationNodeEqualityCheck,
     ElaborationNodeExtractHSL,
@@ -28,15 +34,20 @@ import {
     ElaborationNodeLessThan,
     ElaborationNodeMax,
     ElaborationNodeMin,
+    ElaborationNodeModulo,
     ElaborationNodeMultipleChoice,
     ElaborationNodeMultiplication,
+    ElaborationNodeNot,
     ElaborationNodeNullGuard,
+    ElaborationNodeOr,
     ElaborationNodeRetrieve,
     ElaborationNodeSave,
     ElaborationNodeSubtraction,
     ElaborationNodeSunEvents,
+    ElaborationNodeTimeCompare,
     ElaborationNodeTimeFromValues,
     ElaborationNodeTimeValues,
+    ElaborationNodeXor,
     TypedElaborationNodeImplementationConstructor,
     TypedNullMarkedElaborationNodeImplementationConstructor
 } from '@common/mixing/mix/elaboration-node';
@@ -46,13 +57,14 @@ import {SystemOrigin} from '@common/system/constants';
 import {Point} from '@angular/cdk/drag-drop';
 
 export const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
-    [DatumType.BOOLEAN]:   'Boolean',
-    [DatumType.NUMBER]:    'Number',
-    [DatumType.STRING]:    'Text',
-    [DatumType.COLOR]: 'Color',
-    [DatumType.TIME]:      'Time',
-    [DatumType.DATE]:      'Date',
-    [DatumType.DATE_TIME]: 'Date and Time'
+    [DatumType.BOOLEAN]:    'Boolean',
+    [DatumType.NUMBER]:     'Number',
+    [DatumType.STRING]:     'Text',
+    [DatumType.COLOR]:      'Color',
+    [DatumType.COLOR_TEMP]: 'Color temperature',
+    [DatumType.TIME]:       'Time',
+    [DatumType.DATE]:       'Date',
+    [DatumType.DATE_TIME]:  'Date and Time'
 };
 
 export function getColorVarNameForType(type: DatumType): string {
@@ -68,6 +80,7 @@ export type ElaborationNodeLibraryItem = {
     special: true,
     isTyped: true,
     nullMarked: false,
+    forceDatumType?: boolean,
     constructor: TypedElaborationNodeImplementationConstructor;
     description: string;
     code: ElaborationNodeCode;
@@ -77,6 +90,8 @@ export type ElaborationNodeLibraryItem = {
     isTyped: true,
     nullMarked: true,
     arbitraryNumber: false,
+    forceDatumType?: boolean,
+    forceNullable?: boolean,
     constructor: TypedNullMarkedElaborationNodeImplementationConstructor;
     description: string;
     code: ElaborationNodeCode;
@@ -87,6 +102,8 @@ export type ElaborationNodeLibraryItem = {
     isTyped: true,
     nullMarked: true,
     arbitraryNumber: true,
+    forceDatumType?: boolean,
+    forceNullable?: boolean,
     constructor: ArbitraryInputsElaborationNodeImplementationConstructor;
     description: string;
     code: ElaborationNodeCode;
@@ -100,16 +117,24 @@ export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> 
     SUBTRACTION:           'Subtraction',
     MULTIPLICATION:        'Multiplication',
     DIVISION:              'Division',
+    MODULO:            'Modulo',
     MAX:                   'Maximum',
     MIN:                   'Minimum',
-    CLAMP:                 'Clamp value',
-    LERP:                  'Linear interpolation',
     NULL_GUARD:            'Null guard',
     EQUALITY_CHECK:        'Equality check',
     GREATER_THAN:          'Greater than',
     LESS_THAN:             'Less than',
+    CYCLE:             'Cycle',
+    CLAMP:             'Clamp value',
+    LERP:              'Linear interpolation',
+    AND:               'And',
+    OR:                'Or',
+    XOR:               'Exclusive or',
+    NOT:               'Not',
+    BUFFER:            'Buffer',
     BINARY_CHOICE:         'Binary choice',
-    MULTIPLE_CHOICE: 'Multiple choice',
+    MULTIPLE_CHOICE:   'Multiple choice',
+    ENCODER:           'Encoder',
     EXTRACT_RGB:           'Extract RGB',
     EXTRACT_HSL:           'Extract_HSL',
     EXTRACT_HSV:           'Extract_HSV',
@@ -123,6 +148,9 @@ export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> 
     DATE_TIME_VALUES:      'Values from date time',
     DATE_FROM_VALUES:      'Date from values',
     TIME_FROM_VALUES:      'Time from values',
+    DATE_COMPARE:      'Compare dates',
+    TIME_COMPARE:      'Compare times',
+    DATE_TIME_COMPARE: 'Compare date times',
     DATE_TIME_FROM_VALUES: 'Date Time from values',
     COMBINE_DATE_TIME:     'Combine date and time',
     EPOCH:                 'Get epoch time',
@@ -160,6 +188,13 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:     false
             },
             {
+                constructor: ElaborationNodeModulo,
+                description: 'Returns the "Value" (mod "Modulo"). Note that this follows the mathematical definition of modulo, not the computer science definition (modulo of negative ' +
+                             'numbers is positive)',
+                code:        ElaborationNodeCode.MODULO,
+                special:     false
+            },
+            {
                 constructor: ElaborationNodeMax,
                 description: 'Returns the maximum between two numbers',
                 code:        ElaborationNodeCode.MAX,
@@ -169,6 +204,27 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 constructor: ElaborationNodeMin,
                 description: 'Returns the minimum between two numbers',
                 code:        ElaborationNodeCode.MIN,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeGreaterThan,
+                description: 'Checks if the first number is greater than the second. When "Inclusive" input is true, equal values result in a true response, false otherwise.',
+                code:        ElaborationNodeCode.GREATER_THAN,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeLessThan,
+                description: 'Checks if the first number is less than the second. When "Inclusive" input is true, equal values result in a true response, false otherwise.',
+                code:        ElaborationNodeCode.LESS_THAN,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeCycle,
+                description: 'Cycles a number between values in a closed loop, incrementing or decrementing the value by one depending on the "Forward" input. Upon reaching the ' +
+                             '"Cycle length" value, the value is reset to the start. "Start from 0" decides whether the values go from 0 to "Cycle length" - 1, or from 1 ' +
+                             'to "Cycle length". "Cycle length" values less than 1 are considered as 1, non-integer values are allowed and the fractional part is kept (so 4.5 ' +
+                             'with a cycle of 5 gets reset to 0.5). Values out of range are reduced to the range via modulo "Cycle length".',
+                code:        ElaborationNodeCode.CYCLE,
                 special:     false
             },
             {
@@ -187,8 +243,69 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
         ]
     },
     {
+        sectionName: 'Boolean',
+        nodes:       [
+            {
+                constructor:     ElaborationNodeAnd,
+                description:     'Returns the logical and of all the inputs. The output is true if all the inputs are true, otherwise it\'s false',
+                code:            ElaborationNodeCode.AND,
+                forceDatumType:  true,
+                forceNullable:   true,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: true
+            },
+            {
+                constructor:     ElaborationNodeOr,
+                description:     'Returns the logical or of all the inputs. The output is true if at least one of the inputs is true, otherwise it\'s false',
+                code:            ElaborationNodeCode.OR,
+                forceDatumType:  true,
+                forceNullable:   true,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: true
+            },
+            {
+                constructor:     ElaborationNodeXor,
+                description:     'Returns the exclusive or of all the inputs. The output is true if only one of the inputs is true, otherwise it\'s false',
+                code:            ElaborationNodeCode.XOR,
+                forceDatumType:  true,
+                forceNullable:   true,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: true
+            },
+            {
+                constructor: ElaborationNodeNot,
+                description: 'Return the negated value of the input',
+                code:        ElaborationNodeCode.NOT,
+                special:     false
+            }
+        ]
+    },
+    {
         sectionName: 'Control flow',
         nodes:       [
+            {
+                constructor:     ElaborationNodeBuffer,
+                description:     'This node simply repeats any value it gets presented with. It may be useful in groups to fuse multiple of the same input into one.',
+                code:            ElaborationNodeCode.BUFFER,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: false
+            },
             {
                 constructor: ElaborationNodeNullGuard,
                 description: 'Assures a nullable parameter is transformed into a non-null parameter, returning a non-null fallback value if null',
@@ -208,18 +325,6 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 nullMarked:  false
             },
             {
-                constructor: ElaborationNodeGreaterThan,
-                description: 'Checks if the first number is greater than the second. When "Inclusive" input is true, equal values result in a true response, false otherwise.',
-                code:        ElaborationNodeCode.GREATER_THAN,
-                special:     false
-            },
-            {
-                constructor: ElaborationNodeLessThan,
-                description: 'Checks if the first number is less than the second. When "Inclusive" input is true, equal values result in a true response, false otherwise.',
-                code:        ElaborationNodeCode.LESS_THAN,
-                special:     false
-            },
-            {
                 constructor:  ElaborationNodeBinaryChoice,
                 description:  'Selects one of two values, depending on the value of "Choose first?". If it\'s true, the first is chosen, otherwise the second one is.',
                 code:         ElaborationNodeCode.BINARY_CHOICE,
@@ -235,6 +340,21 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 description:     'Selects a value among a series of options, by index. Indexes outside of range loop, non-integer indexes get rounded.',
                 code:            ElaborationNodeCode.MULTIPLE_CHOICE,
                 datumType:       DatumType.STRING,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
+                nullMarked:      true,
+                arbitraryNumber: true
+            },
+            {
+                constructor:     ElaborationNodeEncoder,
+                description:     'Returns which one of the inputs is true, returning its position (0-indexed). So if the first is true, the encoded value is 0, and so on. ' +
+                                 'In case of multiple true values, the highest-indexed or lowest-indexed one is the one chosen, depending on the dominance flag, and the conflict ' +
+                                 'flag results true. If none is selected, -1 is returned and the unset flag results true.',
+                code:            ElaborationNodeCode.ENCODER,
+                forceDatumType:  true,
+                forceNullable:   true,
+                datumType:       DatumType.BOOLEAN,
                 nullableMark:    false,
                 special:         true,
                 isTyped:         true,
@@ -333,6 +453,24 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 constructor: ElaborationNodeDateTimeFromValues,
                 description: 'Creates a date + time of day value from the single components',
                 code:        ElaborationNodeCode.DATE_TIME_FROM_VALUES,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeDateCompare,
+                description: 'Compares two dates, and results in whether the first comes first, is equal or comes after the second',
+                code:        ElaborationNodeCode.DATE_COMPARE,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeTimeCompare,
+                description: 'Compares two times of day, and results in whether the first comes first, is equal or comes after the second',
+                code:        ElaborationNodeCode.TIME_COMPARE,
+                special:     false
+            },
+            {
+                constructor: ElaborationNodeDateTimeCompare,
+                description: 'Compares two dates + time, and results in whether the first comes first, is equal or comes after the second',
+                code:        ElaborationNodeCode.DATE_TIME_COMPARE,
                 special:     false
             },
             {

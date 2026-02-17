@@ -1,0 +1,17 @@
+@use "dimensions";
+
+.inline-calendar {
+    width: 300px;
+}
+
+
+.date-time-header {
+    display: flex;
+    align-self: stretch;
+    align-items: center;
+    margin-top: dimensions.$margin-xlarge;
+
+    mat-label {
+        flex-grow: 1;
+    }
+}

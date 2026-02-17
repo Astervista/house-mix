@@ -1,5 +1,7 @@
 <h2 mat-dialog-title>{{ title }}</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <house-mix-entity-names-inputs
         [horizontal]="data.entityType != EntityType.GROUP"
         [originalName]="data.edit?.name ?? null"
@@ -14,6 +16,8 @@
                 <mat-label>Zigbee IEEE address</mat-label>
                 <input
                     matInput
+                    placeholder="0123456789abcdef"
+                    [style.font-family]="'monospace'"
                     [formControl]="zigbeeAddressFormControl">
                 <mat-hint>The device's zigbee address</mat-hint>
                 @if (zigbeeAddressFormControl.hasError('required')) {
@@ -209,13 +213,14 @@
 
 </mat-dialog-content>
 <mat-dialog-actions>
-    <button mat-button
+    <button
+        mat-button
             (click)="closeDialog()">
         Cancel
     </button>
     <button
         mat-button
-        (click)="closeDialog(result)"
+        (click)="confirm()"
         [disabled]="confirmDisabled">
         {{ data.edit == null ? 'Create' : 'Edit' }}
     </button>

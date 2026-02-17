@@ -3,14 +3,14 @@ import {Serializable} from "../constants";
 
 export class PersistentDataService<D extends Serializable<J>, J> {
     
-    protected readonly data: Promise<D>;
+    protected _data: Promise<D>;
     
     constructor(
         private fileService: FileService,
         private saveFile: string,
         private D: new (data?: J) => D
     ) {
-        this.data = fileService
+        this._data = fileService
             .readDataFile<J>(saveFile)
             .then((data: J | null) => {
                 if (data != null) {
@@ -21,8 +21,19 @@ export class PersistentDataService<D extends Serializable<J>, J> {
             });
     }
     
+    protected get data(): Promise<D> {
+        return this._data;
+    }
+    
+    protected doAfterLoad(toDo: (data: D) => Promise<void> | void): void {
+        this._data = this._data.then(async data => {
+            await toDo(data);
+            return data;
+        });
+    }
+    
     protected saveData(): void {
-        void this.data.then((dataObject) => {
+        void this._data.then((dataObject) => {
             return this.fileService.saveDataFile(this.saveFile, dataObject.toJSON());
         })
     }

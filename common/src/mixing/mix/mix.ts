@@ -626,6 +626,36 @@ export class Mix {
         }
     }
     
+    public moveImport(datum: ExportedDatum, forwards: boolean): void {
+        const index = this._imports.indexOf(datum);
+        if (index == -1) {
+            return;
+        }
+        const newIndex = forwards ? index + 1 : index - 1;
+        if (newIndex < 0 || newIndex >= this._imports.length) {
+            return;
+        }
+        const substitute = this._imports.splice(newIndex, 1, datum)[0];
+        if (substitute) {
+            this._imports.splice(index, 1, substitute);
+        }
+    }
+    
+    public moveOutput(datum: Datum, forwards: boolean): void {
+        const index = this._outputs.indexOf(datum);
+        if (index == -1) {
+            return;
+        }
+        const newIndex = forwards ? index + 1 : index - 1;
+        if (newIndex < 0 || newIndex >= this._outputs.length) {
+            return;
+        }
+        const substitute = this._outputs.splice(newIndex, 1, datum)[0];
+        if (substitute) {
+            this._outputs.splice(index, 1, substitute);
+        }
+    }
+    
     public toJSON(): MixJSON {
         return {
             id:          this.id,

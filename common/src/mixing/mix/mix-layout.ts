@@ -1,4 +1,4 @@
-import {Allow, IsArray, IsBoolean, IsInt, IsNotEmpty, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
+import {Allow, IsArray, IsBoolean, IsInt, IsNotEmpty, IsNumber, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
 
 export interface Point {
     x: number;
@@ -53,12 +53,27 @@ export class NodeGroupJSON {
                     })
     @Type(() => DatumAliasJSON)
     public inputAliases: DatumAliasJSON[]  = [];
+    
     @IsArray()
     @ValidateNested({
                         each: true
                     })
     @Type(() => DatumAliasJSON)
     public outputAliases: DatumAliasJSON[] = [];
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => DatumPositionJSON)
+    public inputPositions: DatumPositionJSON[] = [];
+    
+    @IsArray()
+    @ValidateNested({
+                        each: true
+                    })
+    @Type(() => DatumPositionJSON)
+    public outputPositions: DatumPositionJSON[] = [];
     
     @ValidateIf(o => (o as Partial<NodeGroupJSON>).parentId != null)
     @IsInt()
@@ -81,5 +96,21 @@ export class DatumAliasJSON {
     @IsString()
     @IsNotEmpty()
     public alias: string = "";
+    
+}
+
+
+export class DatumPositionJSON {
+    
+    @IsString()
+    @IsNotEmpty()
+    public datumName: string = "";
+    
+    @IsInt()
+    public nodeId: number = 0;
+    
+    @IsNumber()
+    @IsNotEmpty()
+    public order: number = 0;
     
 }

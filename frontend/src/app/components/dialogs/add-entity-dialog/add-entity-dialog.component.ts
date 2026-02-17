@@ -35,6 +35,7 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {DeviceService} from '../../../services/device.service';
 import {LockedExposes} from '@common/devices/rest-classes';
 import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 @Component({
                selector:    'house-mix-add-entity-dialog',
@@ -61,7 +62,8 @@ import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-clas
                    MatInput,
                    DynamicSvgComponent,
                    MatSelectTrigger,
-                   LoadingScrimComponent
+                   LoadingScrimComponent,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './add-entity-dialog.component.html',
                styleUrl:    './add-entity-dialog.component.scss'
@@ -527,6 +529,12 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             });
     }
 
+    protected confirm(): void {
+        if (!this.confirmDisabled) {
+            this.closeDialog(this.result);
+        }
+    }
+
     protected readonly ActuatorType                = ActuatorType;
     protected readonly Object                      = Object;
     protected readonly EntityType                  = EntityType;
@@ -543,7 +551,6 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected readonly LoadingStatus             = LoadingStatus;
     protected readonly MixPhase                  = MixPhase;
     protected readonly MixTarget                 = MixTarget;
-
 }
 
 export type AddEntityDialogData = {

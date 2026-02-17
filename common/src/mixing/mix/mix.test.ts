@@ -130,6 +130,7 @@ describe("Composition", () => {
         const result = composition.calculate(inputMap, {
             [DatumType.BOOLEAN]:   new Map<string, unknown>(),
             [DatumType.COLOR]:     new Map<string, unknown>(),
+            [DatumType.COLOR_TEMP]: new Map<string, unknown>(),
             [DatumType.DATE]:      new Map<string, unknown>(),
             [DatumType.DATE_TIME]: new Map<string, unknown>(),
             [DatumType.TIME]:      new Map<string, unknown>(),

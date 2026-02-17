@@ -1,16 +1,17 @@
 import {AfterViewInit, Component, ElementRef, forwardRef, Input, ViewChild} from '@angular/core';
 import {DatumTypeColor, DatumTypeColorBase} from '@common/mixing/mix/datum';
 import {Color, ColorSpace} from '@common/utils/color-convert';
-import {MatError, MatFormField, MatInput, MatLabel} from '@angular/material/input';
+import {MatError, MatFormField, MatInput, MatInputModule, MatLabel} from '@angular/material/input';
 import {MatOption} from '@angular/material/core';
 import {MatSelect} from '@angular/material/select';
-import {ControlValueAccessor, FormControl, FormGroup, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators} from '@angular/forms';
+import {ControlValueAccessor, FormControl, FormGroup, FormsModule, NG_VALUE_ACCESSOR, ReactiveFormsModule, Validators} from '@angular/forms';
 import {Point} from '@angular/cdk/drag-drop';
 import {MatChipListbox, MatChipOption} from '@angular/material/chips';
+import {MatFormFieldModule} from '@angular/material/form-field';
 
 @Component({
                selector:    'house-mix-color-picker',
-               imports: [
+               imports:   [
                    MatFormField,
                    MatLabel,
                    MatOption,
@@ -19,13 +20,16 @@ import {MatChipListbox, MatChipOption} from '@angular/material/chips';
                    MatChipListbox,
                    MatChipOption,
                    MatInput,
-                   MatError
+                   MatError,
+                   MatFormFieldModule,
+                   MatInputModule,
+                   FormsModule
                ],
                providers: [
                    {
                        provide: NG_VALUE_ACCESSOR,
                        useExisting: forwardRef(() => ColorPickerComponent),
-                       multi: true
+                       multi:   true
                    }
                ],
                templateUrl: './color-picker.component.html',
@@ -139,7 +143,7 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
             if (this.onTouched != null) {
                 this.onTouched();
             }
-        })
+        });
         this.inputFormGroup.valueChanges.subscribe(value => {
             if (this.inputFormGroup.invalid) {
                 return;
@@ -222,7 +226,7 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
                             DatumTypeColorBase.XY,
                             this.x, this.y
                         )
-                    )
+                    );
                     break;
                 }
             }
@@ -555,6 +559,31 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
         }
     }
 
+    public get firstInputSuffix(): string {
+        switch (this._formControl.value?.base) {
+            case DatumTypeColorBase.XY: {
+                return '';
+            }
+            case DatumTypeColorBase.RGB: {
+                switch (this.numberInputsFormControl.value) {
+                    case NumberInput.RGB:
+                        return '';
+                    case NumberInput.HSB:
+                    case NumberInput.HSL:
+                        return '°';
+                    case null:
+                    case NumberInput.HEX:
+                    case NumberInput.XY:
+                        return '';
+                }
+                break;
+            }
+            case undefined: {
+                return '';
+            }
+        }
+    }
+
     public get secondInputMax(): number {
         switch (this._formControl.value?.base) {
             case DatumTypeColorBase.XY: {
@@ -580,6 +609,31 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
         }
     }
 
+    public get secondInputSuffix(): string {
+        switch (this._formControl.value?.base) {
+            case DatumTypeColorBase.XY: {
+                return '';
+            }
+            case DatumTypeColorBase.RGB: {
+                switch (this.numberInputsFormControl.value) {
+                    case NumberInput.RGB:
+                        return '';
+                    case NumberInput.HSB:
+                    case NumberInput.HSL:
+                        return '%';
+                    case null:
+                    case NumberInput.HEX:
+                    case NumberInput.XY:
+                        return '';
+                }
+                break;
+            }
+            case undefined: {
+                return '';
+            }
+        }
+    }
+
     public get thirdInputMax(): number {
         switch (this._formControl.value?.base) {
             case DatumTypeColorBase.XY: {
@@ -601,6 +655,31 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
             }
             case undefined: {
                 return 0;
+            }
+        }
+    }
+
+    public get thirdInputSuffix(): string {
+        switch (this._formControl.value?.base) {
+            case DatumTypeColorBase.XY: {
+                return '';
+            }
+            case DatumTypeColorBase.RGB: {
+                switch (this.numberInputsFormControl.value) {
+                    case NumberInput.RGB:
+                        return '';
+                    case NumberInput.HSB:
+                    case NumberInput.HSL:
+                        return '%';
+                    case null:
+                    case NumberInput.HEX:
+                    case NumberInput.XY:
+                        return '';
+                }
+                break;
+            }
+            case undefined: {
+                return '';
             }
         }
     }
@@ -691,6 +770,92 @@ export class ColorPickerComponent implements AfterViewInit, ControlValueAccessor
             this.verticalMouseMove(event);
             this.dragging = null;
         }
+    }
+
+    protected verticalKey(event: KeyboardEvent): void {
+        if (event.key == 'ArrowDown') {
+            this.h += (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (this.h > 1) {
+                this.h -= 1;
+            }
+        } else if (event.key == 'ArrowUp') {
+            this.h -= (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (this.h < 0) {
+                this.h += 1;
+            }
+        } else if (event.key == 'Home') {
+            this.h = 0;
+        } else if (event.key == 'End') {
+            this.h = 1;
+        } else {
+            return;
+        }
+        const color = Color.hsv(this.h, this.s, this.v);
+        this._formControl.setValue(
+            new DatumTypeColor(
+                DatumTypeColorBase.RGB,
+                Math.round(color.r * 255), Math.round(color.g * 255), Math.round(color.b * 255)
+            )
+        );
+        this.repaint();
+        this.updateInputs();
+    }
+
+    protected squareKey(event: KeyboardEvent): void {
+        let x = this._base == DatumTypeColorBase.XY ? this.x : this.s;
+        let y = this._base == DatumTypeColorBase.XY ? 1 - this.y : this.v;
+        if (event.key == 'ArrowDown') {
+            y += (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (y > 1) {
+                y = 1;
+            }
+        } else if (event.key == 'ArrowUp') {
+            y -= (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (y < 0) {
+                y = 0;
+            }
+        } else if (event.key == 'ArrowRight') {
+            x += (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (x > 1) {
+                x = 1;
+            }
+        } else if (event.key == 'ArrowLeft') {
+            x -= (event.shiftKey ? 2 : (event.altKey ? 0.5 : 1)) * 10 / 360;
+            if (x < 0) {
+                x = 0;
+            }
+        } else if (event.key == 'Home') {
+            x = 0;
+        } else if (event.key == 'End') {
+            x = 1;
+        } else if (event.key == 'PageDown') {
+            y = 1;
+        } else if (event.key == 'PageUp') {
+            y = 0;
+        } else {
+            return;
+        }
+        if (this._base == DatumTypeColorBase.XY) {
+            this._formControl.setValue(
+                new DatumTypeColor(
+                    DatumTypeColorBase.XY,
+                    x, 1 - y
+                )
+            );
+            this.x = x;
+            this.y = 1 - y;
+        } else {
+            this.s      = x;
+            this.v      = y;
+            const color = Color.hsv(this.h, this.s, this.v);
+            this._formControl.setValue(
+                new DatumTypeColor(
+                    DatumTypeColorBase.RGB,
+                    Math.round(color.r * 255), Math.round(color.g * 255), Math.round(color.b * 255)
+                )
+            );
+        }
+        this.updateInputs();
     }
 
     protected scrimMouseMove(event: MouseEvent): void {

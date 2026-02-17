@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, ElementRef} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, HostListener} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
@@ -29,6 +29,9 @@ import {BackupDialogComponent} from './backup-dialog/backup-dialog.component';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MixLayout} from '@common/mixing/mix/mix-layout';
 import {StringInputDialogComponent} from '../../dialogs/string-input-dialog/string-input-dialog.component';
+import {patchKeyboardEvent} from '../../../utils/keyboard-help';
+import {kelvinToColor} from '@common/utils/color-convert-table';
+import {DEFAULT_TEMP} from '@common/utils/constants';
 
 
 @Component({
@@ -225,6 +228,7 @@ export class MixComponent implements AfterViewInit {
                         exposes.forEach(output => this.mix?.addOutput(output));
                     }
                     this.uiManager.showOutputAdd = exposes == null;
+                    this.uiManager.updateEdgeConnections(false);
                     if (this.mixPosition && this.mix) {
                         this.availableImports = await this.mixService.getAvailableImports(MixPositionInfoJSON.toJSON(this.mixPosition));
                     } else {
@@ -552,6 +556,7 @@ export class MixComponent implements AfterViewInit {
             case DatumType.NUMBER:
             case DatumType.STRING:
             case DatumType.COLOR:
+            case DatumType.COLOR_TEMP:
             case DatumType.TIME:
             case DatumType.DATE:
             case DatumType.DATE_TIME: {
@@ -680,7 +685,7 @@ export class MixComponent implements AfterViewInit {
                 this.mix?.addConnection(newConnection);
                 this.uiManager.addConnection(newConnection);
             }
-            this.uiManager.updateNode();
+            this.uiManager.updateNode(node);
             this.doBackup();
         }
     }
@@ -786,12 +791,15 @@ export class MixComponent implements AfterViewInit {
             });
     }
 
+    private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean;
+    private isToolbarElementVisible(action: ToolbarAction): boolean;
 
-    private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
+    private isToolbarElementVisible(elementOrAction: ToolbarElement | ToolbarAction): boolean {
+        const action = (typeof elementOrAction == 'string' ? elementOrAction : elementOrAction.id) as ToolbarAction;
         if (this.loadingStatus !== LoadingStatus.LOADED) {
-            return (toolbarElement.id as ToolbarAction) == ToolbarAction.BACK;
+            return action == ToolbarAction.BACK;
         }
-        switch (toolbarElement.id as ToolbarAction) {
+        switch (action) {
             case ToolbarAction.UNGROUP:
                 return this.selectedElements.length == 1
                        && this.selectedElements
@@ -858,8 +866,8 @@ export class MixComponent implements AfterViewInit {
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.UNGROUP: {
-                let firstElement = this.selectedElements[0];
-                if (firstElement && firstElement.type == SelectedElementType.NODE_GROUP) {
+                const firstElement = this.selectedElements[0];
+                if (firstElement?.type == SelectedElementType.NODE_GROUP) {
                     this.uiManager.deleteGroup(firstElement.group);
                 }
                 break;
@@ -1090,6 +1098,73 @@ export class MixComponent implements AfterViewInit {
         }
     }
 
+    @HostListener('keydown', ['$event'])
+    public onKeyDown(event: KeyboardEvent): void {
+        const patchedEvent = patchKeyboardEvent(event);
+        if (patchedEvent.osModifier) {
+            switch (patchedEvent.code) {
+                case 'KeyG': {
+                    if (!patchedEvent.altKey) {
+                        if (!patchedEvent.shiftKey) {
+                            if (this.isToolbarElementVisible(ToolbarAction.GROUP)) {
+                                this.toolbarClick(ToolbarAction.GROUP);
+                            }
+                        } else {
+                            if (this.isToolbarElementVisible(ToolbarAction.UNGROUP)) {
+                                this.toolbarClick(ToolbarAction.UNGROUP);
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 'KeyU': {
+                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
+                        if (this.isToolbarElementVisible(ToolbarAction.REMOVE_FROM_GROUP)) {
+                            this.toolbarClick(ToolbarAction.UNGROUP);
+                        }
+                    }
+                    break;
+                }
+                case 'KeyS': {
+                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
+                        if (this.isToolbarElementVisible(ToolbarAction.SAVE)) {
+                            this.toolbarClick(ToolbarAction.SAVE);
+                        }
+                    }
+                    break;
+                }
+                case 'KeyB': {
+                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
+                        if (this.isToolbarElementVisible(ToolbarAction.BACKUPS)) {
+                            this.toolbarClick(ToolbarAction.BACKUPS);
+                        }
+                    }
+                    break;
+                }
+                case 'KeyI': {
+                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
+                        if (this.isToolbarElementVisible(ToolbarAction.ADD)) {
+                            this.toolbarClick(ToolbarAction.ADD);
+                        }
+                    }
+                    break;
+                }
+                case 'KeyR': {
+                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
+                        if (this.selectedElements.length == 1) {
+                            const selectedElement = this.selectedElements[0];
+                            if (selectedElement?.type == SelectedElementType.NODE_GROUP) {
+                                this.changeGroupName(selectedElement.group);
+                            }
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        event.preventDefault();
+    }
+
     protected doBackup(): void {
         if (this.mix != null && this.mixPosition != null) {
             this.mixBackups ??= new MixBackups(this.mix.id);
@@ -1136,6 +1211,9 @@ export class MixComponent implements AfterViewInit {
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
+    protected readonly kelvinToColor = kelvinToColor;
+    protected readonly onkeyup       = onkeyup;
+    protected readonly DEFAULT_TEMP  = DEFAULT_TEMP;
 }
 
 export interface NodeInputInfo {

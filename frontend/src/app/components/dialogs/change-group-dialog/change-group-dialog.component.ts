@@ -14,6 +14,7 @@ import {EntityType} from '@common/devices/constants';
 import {UnavailableParents} from '@common/devices/rest-classes';
 import {MatIcon} from '@angular/material/icon';
 import {MixPhase, MixTarget} from '@common/mixing/mix/rest-classes';
+import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
 export type ChangeGroupDialogResult = string | null | TopmostResult;
 
@@ -32,18 +33,19 @@ export type ChangeGroupDialogResult = string | null | TopmostResult;
                    ReactiveFormsModule,
                    LoadingScrimComponent,
                    MatIcon,
-                   MatSelectTrigger
+                   MatSelectTrigger,
+                   InputReturnBehaviorDirective
                ],
                templateUrl: './change-group-dialog.component.html',
                styleUrl:    './change-group-dialog.component.scss'
            })
-export class ChangeGroupDialogComponent extends MatDialogComponent<ChangeGroupDialogData, ChangeGroupDialogResult>{
+export class ChangeGroupDialogComponent extends MatDialogComponent<ChangeGroupDialogData, ChangeGroupDialogResult> {
 
     protected parentGroupFormControl: FormControl<ChangeGroupDialogResult> = new FormControl<ChangeGroupDialogResult>(this.data.sonOfGroup ?? TOPMOST);
 
     protected groups: GroupInfo[] = [];
 
-    protected unavailableLoading: LoadingStatus        = LoadingStatus.LOADING;
+    protected unavailableLoading: LoadingStatus = LoadingStatus.LOADING;
     protected unavailableParents: UnavailableParents | null = null;
 
     constructor(
@@ -60,7 +62,7 @@ export class ChangeGroupDialogComponent extends MatDialogComponent<ChangeGroupDi
     }
 
     protected loadAvailableGroups(): void {
-        this.unavailableLoading = LoadingStatus.LOADING
+        this.unavailableLoading = LoadingStatus.LOADING;
         switch (this.data.movingEntityType) {
             case EntityType.GROUP:
                 this
@@ -115,21 +117,35 @@ export class ChangeGroupDialogComponent extends MatDialogComponent<ChangeGroupDi
         return this.unavailableParents?.names.includes(this.parentGroupFormControl.value as string) ?? false;
     }
 
+    protected get canClose(): boolean {
+        return this.parentGroupFormControl.value != this.data.sonOfGroup
+               && this.parentGroupFormControl.value != null
+               && this.unavailableLoading == LoadingStatus.LOADED
+               && !this.selectedUnavailable;
+
+    }
+
+    protected confirm(): void {
+        if (this.canClose) {
+            this.closeDialog(this.parentGroupFormControl.value);
+        }
+    }
+
     protected readonly TOPMOST       = TOPMOST;
     protected readonly LoadingStatus = LoadingStatus;
-    protected readonly MixPhase = MixPhase;
-    protected readonly MixTarget = MixTarget;
+    protected readonly MixPhase                 = MixPhase;
+    protected readonly MixTarget                = MixTarget;
 
     protected readonly EntityType = EntityType;
 }
 
 export interface TopmostResult {
-    topmost: true
+    topmost: true;
 }
 
 export const TOPMOST: TopmostResult = {
     topmost: true
-}
+};
 
 export interface GroupInfo {
     name: string,
