@@ -5,7 +5,6 @@ import {SetParameterBody} from "@common/system/parameter/rest-classes";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 import MixService from "../../mixing/mix/mix.service";
 import {SystemOrigin} from "@common/system/constants";
-import {Datum} from "@common/mixing/mix/datum";
 
 @Controller("/system/parameters/")
 export class ParametersController {

@@ -137,6 +137,7 @@ export class TimePickerComponent implements ControlValueAccessor {
     }
 
     public writeValue(): void {
+        // Nothing to do here
     }
 
     private onTouched: (() => void) | null                      = null;
