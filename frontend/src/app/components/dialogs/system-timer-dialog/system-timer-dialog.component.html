@@ -1,4 +1,10 @@
-<h2 mat-dialog-title>Add a system timer</h2>
+<h2 mat-dialog-title>
+    @if (this.data.edit != null) {
+        Edit a system timer
+    } @else {
+        Add a system timer
+    }
+</h2>
 <mat-dialog-content
     house-mix-input-return-behavior
     (on-stop)="confirm()">

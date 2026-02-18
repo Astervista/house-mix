@@ -1,0 +1,94 @@
+<h2 mat-dialog-title>
+    @if (data.edit != null) {
+        Edit a behavior adjustment
+    } @else {
+        Add a new behavior adjustment
+    }
+</h2>
+<div
+    class="content"
+    mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
+    <mat-form-field class="adjustment-type">
+        <mat-label>Select an adjustment type</mat-label>
+        <mat-select
+            [formControl]="adjustmentTypeFormControl">
+            @if (adjustmentTypeFormControl.value != null) {
+                <mat-select-trigger>
+                    {{ ADJUSTMENT_TYPE_DISPLAY[adjustmentTypeFormControl.value] }}
+                </mat-select-trigger>
+            }
+            @for (option of ADJUSTMENT_TYPES; track option) {
+                <mat-option [value]="option">
+                    <div class="adjustment-type-option">
+                        <span class="adjustment-type-option-title">{{ ADJUSTMENT_TYPE_DISPLAY[option] }}</span>
+                        <span class="adjustment-type-option-description">{{ ADJUSTMENT_TYPE_DESCRIPTION[option] }}</span>
+                    </div>
+                </mat-option>
+            }
+        </mat-select>
+    </mat-form-field>
+    @if (isTransitionAdjustment) {
+        <mat-form-field>
+            <mat-label>Minimum brightness</mat-label>
+            <input
+                matInput
+                type="number"
+                [formControl]="minBrightnessFormControl">
+            <mat-hint>The lowest brightness that isn't off</mat-hint>
+        </mat-form-field>
+    }
+    @if (isTransitionAdjustment || isSplitAdjustment) {
+        <div class="choice-list"
+             tabindex="0"
+             (keyup)="actuatorListKey($event)">
+            @if (actuatorsLoadingStatus != LoadingStatus.LOADED) {
+                <house-mix-loading-scrim
+                    [loadingStatus]="actuatorsLoadingStatus"
+                    (loadingSet)="loadActuators()"
+                    (reload)="loadActuators(true)">
+                </house-mix-loading-scrim>
+            } @else if (actuators == null || actuators.length == 0) {
+                <span>No actuators available. This may be because there are no actuators in the system,<br>or because all the actuators already have a mix assigned to them</span>
+            } @else {
+                @for (actuator of actuators; track actuator.name) {
+                    <div
+                        class="device-display"
+                        [class.selected]="this.selectedActuatorFormControl.value == actuator"
+                        (click)="this.selectedActuatorFormControl.setValue(actuator)">
+                        <house-mix-dynamic-svg
+                            class="device-icon"
+                            [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[actuator.type]}`">
+                        </house-mix-dynamic-svg>
+                        <div class="device-info">
+                                <span
+                                    class="name"
+                                    matTooltipPosition="above"
+                                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                                    [matTooltip]="`Codename: ${actuator.name}`">{{ actuator.displayName }}</span>
+                            <span
+                                class="type">{{ ACTUATOR_TYPE_DISPLAY[actuator.type] }}</span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+<mat-dialog-actions>
+    <button mat-button
+            (click)="closeDialog()">
+        Cancel
+    </button>
+    <button
+        mat-button
+        [disabled]="formGroup == null || formGroup.invalid"
+        (click)="confirm()">
+        @if (data.edit != null) {
+            Edit
+        } @else {
+            Add
+        }
+    </button>
+</mat-dialog-actions>

@@ -396,10 +396,10 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                     update[outputName] = value;
                 }
             }
-            this.zigbeeService.setStatus(actuator.zigbeeAddress, update);
+            this.zigbeeService.setStatus(actuator.zigbeeAddress, actuator.name, update);
         }
         data.executions.push(EngineExecution.create(new Date(), mixResults, storage));
-        if (data.executions.length > 500) {
+        if (data.executions.length > 50) {
             data.executions.shift();
         }
         this.saveData();

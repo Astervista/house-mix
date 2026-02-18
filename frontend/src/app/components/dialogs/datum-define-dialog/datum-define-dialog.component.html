@@ -12,7 +12,8 @@
             <mat-error>This name is already in use</mat-error>
         }
     </mat-form-field>
-    <house-mix-datum-input>
+    <house-mix-datum-input
+        [fixNullable]="this.data.fixNullable ?? null">
 
     </house-mix-datum-input>
 </mat-dialog-content>

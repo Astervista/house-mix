@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {BasePath, Delete, Get, Patch, Put} from '../../utils/networking/decorators';
+import {BasePath, Delete, Get, Patch, Put} from '../utils/networking/decorators';
 import {Mix, MixJSON} from '@common/mixing/mix/mix';
 import {HttpClient} from '@angular/common/http';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON, PutMixBodyJSON} from '@common/mixing/mix/rest-classes';
@@ -18,6 +18,9 @@ export class MixingService {
     @Get('/graph/', {result: MixingGraph})
     public getGraph!: () => Promise<MixingGraph>;
 
+    @Put<PutMixBodyJSON, { id: number }>('/mixes')
+    private putMixRest!: (body: PutMixBodyJSON) => Promise<{ id: number }>;
+
     @Get('/mixes/:id/', {result: Mix, resultIsArray: false})
     public getMix!: (pathParams: { id: number }) => Promise<Mix>;
 
@@ -35,9 +38,6 @@ export class MixingService {
 
     @Put<MixLayout, null>('/mixes/:id/layout', {result: null})
     public updateMixLayout!: (body: MixLayout, pathParams: { id: number }) => Promise<void>;
-
-    @Put<PutMixBodyJSON, { id: number }>('/mixes')
-    private putMixRest!: (body: PutMixBodyJSON) => Promise<{ id: number }>;
 
     @Get(
         '/available-imports/',

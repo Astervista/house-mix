@@ -1,0 +1,22 @@
+<span
+    class="display-name">
+    {{ ADJUSTMENT_TYPE_DISPLAY[adjustment.type] }}</span>
+<div class="content">
+    @if (adjustmentIsOnOff(adjustment) || (adjustmentIsSplitCommands(adjustment))) {
+        <span class="center-title">
+            Actuator code:
+        </span>
+        <span class="center-value">
+                {{ adjustment.data.actuatorName }}
+        </span>
+    }
+
+</div>
+
+
+@if (adjustmentIsOnOff(adjustment)) {
+    <span class="current-value">
+        <span class="title">Min brightness</span>
+        <span class="value">{{ adjustment.data.minValidBrightness }}</span>
+    </span>
+}

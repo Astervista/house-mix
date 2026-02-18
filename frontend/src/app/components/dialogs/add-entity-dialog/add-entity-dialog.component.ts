@@ -482,11 +482,14 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     }
 
     protected set deviceExposesFromLibrary(data: Datum[]) {
-        this.deviceExposes = data.map(
-            datum =>
-                new Datum(datum.name, datum.type, datum.nullable)
+        this.deviceExposes.push(
+            ...data
+                .map(datum =>
+                         new Datum(datum.name, datum.type, datum.nullable)
+                )
+                .filter(datum => !this.deviceExposes.some(d => d.name == datum.name))
         );
-        this.exposesDirty  = true;
+        this.exposesDirty = true;
     }
 
     protected removeDeviceExposes(datum: Datum): void {
@@ -514,7 +517,8 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
                           {
                               data: {
                                   forbiddenNames: this.deviceExposes.map(input => input.name),
-                                  title:          'Define a new property'
+                                  title:       'Define a new property',
+                                  fixNullable: this.data.entityType == EntityType.SENSOR
                               }
                           }
                       );

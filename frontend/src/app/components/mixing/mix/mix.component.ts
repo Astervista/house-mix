@@ -3,7 +3,7 @@ import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
 import {firstValueFrom} from 'rxjs';
-import {MixingService} from '../mixing.service';
+import {MixingService} from '../../../services/mixing.service';
 import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
 import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';

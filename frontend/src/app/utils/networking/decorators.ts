@@ -2,8 +2,9 @@ import {HttpClient, HttpParams} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
 import {API_ENDPOINT} from '../constants';
 
+
 interface GetOptions<T> {
-    result: new (...args: never[]) => T;
+    result: { prototype: T };
     resultIsArray?: boolean;
     httpParams?: HttpParams;
     queryParams?: Record<string, boolean>

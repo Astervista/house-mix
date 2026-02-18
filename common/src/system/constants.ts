@@ -7,6 +7,13 @@ export enum SystemOrigin {
     ENVIRONMENT   = "ENVIRONMENT"
 }
 
+export enum SystemEntity {
+    PARAMETER     = "PARAMETER",
+    TIMER         = "TIMER",
+    DEVICE_STATUS = "DEVICE_STATUS",
+    ADJUSTMENT    = "ADJUSTMENT"
+}
+
 export enum EnvironmentInput {
     TIME            = "TIME",
     DATE            = "DATE",

@@ -16,9 +16,9 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
 import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
 import {ReactiveFormsModule} from '@angular/forms';
-import {MixingService} from '../../mixing/mixing.service';
 import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/entity-names-inputs.component';
 import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
+import {MixingService} from '../../../services/mixing.service';
 
 
 interface AddMixDialogDefaults {
@@ -108,7 +108,7 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         this.selectedElement = null;
     }
 
-    public phaseKey(event: KeyboardEvent): void {
+    protected phaseKey(event: KeyboardEvent): void {
         if (event.key == 'ArrowLeft') {
             const phases       = Object.values(MixPhase);
             const index        = phases.indexOf(this._selectedPhase);
@@ -141,7 +141,7 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         this.selectedElement = null;
     }
 
-    public targetKey(event: KeyboardEvent): void {
+    protected targetKey(event: KeyboardEvent): void {
 
         if (event.key == 'ArrowLeft' || event.key == 'ArrowRight' || event.key == 'Space') {
             if (this._selectedTarget == MixTarget.DEVICE) {
@@ -152,8 +152,8 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
-    public elementsListKey(event: KeyboardEvent): void {
-        let list: (Group | Sensor | Actuator)[] = [];
+    protected elementsListKey(event: KeyboardEvent): void {
+        let list: (Group | Sensor | Actuator)[];
         if (this._selectedPhase == MixPhase.SENSORS) {
             if (this.selectedTarget == MixTarget.DEVICE) {
                 list = this.sensors ?? [];

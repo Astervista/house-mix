@@ -120,4 +120,42 @@
             </house-mix-loading-scrim>
         }
     </div>
+    <div class="section-title">
+        <span>
+            Adjustments
+        </span>
+        <button
+            mat-icon-button
+            matTooltip="Monitor a new device"
+            matTooltipPosition="above"
+            [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+            (click)="addAdjustment()">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+    <div
+        class="section-content"
+        [class.fixed-height]="adjustmentsLoadingStatus != LoadingStatus.LOADED || this.adjustments.length == 0">
+        @if (this.adjustmentsLoadingStatus == LoadingStatus.LOADED) {
+            @if (this.adjustments.length > 0) {
+                @for (adjustment of this.adjustments; track adjustment) {
+                    <house-mix-adjustment
+                        [adjustment]="adjustment"
+                        [selected]="this.selected == adjustment"
+                        (click)="this.selected = adjustment; $event.stopPropagation()"
+                        (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
+
+                    </house-mix-adjustment>
+                }
+            } @else {
+                <span class="no-items">There is currently no adjustment applied to the system</span>
+            }
+        } @else {
+            <house-mix-loading-scrim
+                [loadingStatus]="adjustmentsLoadingStatus"
+                (reload)="loadAdjustments()">
+
+            </house-mix-loading-scrim>
+        }
+    </div>
 </div>

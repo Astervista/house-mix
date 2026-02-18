@@ -20,10 +20,13 @@ import {ConstantEditDialogComponent} from '../mixing/mix/constant-edit-dialog/co
 import {Datum} from '@common/mixing/mix/datum';
 import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 import {DeleteEntityDialogComponent, DeleteEntityDialogData} from '../dialogs/delete-entity-dialog/delete-entity-dialog.component';
-import {SystemOrigin} from '@common/system/constants';
+import {SystemEntity} from '@common/system/constants';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {DeviceMonitorDeviceComponent} from '../entities/system/device-monitor-device/device-monitor-device.component';
 import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device-monitor-device-dialog/system-device-monitor-device-dialog.component';
+import {SystemAdjustmentDialogComponent} from '../dialogs/system-adjustment-dialog/system-adjustment-dialog.component';
+import {Adjustment} from '@common/system/adjustment/adjustment';
+import {AdjustmentComponent} from '../entities/system/adjustment/adjustment.component';
 
 
 @Component({
@@ -36,7 +39,8 @@ import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device
                    MatTooltip,
                    ParameterComponent,
                    TimerComponent,
-                   DeviceMonitorDeviceComponent
+                   DeviceMonitorDeviceComponent,
+                   AdjustmentComponent
                ],
                templateUrl: './system.component.html',
                styleUrl:    './system.component.scss'
@@ -52,7 +56,10 @@ export class SystemComponent {
     protected devices: DeviceMonitorDevice[]      = [];
     protected devicesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
-    protected selected: SystemParameter | SystemTimer | DeviceMonitorDevice | null = null;
+    protected adjustments: Adjustment<unknown, unknown>[] = [];
+    protected adjustmentsLoadingStatus: LoadingStatus     = LoadingStatus.LOADING;
+
+    protected selected: SystemParameter | SystemTimer | DeviceMonitorDevice | Adjustment<unknown, unknown> | null = null;
 
     constructor(
         private router: Router,
@@ -63,17 +70,18 @@ export class SystemComponent {
         this.loadParameters();
         this.loadTimers();
         this.loadDeviceMonitors();
+        this.loadAdjustments();
     }
 
-    protected loadDeviceMonitors(): void {
+    protected loadParameters(): void {
         this.systemService
-            .getDeviceMonitorDevices()
-            .then(devices => {
-                this.devices              = devices;
-                this.devicesLoadingStatus = LoadingStatus.LOADED;
+            .getParameters()
+            .then(parameters => {
+                this.parameters              = parameters;
+                this.parametersLoadingStatus = LoadingStatus.LOADED;
             })
             .catch(() => {
-                this.devicesLoadingStatus = LoadingStatus.ERROR;
+                this.parametersLoadingStatus = LoadingStatus.ERROR;
             });
     }
 
@@ -89,15 +97,27 @@ export class SystemComponent {
             });
     }
 
-    protected loadParameters(): void {
+    protected loadDeviceMonitors(): void {
         this.systemService
-            .getParameters()
-            .then(parameters => {
-                this.parameters              = parameters;
-                this.parametersLoadingStatus = LoadingStatus.LOADED;
+            .getDeviceMonitorDevices()
+            .then(devices => {
+                this.devices              = devices;
+                this.devicesLoadingStatus = LoadingStatus.LOADED;
             })
             .catch(() => {
-                this.parametersLoadingStatus = LoadingStatus.ERROR;
+                this.devicesLoadingStatus = LoadingStatus.ERROR;
+            });
+    }
+
+    protected loadAdjustments(): void {
+        this.systemService
+            .getAdjustments()
+            .then(adjustments => {
+                this.adjustments              = adjustments;
+                this.adjustmentsLoadingStatus = LoadingStatus.LOADED;
+            })
+            .catch(() => {
+                this.adjustmentsLoadingStatus = LoadingStatus.ERROR;
             });
     }
 
@@ -130,7 +150,7 @@ export class SystemComponent {
             case ToolbarAction.CHANGE_PARAMETER_VALUE:
                 return this.selected != null && this.selected instanceof SystemParameter;
             case ToolbarAction.EDIT:
-                return this.selected != null && (this.selected instanceof SystemTimer || this.selected instanceof DeviceMonitorDevice);
+                return this.selected != null && (this.selected instanceof SystemTimer || this.selected instanceof DeviceMonitorDevice || this.selected instanceof Adjustment);
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
@@ -221,6 +241,35 @@ export class SystemComponent {
                                     });
                             }
                         });
+                } else if (selected != null && (selected instanceof Adjustment)) {
+                    this.matDialog
+                        .open(
+                            SystemAdjustmentDialogComponent,
+                            {
+                                data: {
+                                    edit: selected
+                                }
+                            }
+                        )
+                        .afterClosed()
+                        .subscribe((result: Adjustment<unknown, unknown> | undefined) => {
+                            if (result != null) {
+                                this.systemService
+                                    .editAdjustment(result, {id: selected.id as number})
+                                    .then(() => {
+                                        selected.data = result.data;
+                                    })
+                                    .catch(() => {
+                                        this.snackBar.open(
+                                            'There has been an error while editing the adjustment',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
+                        });
                 }
                 break;
             }
@@ -283,19 +332,25 @@ export class SystemComponent {
                 const selected                          = this.selected;
                 if (selected instanceof SystemParameter) {
                     data = {
-                        entityType:        SystemOrigin.PARAMETER,
+                        entityType: SystemEntity.PARAMETER,
                         parameterToDelete: selected
                     };
                 }
                 if (selected instanceof SystemTimer) {
                     data = {
-                        entityType:    SystemOrigin.TIMER,
+                        entityType: SystemEntity.TIMER,
                         timerToDelete: selected
                     };
                 }
                 if (selected instanceof DeviceMonitorDevice) {
                     data = {
-                        entityType:     SystemOrigin.DEVICE_STATUS,
+                        entityType:     SystemEntity.DEVICE_STATUS,
+                        deviceToDelete: selected
+                    };
+                }
+                if (selected instanceof Adjustment) {
+                    data = {
+                        entityType: SystemEntity.ADJUSTMENT,
                         deviceToDelete: selected
                     };
                 }
@@ -312,6 +367,7 @@ export class SystemComponent {
                     .afterClosed()
                     .subscribe(result => {
                         if (result == true) {
+                            this.selected = null;
                             if (selected instanceof SystemParameter) {
                                 this.systemService
                                     .deleteParameter({
@@ -368,6 +424,27 @@ export class SystemComponent {
                                     .catch(() => {
                                         this.snackBar.open(
                                             'There has been an error while deleting the device from monitoring',
+                                            undefined,
+                                            {
+                                                duration: SNACKBAR_TIMEOUT
+                                            }
+                                        );
+                                    });
+                            }
+                            if (selected instanceof Adjustment) {
+                                this.systemService
+                                    .deleteAdjustment({
+                                                          id: selected.id as number
+                                                      })
+                                    .then(() => {
+                                        const index = this.adjustments.indexOf(selected);
+                                        if (index != -1) {
+                                            this.adjustments.splice(index, 1);
+                                        }
+                                    })
+                                    .catch(() => {
+                                        this.snackBar.open(
+                                            'There has been an error while deleting the adjustment',
                                             undefined,
                                             {
                                                 duration: SNACKBAR_TIMEOUT
@@ -465,6 +542,37 @@ export class SystemComponent {
                         .catch(() => {
                             this.snackBar.open(
                                 'There has been an error while creating the device monitoring',
+                                undefined,
+                                {
+                                    duration: SNACKBAR_TIMEOUT
+                                }
+                            );
+                        });
+                }
+            });
+    }
+
+    protected addAdjustment(): void {
+        this.matDialog
+            .open(
+                SystemAdjustmentDialogComponent,
+                {
+                    data: {}
+                }
+            )
+            .afterClosed()
+            .subscribe((result: Adjustment<unknown, unknown> | undefined) => {
+                if (result != null) {
+                    // console.log(result);
+                    this.systemService
+                        .createAdjustment(result)
+                        .then((id) => {
+                            result.id = id.id;
+                            this.adjustments.push(result);
+                        })
+                        .catch(() => {
+                            this.snackBar.open(
+                                'There has been an error while creating the adjustment',
                                 undefined,
                                 {
                                     duration: SNACKBAR_TIMEOUT

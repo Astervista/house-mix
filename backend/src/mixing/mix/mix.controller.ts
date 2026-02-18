@@ -17,6 +17,20 @@ export class MixController {
         return mixes.map(dev => dev.toJSON());
     }
     
+    @Put("mixes/")
+    public async create(
+        @Body()
+        data: PutMixBodyJSON
+    ): Promise<{ id: number }> {
+        const mixInfo = mixInfoFromJSON(data.position);
+        if (mixInfo == null) {
+            throw new BadRequestException("The position information is not correct");
+        }
+        return {
+            id: await this.mixService.putMix(Mix.fromJSON(data.mix), mixInfo)
+        };
+    }
+    
     @Get("mixes/:id")
     public async getById(@Param("id", new ParseIntPipe()) id: number): Promise<MixJSON> {
         const mix = await this.mixService.getMixById(id);
@@ -52,6 +66,7 @@ export class MixController {
         return await this.mixService.getMixLayout(id);
     }
     
+    
     @Put("mixes/:id/layout")
     public async saveLayout(@Param("id", new ParseIntPipe()) id: number, @Body() layout: MixLayout): Promise<void> {
         (layout as { nodePositions: Record<string, Point> | null }).nodePositions ??= {};
@@ -74,21 +89,6 @@ export class MixController {
             }
         }
         await this.mixService.saveMixLayout(id, layout);
-    }
-    
-    
-    @Put("mixes/")
-    public async create(
-        @Body()
-        data: PutMixBodyJSON
-    ): Promise<{ id: number }> {
-        const mixInfo = mixInfoFromJSON(data.position);
-        if (mixInfo == null) {
-            throw new BadRequestException("The position information is not correct");
-        }
-        return {
-            id: await this.mixService.putMix(Mix.fromJSON(data.mix), mixInfo)
-        };
     }
     
     @Get("available-imports/")

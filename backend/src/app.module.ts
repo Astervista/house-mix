@@ -11,19 +11,24 @@ import {SensorService} from "./devices/sensor/sensor.service";
 import {SensorController} from "./devices/sensor/sensor.controller";
 import {ParametersController} from "./system/parameters/parameters.controller";
 import {ParametersService} from "./system/parameters/parameters.service";
-import { TimersService } from './system/timers/timers.service';
-import { TimersController } from './system/timers/timers.controller';
+import {TimersService} from "./system/timers/timers.service";
+import {TimersController} from "./system/timers/timers.controller";
 import {EngineService} from "./engine/engine.service";
 import {DeviceMonitorService} from "./system/device-monitor/device-monitor.service";
 import {DeviceMonitorController} from "./system/device-monitor/device-monitor.controller";
+import {AdjustmentsController} from "./system/adjustments/adjustments.controller";
+import {AdjustmentsService} from "./system/adjustments/adjustments.service";
 
 @Module({
             imports:     [],
-            controllers: [ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController, DeviceMonitorController],
-            providers:   [ZigbeeService, FileService, GroupService, ActuatorService, SensorService, MixService, ParametersService, TimersService, EngineService, DeviceMonitorService]
+            controllers: [ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController, DeviceMonitorController, AdjustmentsController],
+            providers:   [
+                ZigbeeService, FileService, GroupService, ActuatorService, SensorService, MixService, ParametersService, TimersService, EngineService, DeviceMonitorService,
+                AdjustmentsService
+            ]
         })
 export class AppModule {
-
-    private CopyRight_2026_Astervista?: never;
+    
+    private _CopyRight_2026_Astervista?: never;
 
 }

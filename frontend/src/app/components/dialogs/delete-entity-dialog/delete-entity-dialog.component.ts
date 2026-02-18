@@ -20,12 +20,13 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {MatIcon} from '@angular/material/icon';
 import {UnavailableParents} from '@common/devices/rest-classes';
 import {NgTemplateOutlet} from '@angular/common';
-import {SystemOrigin} from '@common/system/constants';
+import {SystemEntity, SystemOrigin} from '@common/system/constants';
 import {SystemParameter} from '@common/system/parameter/system-parameter';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {SystemTimer} from '@common/system/timer/system-timer';
 import {SystemService} from '../../../services/system.service';
 import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
+import {Adjustment} from '@common/system/adjustment/adjustment';
 
 @Component({
                selector:    'house-mix-delete-entity-dialog',
@@ -125,6 +126,25 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
         this.loadDeleteLocks();
     }
 
+    protected get title(): string {
+        switch (this.data.entityType) {
+            case EntityType.SENSOR:
+                return 'Delete sensor';
+            case EntityType.GROUP:
+                return 'Delete group';
+            case EntityType.ACTUATOR:
+                return 'Delete actuator';
+            case SystemEntity.TIMER:
+                return 'Delete system timer';
+            case SystemEntity.PARAMETER:
+                return 'Delete system parameter';
+            case SystemEntity.DEVICE_STATUS:
+                return 'Stop monitoring device';
+            case SystemEntity.ADJUSTMENT:
+                return 'Delete behavior adjustment';
+        }
+    }
+
     protected get canDelete(): boolean {
         return this.deleteLocks == null || this.deleteLocks.length == 0;
     }
@@ -169,14 +189,17 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
             case EntityType.ACTUATOR:
                 lockPromise = this.deviceService.getActuatorDeleteLocks({name: data.actuatorToDelete.name})
                 break;
-            case SystemOrigin.TIMER:
+            case SystemEntity.TIMER:
                 lockPromise = this.systemService.getTimerDeleteLocks({name: data.timerToDelete.name});
                 break;
-            case SystemOrigin.PARAMETER:
+            case SystemEntity.PARAMETER:
                 lockPromise = this.systemService.getParameterDeleteLocks({name: data.parameterToDelete.name});
                 break;
-            case SystemOrigin.DEVICE_STATUS:
+            case SystemEntity.DEVICE_STATUS:
                 lockPromise = this.systemService.getDeviceMonitorDeviceDeleteLocks({name: data.deviceToDelete.name});
+                break;
+            case SystemEntity.ADJUSTMENT:
+                lockPromise = Promise.resolve([]);
                 break;
         }
         lockPromise
@@ -184,9 +207,10 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
                 this.deleteLocksLoadingStatus = LoadingStatus.LOADED;
                 const selfLocks   = locks.filter(lock => {
                     switch (data.entityType) {
-                        case SystemOrigin.DEVICE_STATUS:
-                        case SystemOrigin.TIMER:
-                        case SystemOrigin.PARAMETER:
+                        case SystemEntity.DEVICE_STATUS:
+                        case SystemEntity.TIMER:
+                        case SystemEntity.PARAMETER:
+                        case SystemEntity.ADJUSTMENT:
                             return false;
                         case EntityType.SENSOR:
                             return lock.phase == MixPhase.SENSORS && lock.target == MixTarget.DEVICE && lock.sensorName == data.sensorToDelete.name;
@@ -254,6 +278,7 @@ export class DeleteEntityDialogComponent extends MatDialogComponent<DeleteEntity
     protected readonly MixPhase  = MixPhase;
     protected readonly MixTarget    = MixTarget;
     protected readonly SystemOrigin = SystemOrigin;
+    protected readonly SystemEntity = SystemEntity;
 }
 
 export type DeleteEntityDialogData = {
@@ -268,12 +293,15 @@ export type DeleteEntityDialogData = {
     entityType: EntityType.ACTUATOR;
     actuatorToDelete: Actuator
 } | {
-    entityType: SystemOrigin.TIMER;
+    entityType: SystemEntity.TIMER;
     timerToDelete: SystemTimer
 } | {
-    entityType: SystemOrigin.PARAMETER;
+    entityType: SystemEntity.PARAMETER;
     parameterToDelete: SystemParameter
 } | {
-    entityType: SystemOrigin.DEVICE_STATUS;
+    entityType: SystemEntity.DEVICE_STATUS;
     deviceToDelete: DeviceMonitorDevice
+} | {
+    entityType: SystemEntity.ADJUSTMENT;
+    deviceToDelete: Adjustment<unknown, unknown>
 }

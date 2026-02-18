@@ -12,7 +12,11 @@
 
 
 .display-name {
-    @include entity.name(true)
+    @include entity.name(true);
+
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-medium
 }
 
 .content {
@@ -28,4 +32,21 @@
     .center-value {
         font-weight: 200;
     }
+}
+
+
+.current-value {
+
+    border-top: solid 1px var(--house-mix-entity-border-color);
+    transition: border-top-color 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    padding: dimensions.$margin-medium;
+    gap: dimensions.$indent-msmall;
+
+    .title {
+        font-weight: 200;
+        flex-grow: 1;
+    }
+
 }

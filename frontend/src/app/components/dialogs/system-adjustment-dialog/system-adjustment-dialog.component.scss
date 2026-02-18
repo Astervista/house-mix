@@ -1,0 +1,104 @@
+@use "dimensions";
+@use "../../entities/entity";
+
+.content {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-medium
+}
+
+.adjustment-type {
+    min-width: 450px;
+}
+
+.adjustment-type-option {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: dimensions.$margin-medium;
+    padding: dimensions.$margin-medium;
+}
+
+.adjustment-type-option-description {
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.choice-list {
+    display: flex;
+    align-items: center;
+    gap: dimensions.$margin-large;
+    padding: dimensions.$margin-medium;
+    position: relative;
+    align-content: space-around;
+    min-height: 80px;
+    justify-content: space-around;
+    flex-wrap: wrap;
+
+    --selected-border-width: 3px;
+    --selected-border-width-light: 1px;
+
+    &:focus {
+        outline: none;
+        border: none;
+    }
+
+    &:focus-visible {
+        --selected-border-width: 5px;
+        --selected-border-width-light: 3px;
+    }
+
+    .device-display {
+        @include entity.container;
+
+        cursor: pointer;
+        flex-direction: row;
+        align-items: center;
+        padding: dimensions.$margin-medium dimensions.$margin-mlarge;
+        gap: dimensions.$margin-medium;
+
+        outline-width: var(--selected-border-width-light);
+
+        &.selected {
+            outline-width: var(--selected-border-width);
+        }
+
+        --highlight-color: var(--house-mix-text-color-30);
+        --stroke-color-animation-duration: 0.2s;
+
+        &.group {
+            padding: dimensions.$margin-xlarge;
+        }
+
+        .device-icon {
+            width: 30px;
+            height: 30px;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+            gap: dimensions.$margin-msmall;
+            padding: dimensions.$margin-msmall;
+
+            .name {
+                font-size: 17px;
+                font-weight: 300;
+            }
+
+            .type {
+                font-size: 14px;
+                font-weight: 200;
+            }
+        }
+    }
+
+}
+
+.loading-container {
+    position: relative;
+    height: 60px;
+}

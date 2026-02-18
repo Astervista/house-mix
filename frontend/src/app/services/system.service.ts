@@ -1,12 +1,13 @@
 import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
-import { SystemParameter } from "@common/system/parameter/system-parameter";
-import { SystemTimer } from "@common/system/timer/system-timer";
-import { EntityPathParams } from "@common/utils/rest-classes";
-import { SetParameterBody } from "@common/system/parameter/rest-classes";
+import {BasePath, Delete, Get, Patch, Post, Put} from '../utils/networking/decorators';
+import {SystemParameter} from '@common/system/parameter/system-parameter';
+import {SystemTimer} from '@common/system/timer/system-timer';
+import {EntityPathParams} from '@common/utils/rest-classes';
+import {SetParameterBody} from '@common/system/parameter/rest-classes';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
+import {Adjustment} from '@common/system/adjustment/adjustment';
 
 @Injectable({
                 providedIn: 'root'
@@ -130,4 +131,27 @@ export class SystemService {
             .map(mixInfoFromJSON)
             .filter(a => a != null);
     }
+
+
+    // ADJUSTMENTS
+
+
+    @Get('/adjustments/', {result: Adjustment<unknown, unknown>, resultIsArray: true})
+    public getAdjustments!: () => Promise<Adjustment<unknown, unknown>[]>;
+
+    @Put<Adjustment<unknown, unknown>, { id: number }>(
+        '/adjustments/'
+    )
+    public createAdjustment!: (adjustment: Adjustment<unknown, unknown>) => Promise<{ id: number }>;
+
+    @Delete<null, null>(
+        '/adjustments/:id/'
+    )
+    public deleteAdjustment!: (params: { id: number }) => Promise<void>;
+
+    @Patch<Adjustment<unknown, unknown>, null>(
+        '/adjustments/:id'
+    )
+    public editAdjustment!: (changes: Adjustment<unknown, unknown>, params: { id: number }) => Promise<void>;
+
 }

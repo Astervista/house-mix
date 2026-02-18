@@ -4,7 +4,7 @@ import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDi
 import {Datum, DatumType, DatumTypeColor, DatumTypeColorBase} from '@common/mixing/mix/datum';
 import {MatError, MatFormField, MatHint, MatInput, MatInputModule, MatLabel} from '@angular/material/input';
 import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors} from '@angular/forms';
-import {MatTimepicker, MatTimepickerInput, MatTimepickerToggle} from '@angular/material/timepicker';
+import {MatTimepicker, MatTimepickerInput} from '@angular/material/timepicker';
 import {MatNativeDateModule} from '@angular/material/core';
 import {MatDatepickerModule} from '@angular/material/datepicker';
 import {MatIcon} from '@angular/material/icon';
@@ -46,7 +46,6 @@ export const DATE_FORMAT = {
                    MatInput,
                    ReactiveFormsModule,
                    MatTimepickerInput,
-                   MatTimepickerToggle,
                    MatTimepicker,
                    MatDatepickerModule,
                    MatNativeDateModule,

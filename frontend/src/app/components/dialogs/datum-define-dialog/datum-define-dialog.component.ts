@@ -1,5 +1,5 @@
 import {AfterViewInit, Component, Inject, ViewChild} from '@angular/core';
-import {MAT_DIALOG_DATA, MatDialogActions,  MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
+import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {Datum, DatumType} from '@common/mixing/mix/datum';
 import {MatButton} from '@angular/material/button';
 import {AbstractControl, FormControl, ReactiveFormsModule, ValidationErrors, Validators} from '@angular/forms';
@@ -93,4 +93,5 @@ export class DatumDefineDialogComponent extends MatDialogComponent<OutputDefineD
 export interface OutputDefineDialogData {
     forbiddenNames: string[];
     title?: string;
+    fixNullable?: boolean;
 }

@@ -3,7 +3,7 @@ import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary
 import {Router} from '@angular/router';
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
 import {AddMixDialogComponent} from '../dialogs/add-mix-dialog/add-mix-dialog.component';
-import {MixingService} from './mixing.service';
+import {MixingService} from '../../services/mixing.service';
 import {MixGraphElement, MixingGraph, MixingGraphActuator, MixingGraphCenter, MixingGraphDependency, MixingGraphGroup, MixingGraphSensor} from '@common/mixing/mixing-graph';
 import {DatumOrigin} from '@common/mixing/mix/datum';
 import {DATUM_ORIGIN_DISPLAY, graphConnectionSmoothPath, Line, MEASURES} from './constants';

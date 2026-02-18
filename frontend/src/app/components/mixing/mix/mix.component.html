@@ -962,7 +962,7 @@
                                         class="node-heading-text"
                                         [attr.x]="MEASURES.NODE_WIDTH / 2"
                                         y="0">
-                                        {{ ELABORATION_NODE_DISPLAY_NAME[node.code] }}
+                                        {{ ELABORATION_NODE_DISPLAY_NAME[node.code] }} - {{ node.id }}
                                     </text>
                                     @for (inputInfo of getAllNodeInputs(node); track $index; let inputIndex = $index) {
                                         @let input = inputInfo.datum;

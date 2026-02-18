@@ -1,6 +1,7 @@
 import {Injectable} from "@nestjs/common";
 import {connect, MqttClient} from "mqtt";
 import {Observable, Subject} from "rxjs";
+import {AdjustmentAnimationOff, AdjustmentAnimationOn, AdjustmentSplitCommands} from "@common/system/adjustment/adjustment";
 
 export interface StatusUpdate<T> {
     old: T,
@@ -18,9 +19,13 @@ export class ZigbeeService {
     
     private _deviceStatusCache: Map<string, Record<string, unknown>> = new Map<string, Record<string, unknown>>();
     
-    private queue: { address: string, value: unknown }[] = [];
+    private queue: { address: string, value: Record<string, unknown>, futureSends: Record<string, unknown>[], futureSendDelays: number[] }[] = [];
     
     private queueBusy: boolean = false;
+    
+    private adjustedPendingTimeout: Map<string, NodeJS.Timeout> = new Map<string, NodeJS.Timeout>;
+    
+    public transitionAdjustments: (AdjustmentAnimationOff | AdjustmentAnimationOn | AdjustmentSplitCommands)[] = [];
     
     constructor() {
         
@@ -72,14 +77,129 @@ export class ZigbeeService {
         return false;
     }
     
-    public setStatus(address: string, value: Record<string, unknown>): void {
+    public setStatus(address: string, deviceName: string, value: Record<string, unknown>): void {
+        for (const key of Object.keys(value)) {
+            if (value[key] == null) {
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                delete value[key];
+            }
+        }
+        const transitionAdjustmentOff =
+                  this.transitionAdjustments.find((adjustment): adjustment is AdjustmentAnimationOff =>
+                                                      adjustment.data.actuatorName == deviceName && adjustment instanceof AdjustmentAnimationOff);
+        const transitionAdjustmentOn  =
+                  this.transitionAdjustments.find((adjustment): adjustment is AdjustmentAnimationOn =>
+                                                      adjustment.data.actuatorName == deviceName && adjustment instanceof AdjustmentAnimationOn);
+        const splitAdjustment         =
+                  this.transitionAdjustments.find((adjustment): adjustment is AdjustmentSplitCommands =>
+                                                      adjustment.data.actuatorName == deviceName && adjustment instanceof AdjustmentSplitCommands);
+        
+        let futureSends: Record<string, unknown>[] = [];
+        let futureSendDelays: number[]             = [];
+        const currentStatusForAddress              = this._deviceStatusCache.get(address);
+        if (transitionAdjustmentOff != null && currentStatusForAddress != null) {
+            if ("brightness" in value && value["brightness"] == 0) {
+                value["state"] = "OFF";
+                delete value["brightness"];
+            }
+            if ("state" in value && value["state"] == "OFF") {
+                delete value["brightness"];
+            }
+            if ("brightness" in value && value["brightness"] as number > 0) {
+                value["state"] = "ON";
+            }
+            if ("transition" in value && value["transition"] == 0) {
+                delete value["transition"];
+            }
+            if (
+                "state" in currentStatusForAddress
+                && currentStatusForAddress["state"] == "ON"
+                && (
+                    ("state" in value && value["state"] == "OFF")
+                ) && ("transition" in value)) {
+                const newCommand = {...value};
+                futureSends.push(newCommand);
+                futureSendDelays.push(value["transition"] as number);
+                delete newCommand["transition"];
+                
+                value["state"]      = "ON";
+                value["brightness"] = transitionAdjustmentOff.data.minValidBrightness;
+            }
+        }
+        if (transitionAdjustmentOn != null && currentStatusForAddress != null) {
+            if ("brightness" in value && value["brightness"] == 0) {
+                value["state"] = "OFF";
+                delete value["brightness"];
+            }
+            if ("state" in value && value["state"] == "OFF") {
+                delete value["brightness"];
+            }
+            if ("brightness" in value && value["brightness"] as number > 0) {
+                value["state"] = "ON";
+            }
+            if ("transition" in value && value["transition"] == 0) {
+                delete value["transition"];
+            }
+            if (
+                "state" in currentStatusForAddress
+                && currentStatusForAddress["state"] == "OFF"
+                && (
+                    ("state" in value && value["state"] == "ON")
+                ) && ("transition" in value)) {
+                futureSends.push({...value});
+                futureSendDelays.push(0.05);
+                
+                value["brightness"] = transitionAdjustmentOn.data.minValidBrightness;
+                delete value["transition"];
+            }
+        }
+        if (splitAdjustment) {
+            const oldFutureSend = futureSends;
+            futureSends         = [];
+            futureSendDelays    = [];
+            let split           = this.splitCommand(value);
+            value               = split.shift() as Record<string, unknown>;
+            futureSends.push(...split);
+            futureSendDelays.push(...split.map(s => "transition" in s ? (s["transition"] as number) : 0));
+            for (const send of oldFutureSend) {
+                split = this.splitCommand(send);
+                futureSends.push(...split);
+                futureSendDelays.push(...split.map(s => "transition" in s ? (s["transition"] as number) : 0));
+            }
+        }
+        this.enqueue(address, value, futureSends, futureSendDelays);
+    }
+    
+    private splitCommand(command: Record<string, unknown>): Record<string, unknown>[] {
+        const result: Record<string, unknown>[] = [];
+        if (!("transition" in command) || command["transition"] == 0) {
+            result.push(command);
+            return result;
+        }
+        for (const property of SPLITTABLE_PROPERTIES) {
+            if (command[property] != null) {
+                const cleanCommand: Record<string, unknown> = {};
+                for (const key of Object.keys(command)) {
+                    if (key == property || !SPLITTABLE_PROPERTIES.includes(key)) {
+                        cleanCommand[key] = command[key];
+                    }
+                }
+                result.push(cleanCommand);
+            }
+        }
+        return result;
+    }
+    
+    private enqueue(address: string, value: Record<string, unknown>, futureSends: Record<string, unknown>[], futureSendDelays: number[]): void {
         const currentStatusForAddress = this._deviceStatusCache.get(address);
         const needsUpdate             = currentStatusForAddress == null || this.checkAdditionForChanges(currentStatusForAddress, value);
         const pendingUpdate           = this.queue.find(item => item.address == address);
         if (needsUpdate && pendingUpdate == null) {
-            this.queue.push({address, value});
+            this.queue.push({address, value, futureSends, futureSendDelays});
         } else if (needsUpdate && pendingUpdate != null) {
-            pendingUpdate.value = value;
+            pendingUpdate.value            = value;
+            pendingUpdate.futureSends      = futureSends;
+            pendingUpdate.futureSendDelays = futureSendDelays;
         } else if (!needsUpdate && pendingUpdate != null) {
             this.queue.splice(this.queue.indexOf(pendingUpdate), 1);
         }
@@ -95,6 +215,16 @@ export class ZigbeeService {
             const item     = this.queue.shift();
             if (item) {
                 this.client.publish(`zigbee2mqtt/0x${item.address.replace("/", "")}/set`, JSON.stringify(item.value));
+                const futureSends = item.futureSends;
+                if (futureSends.length > 0) {
+                    if (this.adjustedPendingTimeout.has(item.address)) {
+                        clearTimeout(this.adjustedPendingTimeout.get(item.address));
+                    }
+                    const futureDelay = item.futureSendDelays.shift() as number;
+                    this.adjustedPendingTimeout.set(item.address, setTimeout(() => {
+                        this.enqueue(item.address, futureSends.shift() as Record<string, unknown>, futureSends, item.futureSendDelays);
+                    }, futureDelay * 1000));
+                }
             }
             setTimeout(() => {
                 this.queueBusy = false;
@@ -134,3 +264,6 @@ export class ZigbeeService {
     }
     
 }
+
+
+const SPLITTABLE_PROPERTIES = ["brightness", "color_temp", "color"];
