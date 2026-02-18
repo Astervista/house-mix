@@ -1,7 +1,7 @@
 {
   "name": "common",
-  "version": "0.1.0",
-  "description": " Common classes to be used both in the backend and frontend",
+  "version": "0.2.0",
+  "description": "Common classes to be used both in the backend and frontend",
   "license": "ISC",
   "author": "Asterio Fiora",
   "type": "commonjs",
