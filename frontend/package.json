@@ -1,11 +1,12 @@
 {
-  "name": "house-mix",
+    "name": "house-mix-frontend",
     "version": "0.2.0",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "start-dev": "ng serve --build-target=house-mix:build:development --port 4201\n",
-    "build": "ng build",
+      "build:common": "tsc -p ../common/tsconfig.json",
+      "build": "npm run build:common && ng build --configuration production --base-href /house-mix/",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "serve:ssr:house-mix": "node dist/house-mix/server/server.mjs"

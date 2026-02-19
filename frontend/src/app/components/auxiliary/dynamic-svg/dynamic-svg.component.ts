@@ -2,6 +2,7 @@ import {Component, HostBinding, Input} from '@angular/core';
 import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
 import {HttpClient} from '@angular/common/http';
 import {catchError, firstValueFrom, of} from 'rxjs';
+import {RESOURCE_ROOT} from '../../../utils/constants';
 
 @Component({
                selector: 'house-mix-dynamic-svg',
@@ -12,6 +13,9 @@ import {catchError, firstValueFrom, of} from 'rxjs';
 export class DynamicSvgComponent {
 
     @Input() public set src(src: string | null) {
+        if (src != null) {
+            src = RESOURCE_ROOT + src;
+        }
         if (this._src != src) {
             if (src == null) {
                 this.svg = null;

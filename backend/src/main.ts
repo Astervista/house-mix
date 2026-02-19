@@ -1,7 +1,7 @@
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app.module";
 import {ConsoleLogger, ValidationPipe} from "@nestjs/common";
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
 
 async function bootstrap(): Promise<void> {
     const app = await NestFactory.create(AppModule, {
@@ -14,10 +14,19 @@ async function bootstrap(): Promise<void> {
             whitelist: true,
         }
     ));
-  
-    app.enableCors({
-                     origin: 'http://localhost:4201',
-                   });
+    
+    
+    const isProd = process.env["NODE_ENV"] === "production";
+    
+    if (isProd) {
+        app.setGlobalPrefix("house-mix/api");
+        console.log("Running in production");
+    } else {
+        app.enableCors({
+                           origin: "http://localhost:4201"
+                       });
+        console.log("Running in development");
+    }
     
     const config = new DocumentBuilder()
       .setTitle('My API')

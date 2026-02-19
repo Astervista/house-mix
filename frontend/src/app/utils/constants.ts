@@ -1,6 +1,8 @@
-import { DatumType } from "@common/mixing/mix/datum";
+import {DatumType} from '@common/mixing/mix/datum';
+import {isDevMode} from '@angular/core';
 
-export const API_ENDPOINT = "http://localhost:3001/"
+export const API_ENDPOINT: string  = isDevMode() ? 'http://localhost:3001/' : '/house-mix/api/';
+export const RESOURCE_ROOT: string = isDevMode() ? '/' : '/house-mix/';
 
 export const SNACKBAR_TIMEOUT = 5000;
 export const TOOLTIP_TIMEOUT = 1000;
