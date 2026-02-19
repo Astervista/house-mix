@@ -3,7 +3,6 @@
   "version": "0.2.1",
   "description": "",
   "author": "",
-  "private": true,
   "license": "UNLICENSED",
   "main": "dist/backend/src/main.js",
   "types": "dist/backend/src/main.d.ts",
