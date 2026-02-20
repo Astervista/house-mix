@@ -25,6 +25,12 @@ jobs:
         working-directory: ./backend
         run: npm ci
 
+      - name: Cache Common Dependencies
+        uses: actions/cache@v3
+        with:
+          path: common/node_modules
+          key: common-deps-${{ hashFiles('common/package-lock.json') }}
+
       - name: Install Common Dependencies
         working-directory: ./common
         run: npm ci
@@ -50,6 +56,16 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 24
+
+      - name: Cache Common Dependencies
+        uses: actions/cache@v3
+        with:
+          path: common/node_modules
+          key: common-deps-${{ hashFiles('common/package-lock.json') }}
+
+      - name: Compile common typescript
+        working-directory: ./common
+        run: tsc
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
