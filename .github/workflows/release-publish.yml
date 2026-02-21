@@ -9,6 +9,28 @@ permissions:
   packages: write
 
 jobs:
+  publish-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      # Check out the repo
+      - uses: actions/checkout@v3
+
+      # Package the bundle folder
+      - name: Create bundle artifact
+        run: |
+          mkdir -p bundle-artifact
+          cp -r containers/bundle/* bundle-artifact/
+          zip -r house-mix-bundle.zip bundle-artifact
+
+      # Upload as a release artifact
+      - name: Upload bundle artifact
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./house-mix-bundle.zip
+          asset_name: house-mix-bundle.zip
+          asset_content_type: application/zip
+
   backend:
     name: Build & Publish NestJS Backend
     runs-on: ubuntu-latest
@@ -62,10 +84,6 @@ jobs:
         with:
           path: common/node_modules
           key: common-deps-${{ hashFiles('common/package-lock.json') }}
-
-      - name: Compile common typescript
-        working-directory: ./common
-        run: tsc
 
       - name: Install Frontend Dependencies
         working-directory: ./frontend
