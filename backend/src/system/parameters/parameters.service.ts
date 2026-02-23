@@ -82,9 +82,9 @@ class ParameterData {
     
     public parameters: SystemParameter[];
     
-    constructor(mixDataJSON?: ParameterDataJSON) {
-        if (mixDataJSON) {
-            this.parameters = mixDataJSON.parameters.map((parameter: SystemParameterJSON) => SystemParameter.fromJSON(parameter));
+    constructor(parameterDataJSON?: ParameterDataJSON) {
+        if (parameterDataJSON) {
+            this.parameters = parameterDataJSON.parameters.map((parameter: SystemParameterJSON) => SystemParameter.fromJSON(parameter));
             
         } else {
             this.parameters = [];
@@ -93,7 +93,7 @@ class ParameterData {
     
     public toJSON(): ParameterDataJSON {
         return {
-            parameters: this.parameters.map((mix: SystemParameter) => mix.toJSON()),
+            parameters: this.parameters.map((parameter: SystemParameter) => parameter.toJSON())
         };
     }
 }

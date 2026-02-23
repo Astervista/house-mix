@@ -1,0 +1,86 @@
+@use "dimensions";
+@use "full-page";
+
+:host {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    --house-mix-entity-animation-speed: 0.2s;
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    flex-grow: 1;
+    flex-basis: 0;
+    padding: 0 dimensions.$margin-large;
+
+    .section {
+        display: flex;
+        flex-direction: column;
+        gap: dimensions.$margin-medium;
+
+        .title {
+            font-size: 1.2em;
+            color: var(--mat-sys-primary);
+            font-weight: 300;
+        }
+
+        .list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+
+            .setting {
+                display: flex;
+                position: relative;
+                align-items: center;
+                padding: dimensions.$margin-xlarge;
+                border-radius: dimensions.$margin-large;
+                overflow: hidden;
+                min-height: 70px;
+                box-sizing: border-box;
+
+                &:not(.bare) {
+                    cursor: pointer;
+                }
+
+                .back-ripple {
+                    position: absolute;
+                    width: 100%;
+                    height: 100%;
+                    top: 0;
+                    left: 0;
+                }
+
+                .text-info {
+                    display: flex;
+                    flex-direction: column;
+                    flex-grow: 1;
+                    flex-basis: 0;
+                    gap: dimensions.$margin-mlarge;
+
+                    .main {
+                        font-size: 1.05rem;
+                        font-weight: 200;
+                    }
+
+                    .description {
+                        font-weight: 100;
+                        color: var(--house-mix-text-color-70);
+                    }
+                }
+
+            }
+        }
+    }
+
+}
+
+.search {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 dimensions.$margin-xlarge;
+}

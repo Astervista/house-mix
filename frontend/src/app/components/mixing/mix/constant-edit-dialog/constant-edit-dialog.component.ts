@@ -122,8 +122,18 @@ export class ConstantEditDialogComponent extends MatDialogComponent<ConstantEdit
                 const number       = (data.value as number | null) ?? Datum.getDefaultForType(data.type) as number;
                 this.selectedValue = number;
                 this.numberFormControl.setValue(number);
+                this.numberFormControl.addValidators((control: AbstractControl) => {
+                    if (this.data.numberStep != null) {
+                        return control.value % this.data.numberStep != 0 ? {invalidStep: true} : null;
+                    }
+                    return null;
+                });
                 this.numberFormControl.valueChanges.subscribe(value => {
-                    this.selectedValue = value;
+                    if (this.numberFormControl.valid) {
+                        this.selectedValue = value;
+                    } else {
+                        this.selectedValue = null;
+                    }
                 });
                 break;
             }
@@ -274,7 +284,11 @@ export interface ConstantEditDialogData {
     type: DatumType,
     value: unknown,
     datumName?: string,
-    canClear?: boolean
+    canClear?: boolean,
+    numberMin?: number,
+    numberMax?: number,
+    numberStep?: number,
+    numberSuffix?: string
 }
 
 export interface ConstantEditDialogResponse {

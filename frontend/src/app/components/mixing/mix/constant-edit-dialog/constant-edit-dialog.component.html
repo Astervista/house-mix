@@ -6,7 +6,29 @@
     @if (this.data.type == DatumType.NUMBER) {
         <mat-form-field>
             <mat-label>Value</mat-label>
-            <input matInput type="number" [formControl]="numberFormControl">
+            <input
+                matInput
+                type="number"
+                [formControl]="numberFormControl"
+                [min]="data.numberMin ?? null"
+                [max]="data.numberMax ?? null"
+                [step]="data.numberStep ?? null">
+            @if (data.numberSuffix) {
+                <span matTextSuffix>{{ data.numberSuffix }} </span>
+            }
+            @if (numberFormControl.hasError("min")) {
+                <mat-error>Must be greater than {{ data.numberMin }}</mat-error>
+            } @else if (numberFormControl.hasError("max")) {
+                <mat-error>Must be less than {{ data.numberMax }}</mat-error>
+            } @else if (numberFormControl.hasError("invalidStep")) {
+                <mat-error>
+                    @if (data.numberStep == 1) {
+                        Must be an integer
+                    } @else {
+                        Must be a multiple of {{ data.numberStep }}
+                    }
+                </mat-error>
+            }
         </mat-form-field>
     }
     @if (this.data.type == DatumType.STRING) {

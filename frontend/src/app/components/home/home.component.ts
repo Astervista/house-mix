@@ -23,7 +23,11 @@ import {BetterMatDialog} from '../../utils/better-mat-dialog';
 import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.component';
 import {LoadingStatus} from '../../utils/enums';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
-import {MatButton} from '@angular/material/button';
+import {MatButton, MatIconButton} from '@angular/material/button';
+import {SystemService} from '../../services/system.service';
+import {LocalStorageService} from '../../services/local-storage.service';
+import {LOCAL_SETTINGS_KEY} from '../system/settings/settings.component';
+import {MatNestedTreeNode, MatTree, MatTreeNestedDataSource, MatTreeNodeDef, MatTreeNodeOutlet, MatTreeNodeToggle} from '@angular/material/tree';
 
 
 @Component({
@@ -35,7 +39,13 @@ import {MatButton} from '@angular/material/button';
                    MatIcon,
                    DynamicSvgComponent,
                    MatProgressSpinner,
-                   MatButton
+                   MatButton,
+                   MatTree,
+                   MatNestedTreeNode,
+                   MatTreeNodeDef,
+                   MatTreeNodeToggle,
+                   MatIconButton,
+                   MatTreeNodeOutlet
                ],
                templateUrl: './home.component.html',
                styleUrl:    './home.component.scss'
@@ -57,13 +67,21 @@ export class HomeComponent {
 
     protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
 
+    protected treeView: boolean;
+    protected dataSource           = new MatTreeNestedDataSource<Group>();
+    protected treeChildrenAccessor = (node: Group): Group[] => this.allGroups.filter(group => node.containsGroup(group.name));
+    protected treeHasChildren      = (_: number, node: Group): boolean => (node.groups.length + node.sensors.length + node.actuators.length) > 0;
+
     constructor(
         private router: Router,
         private matDialog: BetterMatDialog,
         private groupService: GroupService,
         private deviceService: DeviceService,
-        private snackBar: MatSnackBar
+        private snackBar: MatSnackBar,
+        localStoragesService: LocalStorageService
     ) {
+        this.treeView        = localStoragesService.getItem(LOCAL_SETTINGS_KEY).deviceViewLayoutTree;
+        this.dataSource.data = this.rootGroups;
         this.reload();
     }
 
@@ -237,6 +255,7 @@ export class HomeComponent {
                                         }
                                     }
                                     this.allGroups.push(result.group);
+                                    this.updateTree();
                                 })
                                 .catch((e: unknown) => {
                                     if (e instanceof HttpErrorResponse) {
@@ -302,6 +321,7 @@ export class HomeComponent {
                                             }
                                         }
                                         this.allActuators.push(result.actuator);
+                                        this.updateTree();
                                     })
                                     .catch((e: unknown) => {
                                         if (e instanceof HttpErrorResponse) {
@@ -343,6 +363,7 @@ export class HomeComponent {
                                             }
                                         }
                                         this.allSensors.push(result.sensor);
+                                        this.updateTree();
                                     })
                                     .catch((e: unknown) => {
                                         if (e instanceof HttpErrorResponse) {
@@ -456,6 +477,7 @@ export class HomeComponent {
                                             if (index !== -1) {
                                                 this.allGroups.splice(index, 1);
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -502,6 +524,7 @@ export class HomeComponent {
                                                     this.rootActuators.splice(index, 1);
                                                 }
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -548,6 +571,7 @@ export class HomeComponent {
                                                     this.rootSensors.splice(index, 1);
                                                 }
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -860,6 +884,7 @@ export class HomeComponent {
                                             } else {
                                                 this.rootGroups.push(selectedObject);
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -897,6 +922,7 @@ export class HomeComponent {
                                             } else {
                                                 this.rootActuators.push(selectedObject);
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -934,6 +960,7 @@ export class HomeComponent {
                                             } else {
                                                 this.rootSensors.push(selectedObject);
                                             }
+                                            this.updateTree();
                                         })
                                         .catch(() => {
                                             this.snackBar.open(
@@ -953,7 +980,14 @@ export class HomeComponent {
         }
     }
 
+    private updateTree(): void {
+        this.dataSource.data = this.rootGroups;
+    }
+
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
+
+    protected getActuator: (name: string) => Actuator | null = (name: string): Actuator | null => { return this.allActuators.find(actuator => actuator.name == name) ?? null; };
+    protected getSensor: (name: string) => Sensor | null     = (name: string): Sensor | null => { return this.allSensors.find(sensor => sensor.name == name) ?? null; };
 
     protected readonly ToolbarAction = ToolbarAction;
     protected readonly LoadingStatus = LoadingStatus;
@@ -984,7 +1018,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.BUTTON,
         icon:  'instant_mix',
         id:    ToolbarAction.MIXING,
-        hint:  'Mixing',
+        hint: 'Mixing view',
         order: 0
     },
     {

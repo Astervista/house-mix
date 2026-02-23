@@ -23,6 +23,14 @@
     align-self: stretch;
 }
 
+.spacer + .divider {
+    display: none;
+}
+
+.divider + .divider {
+    display: none;
+}
+
 .spacer {
     flex-grow: 1;
 }

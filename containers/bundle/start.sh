@@ -3,7 +3,7 @@ set -e
 
 # Required environment variables / files
 REQUIRED_ENV_FILE=".env"
-REQUIRED_SECRETS="/run/secrets/github_token /run/secrets/mqtt_password"
+REQUIRED_SECRETS="secrets/github_token.txt secrets/mqtt_password.txt"
 
 # Check if .env exists
 if [ ! -f "$REQUIRED_ENV_FILE" ]; then
@@ -21,10 +21,8 @@ done
 
 GITHUB_TOKEN=$(cat ./secrets/github_token.txt)
 
-echo "$GITHUB_TOKEN"
-
 # --- 2. Login to GitHub Container Registry ---
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u astervista --password-stdin
 
 # --- 3. Start Docker Compose ---
-docker compose up
+docker compose up -d

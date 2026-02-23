@@ -1,0 +1,14 @@
+// TODO: Put the new node in the center
+// TODO: Copy/paste nodes
+// TODO: Tab order in node/input library + in compact view nullable circle is opposite + when nullable is choosable wrong display of the connector + search hierarchy
+// TODO: Dbl click on home and maybe go to mix
+// TODO: New time picker doesn't work
+// TODO: Check what's up with the adjustments for the desk lamp
+// TODO: Remove color temp from off with transition and adjustment
+// TODO: New expose in actuator should leave the nullability
+// TODO: Sometimes the mix save request fails
+// TODO: Back warning in mixes
+// TODO: Check what happens when multiple choice index is -1
+// TODO: Confirm before rearranging
+// TODO: Tree view in home
+// TODO: Shortcuts in menus

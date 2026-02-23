@@ -1171,7 +1171,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                 break;
             }
             case ToolbarAction.DEVICES: {
-                this.goTo('home');
+                this.goTo('devices');
                 break;
             }
             case ToolbarAction.MIXING: {
@@ -1374,7 +1374,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.BUTTON,
         icon:  'instant_mix',
         id:    ToolbarAction.MIXING,
-        hint:  'Mixing',
+        hint: 'Mixing view',
         order: 0
     },
     {

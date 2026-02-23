@@ -1,20 +1,40 @@
 <span
     class="display-name"
     matTooltipPosition="above"
+    [class.compact]="compact"
     [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
-    [matTooltip]="`Codename: ${device.name}`">{{ device.displayName }}</span>
-@if (isActuator(device)) {
-    <house-mix-dynamic-svg
-        class="preview"
-        [class.selected]="selected"
-        [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[device.type]}`">
-    </house-mix-dynamic-svg>
-} @else if (isSensor(device)) {
-    <house-mix-dynamic-svg
-        class="preview"
-        [class.selected]="selected"
-        [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[device.type]}`">
-    </house-mix-dynamic-svg>
+    [matTooltip]="`Codename: ${device.name}`">
+    @if (compact) {
+        @if (isActuator(device)) {
+            <house-mix-dynamic-svg
+                class="preview-compact"
+                [class.selected]="selected"
+                [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[device.type]}`">
+        </house-mix-dynamic-svg>
+        } @else if (isSensor(device)) {
+            <house-mix-dynamic-svg
+                class="preview-compact"
+                [class.selected]="selected"
+                [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[device.type]}`">
+        </house-mix-dynamic-svg>
+        }
+    }
+    {{ device.displayName }}
+</span>
+@if (!compact) {
+    @if (isActuator(device)) {
+        <house-mix-dynamic-svg
+            class="preview"
+            [class.selected]="selected"
+            [src]="`/devices/actuators/icons/${ACTUATOR_TYPE_ICON[device.type]}`">
+        </house-mix-dynamic-svg>
+    } @else if (isSensor(device)) {
+        <house-mix-dynamic-svg
+            class="preview"
+            [class.selected]="selected"
+            [src]="`/devices/sensors/icons/${SENSOR_TYPE_ICON[device.type]}`">
+        </house-mix-dynamic-svg>
+    }
 }
 <div
     class="info">

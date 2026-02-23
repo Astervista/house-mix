@@ -1,0 +1,206 @@
+<house-mix-toolbar
+    [elements]="ALL_TOOLBAR_ELEMENTS"
+    (elementSelected)="toolbarClick()">
+
+</house-mix-toolbar>
+
+@switch (loadingStatus) {
+    @case (LoadingStatus.LOADING) {
+        <div
+            class="welcome-content">
+            <house-mix-dynamic-svg
+                class="icon"
+                [src]="randomIcon">
+            </house-mix-dynamic-svg>
+            <h2>Loading...</h2>
+            <h3>Retrieving settings, please wait</h3>
+            <mat-spinner
+                strokeWidth="4"
+                diameter="70"></mat-spinner>
+        </div>
+    }
+    @case (LoadingStatus.ERROR) {
+        <div class="error-container">
+            <house-mix-dynamic-svg
+                class="icon"
+                src="broken.svg">
+            </house-mix-dynamic-svg>
+            <h2>There's a problem...</h2>
+            <h3>
+                Sorry, there has been an error loading the settings.
+                <span class="break"></span>
+                Please try again later or go back.
+            </h3>
+            <button
+                class="error-button"
+                mat-button
+                (click)="reload()">
+                Try again
+            </button>
+        </div>
+    }
+    @case (LoadingStatus.LOADED) {
+        <div class="content">
+            <div class="section">
+                <span class="title">General</span>
+                <div class="list">
+                    <div
+                        class="setting"
+                        (click)="changeName()">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Name</span>
+                            <span
+                                class="description">
+                                {{ settings.homeName }}
+                            </span>
+                        </div>
+                    </div>
+                    <div
+                        class="setting"
+                        (click)="changeTheme()">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Theme</span>
+                            <span
+                                class="description">
+                                {{ localSettings.darkMode ? 'Dark mode' : 'Light mode' }}
+                            </span>
+                        </div>
+                        <mat-slide-toggle
+                            [checked]="localSettings.darkMode"
+                            (change)="changeTheme(!$event.checked)"></mat-slide-toggle>
+                    </div>
+                    <div
+                        class="setting"
+                        (click)="changeDevicesLayout()">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Device view layout</span>
+                            <span
+                                class="description">
+                                {{ localSettings.deviceViewLayoutTree ? 'Show devices in a tree view' : 'Show devices organization diagram' }}
+                            </span>
+                        </div>
+                        <mat-slide-toggle
+                            [checked]="localSettings.deviceViewLayoutTree"
+                            (change)="changeDevicesLayout(!$event.checked)"></mat-slide-toggle>
+                    </div>
+                    <div
+                        class="setting bare">
+                        <div class="text-info">
+                            <span class="main">Start page</span>
+                            <span
+                                class="description">
+                                The view to be shown when the app starts
+                            </span>
+                            <mat-chip-listbox>
+                                <mat-chip-option
+                                    [style.pointer-events]="localSettings.startPage == MainPages.DEVICES ? 'none' : ''"
+                                    (click)="changeStartPage(MainPages.DEVICES)"
+                                    [selected]="localSettings.startPage == MainPages.DEVICES">
+                                    Devices
+                                </mat-chip-option>
+                                <mat-chip-option
+                                    [style.pointer-events]="localSettings.startPage == MainPages.MIXING ? 'none' : ''"
+                                    (click)="changeStartPage(MainPages.MIXING)"
+                                    [selected]="localSettings.startPage == MainPages.MIXING">
+                                    Mixing
+                                </mat-chip-option>
+                                <mat-chip-option
+                                    [style.pointer-events]="localSettings.startPage == MainPages.SYSTEM ? 'none' : ''"
+                                    (click)="changeStartPage(MainPages.SYSTEM)"
+                                    [selected]="localSettings.startPage == MainPages.SYSTEM">
+                                    System
+                                </mat-chip-option>
+                            </mat-chip-listbox>
+                        </div>
+
+                    </div>
+                </div>
+                <span class="title">Device monitoring</span>
+                <div class="list">
+                    <div
+                        class="setting"
+                        (click)="changeCheck(false)">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Check if device went offline every</span>
+                            <span
+                                class="description">
+                                {{ getDurationString(settings.offlineCheck) }}
+                            </span>
+                            <mat-slider
+                                [max]="10"
+                                [min]="0"
+                                [step]="1"
+                                [showTickMarks]="true"
+                                (click)="$event.stopPropagation()">
+                                <input matSliderThumb [formControl]="offlineCheckFormControl">
+                            </mat-slider>
+                        </div>
+                    </div>
+                    <div
+                        class="setting"
+                        (click)="changeCheck(true)">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Check if device rejoined network every</span>
+                            <span
+                                class="description">
+                                {{ getDurationString(settings.onlineCheck) }}
+                            </span>
+                            <mat-slider
+                                [max]="10"
+                                [min]="0"
+                                [step]="1"
+                                [showTickMarks]="true"
+                                (click)="$event.stopPropagation()">
+                                <input matSliderThumb [formControl]="onlineCheckFormControl">
+                            </mat-slider>
+                        </div>
+                    </div>
+                    <div
+                        class="setting"
+                        (click)="changeUnavailable()">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Time after which an unavailable device is considered offline</span>
+                            <span
+                                class="description">
+                                {{ getDurationString(settings.unavailableTimeout) }}
+                            </span>
+                            <mat-slider
+                                [max]="10"
+                                [min]="0"
+                                [step]="1"
+                                [showTickMarks]="true"
+                                (click)="$event.stopPropagation()">
+                                <input matSliderThumb [formControl]="unavailableFormControl">
+                            </mat-slider>
+                        </div>
+                    </div>
+                </div>
+                <span class="title">Zigbee</span>
+                <div class="list">
+                    <div
+                        class="setting"
+                        (click)="changeThrottle()">
+                        <span class="back-ripple" mat-ripple></span>
+                        <div class="text-info">
+                            <span class="main">Command throttle timing</span>
+                            <span
+                                class="description">
+                                @if (settings.throttleTiming == 0) {
+                                    Sending all commands together
+                                } @else {
+                                    Sending a command every{{ settings.throttleTiming == 1 ? "" : ` ${settings.throttleTiming}` }} millisecond{{ settings.throttleTiming == 1 ? "" : "s" }}
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}

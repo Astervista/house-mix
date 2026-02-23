@@ -7,13 +7,8 @@
     align-items: center;
 }
 
-.preview {
-    width: 80px;
-    height: 80px;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    margin: dimensions.$margin-large;
+.preview,
+.preview-compact {
 
     --highlight-color: var(--house-mix-text-color-30);
     --stroke-color-animation-duration: 0.2s;
@@ -24,8 +19,29 @@
 
 }
 
+.preview {
+    width: 80px;
+    height: 80px;
+    margin: dimensions.$margin-large;
+}
+
+.preview-compact {
+    width: 30px;
+    height: 30px;
+    margin: dimensions.$margin-medium;
+}
+
 .display-name {
-    @include entity.name(true)
+    @include entity.name(true);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: dimensions.$margin-medium;
+
+    &.compact {
+        padding-right: dimensions.$margin-xlarge;
+    }
 }
 
 .info {

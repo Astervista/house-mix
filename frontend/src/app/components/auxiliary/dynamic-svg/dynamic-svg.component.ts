@@ -15,6 +15,7 @@ export class DynamicSvgComponent {
     @Input() public set src(src: string | null) {
         if (src != null) {
             src = RESOURCE_ROOT + src;
+            src = src.replace(/^\/+/g, '/');
         }
         if (this._src != src) {
             if (src == null) {

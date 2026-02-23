@@ -1,6 +1,7 @@
 @use "dimensions";
 @use "colors";
 @use "full-page";
+@use "../entities/entity";
 
 :host {
     display: flex;
@@ -41,9 +42,83 @@
     padding: dimensions.$margin-large;
     gap: dimensions.$margin-large;
     align-items: stretch;
+
     mat-icon {
         align-self: center;
     }
 }
 
 
+.tree ul,
+.tree li {
+    margin-top: 0;
+    margin-bottom: 0;
+    list-style-type: none;
+}
+
+.tree {
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-large;
+}
+
+.tree .mat-nested-tree-node div[role=group] {
+    padding-left: 40px;
+    padding-right: dimensions.$margin-large;
+}
+
+
+.tree div[role=group] {
+
+    display: flex;
+    flex-direction: column;
+    gap: dimensions.$margin-large;
+    padding: dimensions.$margin-large 0;
+
+    > .tree-devices-title {
+        font-size: 17px;
+        font-weight: 100;
+        margin: dimensions.$margin-medium;
+    }
+
+    > .tree-devices {
+        display: flex;
+        flex-direction: row;
+        gap: dimensions.$margin-mlarge;
+        padding-left: dimensions.$indent-medium;
+    }
+
+    > mat-nested-tree-node {
+        margin-left: dimensions.$indent-medium;
+    }
+
+}
+
+.node-title-expanded {
+
+    border-bottom: solid 1px var(--house-mix-border-color);
+}
+
+.selected > .node-title-expanded {
+    border-bottom: solid 1px var(--mat-sys-primary);
+}
+
+.mat-tree-node {
+    > .node-name {
+        font-size: 19px;
+        font-weight: 300;
+        margin-left: dimensions.$margin-medium;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        align-self: stretch;
+    }
+}
+
+.tree div[role=group].tree-collapsed {
+    display: none;
+}
+
+.group-node {
+    @include entity.container
+}

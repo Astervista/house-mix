@@ -44,19 +44,105 @@
             <div
                 class="main-content"
                 (click)="selectedObject = null">
-                <div
-                    class="groups-container">
-                    @for (group of rootGroups; track group.name) {
-                        <house-mix-group
-                            [group]="group"
-                            [otherGroups]="allGroups"
-                            [actuators]="allActuators"
-                            [sensors]="allSensors"
-                            [selected]="this.selectedObject"
-                            (onSelect)="this.selectedObject = $event">
-                        </house-mix-group>
-                    }
-                </div>
+                @if (treeView) {
+                    <mat-tree
+                        #tree
+                        class="tree"
+                        [dataSource]="dataSource"
+                        [childrenAccessor]="treeChildrenAccessor">
+
+                        <mat-nested-tree-node
+                            class="group-node"
+                            [class.selected]="node == selectedObject"
+                            *matTreeNodeDef="let node; when: treeHasChildren"
+                            matTreeNodeToggle
+                            [cdkTreeNodeTypeaheadLabel]="node.name">
+
+                            <div class="mat-tree-node"
+                                 [class.node-title-expanded]="tree.isExpanded(node)">
+                                @if (treeHasChildren(0, node)) {
+                                    <button
+                                        matIconButton
+                                        matTreeNodeToggle
+                                        [attr.aria-label]="'Toggle ' + node.name">
+                                        <mat-icon>
+                                            {{ tree.isExpanded(node) ? 'expand_more' : 'chevron_right' }}
+                                        </mat-icon>
+                                    </button>
+                                } @else {
+                                    <span style="width: 40px; align-self: stretch" (click)="$event.stopPropagation()"></span>
+                                }
+                                <span
+                                    class="node-name"
+                                    (click)="selectedObject = node; (tree.isExpanded(node) || !treeHasChildren(0, node)) ? $event.stopPropagation() : null">
+                                    {{ node.displayName }}
+                                </span>
+                            </div>
+
+                            <div
+                                role="group"
+                                [class.tree-collapsed]="!tree.isExpanded(node) || !treeHasChildren(0, node)"
+                                (click)="selectedObject = node; $event.stopPropagation()">
+                                @if (node.actuators.length > 0) {
+                                    <span class="tree-devices-title">Actuators</span>
+                                    <div class="tree-devices">
+                                        @for (actuatorName of node.actuators; track actuatorName) {
+                                            @let actuator = getActuator(actuatorName);
+                                            @if (actuator != null) {
+                                                <house-mix-device
+                                                    [compact]="true"
+                                                    [device]="actuator"
+                                                    [selected]="selectedObject == actuator"
+                                                    (onSelect)="this.selectedObject = $event">
+
+                                                </house-mix-device>
+                                            } @else {
+                                                <span class="simple-subgroup">{{ actuatorName }}</span>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                @if (node.sensors.length > 0) {
+                                    <span class="tree-devices-title">Sensors</span>
+                                    <div class="tree-devices">
+                                        @for (actuatorName of node.actuators; track actuatorName) {
+                                            @let actuator = getActuator(actuatorName);
+                                            @if (actuator != null) {
+                                                <house-mix-device
+                                                    [compact]="true"
+                                                    [device]="actuator"
+                                                    [selected]="selectedObject == actuator"
+                                                    (onSelect)="this.selectedObject = $event">
+
+                                                </house-mix-device>
+                                            } @else {
+                                                <span class="simple-subgroup">{{ actuatorName }}</span>
+                                            }
+                                        }
+                                    </div>
+                                }
+                                @if (node.groups.length > 0) {
+                                    <span class="tree-devices-title">Groups</span>
+                                    <ng-container matTreeNodeOutlet></ng-container>
+                                }
+                            </div>
+                        </mat-nested-tree-node>
+                    </mat-tree>
+                } @else {
+                    <div
+                        class="groups-container">
+                        @for (group of rootGroups; track group.name) {
+                            <house-mix-group
+                                [group]="group"
+                                [otherGroups]="allGroups"
+                                [actuators]="allActuators"
+                                [sensors]="allSensors"
+                                [selected]="this.selectedObject"
+                                (onSelect)="this.selectedObject = $event">
+                            </house-mix-group>
+                        }
+                    </div>
+                }
             </div>
         } @else {
             <div
@@ -94,14 +180,14 @@
             </div>
         }
 
-        @if (rootActuators.length + rootSensors.length > 0) {
+        @if (rootActuators.length + rootSensors.length > 0 && !this.treeView) {
             <div
                 class="device-container"
                 (click)="selectedObject = null">
-        <span
-            class="device-title">
-            Devices without a group
-        </span>
+            <span
+                class="device-title">
+                Devices without a group
+            </span>
                 <div
                     class="device-list">
                     @if (rootActuators.length > 0) {

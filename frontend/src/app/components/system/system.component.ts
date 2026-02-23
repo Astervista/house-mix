@@ -154,6 +154,7 @@ export class SystemComponent {
             case ToolbarAction.DEVICES:
             case ToolbarAction.MIXING:
             case ToolbarAction.SYSTEM:
+            case ToolbarAction.SETTINGS:
                 return true;
         }
     }
@@ -165,11 +166,15 @@ export class SystemComponent {
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.DEVICES: {
-                this.goTo('home');
+                this.goTo('devices');
                 break;
             }
             case ToolbarAction.MIXING: {
                 this.goTo('mixing');
+                break;
+            }
+            case ToolbarAction.SETTINGS: {
+                this.goTo('system/settings');
                 break;
             }
             case ToolbarAction.SYSTEM: {
@@ -597,6 +602,7 @@ enum ToolbarAction {
     DELETE                 = 'delete',
     CHANGE_PARAMETER_VALUE = 'change-parameter-value',
     EDIT                   = 'edit',
+    SETTINGS = 'settings'
 }
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
@@ -611,7 +617,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         type:  ToolBarElementType.BUTTON,
         icon:  'instant_mix',
         id:    ToolbarAction.MIXING,
-        hint:  'Mixing',
+        hint: 'Mixing view',
         order: 0
     },
     {
@@ -646,6 +652,18 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         id:    ToolbarAction.DELETE,
         hint:  'Delete',
         order: 2
+    },
+    {
+        type:  ToolBarElementType.DIVIDER,
+        id:    'divider-1',
+        order: 3
+    },
+    {
+        type:  ToolBarElementType.BUTTON,
+        icon:  'settings',
+        id:    ToolbarAction.SETTINGS,
+        hint:  'System settings',
+        order: 4
     }
 
 ];

@@ -23,6 +23,7 @@ export class DeviceComponent {
     @Input({required: true}) public device!: Device;
     @HostBinding("class.selected")
     @Input() public selected: boolean = false;
+    @Input() public compact: boolean = false;
 
     @Output("onSelect") public onSelectEmitter: EventEmitter<Device> = new EventEmitter<Device>();
 

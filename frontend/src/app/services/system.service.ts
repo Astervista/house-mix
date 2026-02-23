@@ -2,12 +2,14 @@ import {Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BasePath, Delete, Get, Patch, Post, Put} from '../utils/networking/decorators';
 import {SystemParameter} from '@common/system/parameter/system-parameter';
+import {SystemSettings, SystemSettingsJSON} from '@common/system/settings/settings';
 import {SystemTimer} from '@common/system/timer/system-timer';
 import {EntityPathParams} from '@common/utils/rest-classes';
 import {SetParameterBody} from '@common/system/parameter/rest-classes';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {Adjustment} from '@common/system/adjustment/adjustment';
+import {Observable, Subject} from 'rxjs';
 
 @Injectable({
                 providedIn: 'root'
@@ -153,5 +155,26 @@ export class SystemService {
         '/adjustments/:id'
     )
     public editAdjustment!: (changes: Adjustment<unknown, unknown>, params: { id: number }) => Promise<void>;
+
+
+    // SETTINGS
+
+    private settingsChangeSubject: Subject<SystemSettings> = new Subject<SystemSettings>();
+
+    @Get('/settings/', {result: SystemSettings})
+    public getSettings!: () => Promise<SystemSettings>;
+
+    @Patch<SystemSettings, null>('/settings')
+    private editSettingsREST!: (changes: SystemSettingsJSON) => Promise<SystemSettings>;
+
+    public async editSettings(changes: SystemSettingsJSON): Promise<SystemSettings> {
+        const newSettings = await this.editSettingsREST(changes);
+        this.settingsChangeSubject.next(newSettings);
+        return newSettings;
+    }
+
+    public observeSettingsChanges(): Observable<SystemSettings> {
+        return this.settingsChangeSubject.asObservable();
+    }
 
 }

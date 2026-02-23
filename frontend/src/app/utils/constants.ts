@@ -10,3 +10,9 @@ export const TOOLTIP_TIMEOUT = 1000;
 export function getDateDisplayFormat(type: DatumType): string {
     return type == DatumType.DATE ? "yyyy-MM-dd" : (type == DatumType.TIME ? "HH:mm:ss" : "yyyy-MM-dd HH:mm:ss")
 }
+
+export enum MainPages {
+    DEVICES = 'DEVICES',
+    MIXING  = 'MIXING',
+    SYSTEM  = 'SYSTEM'
+}

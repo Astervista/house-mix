@@ -18,13 +18,19 @@ import {DeviceMonitorService} from "./system/device-monitor/device-monitor.servi
 import {DeviceMonitorController} from "./system/device-monitor/device-monitor.controller";
 import {AdjustmentsController} from "./system/adjustments/adjustments.controller";
 import {AdjustmentsService} from "./system/adjustments/adjustments.service";
+import {SettingsService} from "./system/settings/settings.service";
+import {SettingsController} from "./system/settings/settings.controller";
 
 @Module({
             imports:     [],
-            controllers: [ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController, DeviceMonitorController, AdjustmentsController],
+            controllers: [
+                ActuatorController, SensorController, GroupController, MixController, ParametersController, TimersController, DeviceMonitorController, AdjustmentsController,
+                SettingsController
+            ],
             providers:   [
                 ZigbeeService, FileService, GroupService, ActuatorService, SensorService, MixService, ParametersService, TimersService, EngineService, DeviceMonitorService,
-                AdjustmentsService
+                AdjustmentsService,
+                SettingsService
             ]
         })
 export class AppModule {
