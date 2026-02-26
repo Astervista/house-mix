@@ -27,6 +27,8 @@ export class ZigbeeService {
     
     public transitionAdjustments: (AdjustmentAnimationOff | AdjustmentAnimationOn | AdjustmentSplitCommands)[] = [];
     
+    public static throttleTiming: number = 30;
+    
     constructor() {
         
         if ((process.env["MQTT_URL"] == null) || (process.env["MQTT_URL"] === "")) {
@@ -101,9 +103,11 @@ export class ZigbeeService {
             if ("brightness" in value && value["brightness"] == 0) {
                 value["state"] = "OFF";
                 delete value["brightness"];
+                delete value["color_temp"];
             }
             if ("state" in value && value["state"] == "OFF") {
                 delete value["brightness"];
+                delete value["color_temp"];
             }
             if ("brightness" in value && value["brightness"] as number > 0) {
                 value["state"] = "ON";
@@ -130,9 +134,11 @@ export class ZigbeeService {
             if ("brightness" in value && value["brightness"] == 0) {
                 value["state"] = "OFF";
                 delete value["brightness"];
+                delete value["color_temp"];
             }
             if ("state" in value && value["state"] == "OFF") {
                 delete value["brightness"];
+                delete value["color_temp"];
             }
             if ("brightness" in value && value["brightness"] as number > 0) {
                 value["state"] = "ON";
@@ -164,7 +170,7 @@ export class ZigbeeService {
             for (const send of oldFutureSend) {
                 split = this.splitCommand(send);
                 futureSends.push(...split);
-                futureSendDelays.push(...split.map(s => "transition" in s ? (s["transition"] as number) : 0));
+                futureSendDelays.push(...split.map(s => "transition" in s ? (s["transition"] as number) + 500 : 0));
             }
         }
         this.enqueue(address, value, futureSends, futureSendDelays);
@@ -202,6 +208,12 @@ export class ZigbeeService {
             pendingUpdate.futureSendDelays = futureSendDelays;
         } else if (!needsUpdate && pendingUpdate != null) {
             this.queue.splice(this.queue.indexOf(pendingUpdate), 1);
+        } else if (!needsUpdate && pendingUpdate == null) {
+            const nextFuture = futureSends.shift();
+            if (nextFuture != null) {
+                this.enqueue(address, nextFuture, futureSends, futureSendDelays.slice(1));
+                return;
+            }
         }
         this.advanceSendQueue();
     }
@@ -229,7 +241,7 @@ export class ZigbeeService {
             setTimeout(() => {
                 this.queueBusy = false;
                 this.advanceSendQueue();
-            }, 30);
+            }, ZigbeeService.throttleTiming);
             
         }
     }

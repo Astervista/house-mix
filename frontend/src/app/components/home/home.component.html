@@ -1,5 +1,6 @@
 <house-mix-toolbar
     [elements]="toolbarElements"
+    [keyObservable]="keySubject.asObservable()"
     (elementSelected)="toolbarClick(asToolbarAction($event))">
 
 </house-mix-toolbar>
@@ -43,6 +44,7 @@
         @if (rootGroups.length > 0) {
             <div
                 class="main-content"
+                tabindex="0"
                 (click)="selectedObject = null">
                 @if (treeView) {
                     <mat-tree
@@ -74,7 +76,8 @@
                                 }
                                 <span
                                     class="node-name"
-                                    (click)="selectedObject = node; (tree.isExpanded(node) || !treeHasChildren(0, node)) ? $event.stopPropagation() : null">
+                                    (click)="selectedObject = node; (tree.isExpanded(node) || !treeHasChildren(0, node)) ? $event.stopPropagation() : null"
+                                    (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
                                     {{ node.displayName }}
                                 </span>
                             </div>
@@ -93,7 +96,8 @@
                                                     [compact]="true"
                                                     [device]="actuator"
                                                     [selected]="selectedObject == actuator"
-                                                    (onSelect)="this.selectedObject = $event">
+                                                    (onSelect)="this.selectedObject = $event"
+                                                    (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
 
                                                 </house-mix-device>
                                             } @else {
@@ -112,7 +116,8 @@
                                                     [compact]="true"
                                                     [device]="actuator"
                                                     [selected]="selectedObject == actuator"
-                                                    (onSelect)="this.selectedObject = $event">
+                                                    (onSelect)="this.selectedObject = $event"
+                                                    (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
 
                                                 </house-mix-device>
                                             } @else {
@@ -128,6 +133,32 @@
                             </div>
                         </mat-nested-tree-node>
                     </mat-tree>
+                    <span class="tree-devices-title">Sensors without a group</span>
+                    <div class="tree-devices">
+                        @for (sensor of rootSensors; track sensor.name) {
+                            <house-mix-device
+                                [compact]="true"
+                                [device]="sensor"
+                                [selected]="selectedObject == sensor"
+                                (onSelect)="this.selectedObject = $event"
+                                (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
+
+                            </house-mix-device>
+                        }
+                    </div>
+                    <span class="tree-devices-title">Actuators without a group</span>
+                    <div class="tree-devices">
+                        @for (actuator of rootActuators; track actuator.name) {
+                            <house-mix-device
+                                [compact]="true"
+                                [device]="actuator"
+                                [selected]="selectedObject == actuator"
+                                (onSelect)="this.selectedObject = $event"
+                                (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
+
+                            </house-mix-device>
+                        }
+                    </div>
                 } @else {
                     <div
                         class="groups-container">
@@ -138,7 +169,8 @@
                                 [actuators]="allActuators"
                                 [sensors]="allSensors"
                                 [selected]="this.selectedObject"
-                                (onSelect)="this.selectedObject = $event">
+                                (onSelect)="this.selectedObject = $event"
+                                (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
                             </house-mix-group>
                         }
                     </div>
@@ -196,7 +228,8 @@
                             <house-mix-device
                                 [device]="actuator"
                                 [selected]="selectedObject == actuator"
-                                (onSelect)="this.selectedObject = $event">
+                                (onSelect)="this.selectedObject = $event"
+                                (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
                             </house-mix-device>
                         }
                     }
@@ -206,7 +239,8 @@
                             <house-mix-device
                                 [device]="sensor"
                                 [selected]="selectedObject == sensor"
-                                (onSelect)="this.selectedObject = $event">
+                                (onSelect)="this.selectedObject = $event"
+                                (dblclick)="this.toolbarClick(ToolbarAction.EDIT)">
                             </house-mix-device>
                         }
                     }

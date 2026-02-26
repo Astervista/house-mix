@@ -108,6 +108,7 @@ export class TimePickerComponent implements ControlValueAccessor {
             } else {
                 this.second = Math.round(rotationFraction * 60);
             }
+            this.updateFormControl();
         }
     }
 

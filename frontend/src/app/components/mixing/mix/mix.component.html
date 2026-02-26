@@ -1,6 +1,7 @@
 <!--suppress HtmlUnknownAttribute, RequiredAttributes -->
 <house-mix-toolbar
     [elements]="toolbarElements"
+    [keyObservable]="keySubject.asObservable()"
     (elementSelected)="toolbarClick(asToolbarAction($event))">
 </house-mix-toolbar>
 @switch (this.loadingStatus) {

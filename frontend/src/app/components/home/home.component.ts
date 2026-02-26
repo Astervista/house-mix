@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, HostListener} from '@angular/core';
 import {Router} from '@angular/router';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {AddEntityDialogComponent} from '../dialogs/add-entity-dialog/add-entity-dialog.component';
@@ -24,10 +24,10 @@ import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.componen
 import {LoadingStatus} from '../../utils/enums';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MatButton, MatIconButton} from '@angular/material/button';
-import {SystemService} from '../../services/system.service';
 import {LocalStorageService} from '../../services/local-storage.service';
 import {LOCAL_SETTINGS_KEY} from '../system/settings/settings.component';
 import {MatNestedTreeNode, MatTree, MatTreeNestedDataSource, MatTreeNodeDef, MatTreeNodeOutlet, MatTreeNodeToggle} from '@angular/material/tree';
+import {Subject} from 'rxjs';
 
 
 @Component({
@@ -148,16 +148,15 @@ export class HomeComponent {
             });
     }
 
-    protected get toolbarElements(): ToolbarElement[] {
-        return this.filterToolbar();
+    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
+
+    @HostListener('keydown', ['$event'])
+    public onKeyDown(event: KeyboardEvent): void {
+        this.keySubject.next(event);
     }
 
-    protected get selectedGroup(): Group | null {
-        if (this.selectedObject instanceof Group) {
-            return this.selectedObject;
-        } else {
-            return null;
-        }
+    protected get toolbarElements(): ToolbarElement[] {
+        return this.filterToolbar();
     }
 
     private filterToolbar(toFilter: ToolbarElement[] = ALL_TOOLBAR_ELEMENTS): ToolbarElement[] {
@@ -980,6 +979,14 @@ export class HomeComponent {
         }
     }
 
+    protected get selectedGroup(): Group | null {
+        if (this.selectedObject instanceof Group) {
+            return this.selectedObject;
+        } else {
+            return null;
+        }
+    }
+
     private updateTree(): void {
         this.dataSource.data = this.rootGroups;
     }
@@ -1038,6 +1045,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'edit',
         id:    ToolbarAction.EDIT,
         hint:  'Edit',
+        shortcut: {
+            codes:      ['Enter', 'NumpadEnter'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -1045,6 +1058,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'move_item',
         id:    ToolbarAction.MOVE,
         hint:  'Move',
+        shortcut: {
+            codes:      ['KeyM'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
         order: 3
     },
     {
@@ -1052,6 +1071,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'delete',
         id:    ToolbarAction.DELETE,
         hint:  'Remove',
+        shortcut: {
+            codes:      ['Delete', 'Backspace'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 4
     },
     {
@@ -1066,7 +1091,13 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
                 icon:  'ad_group',
                 id:    ToolbarAction.ADD_GROUP,
                 hint:  'Create a new group',
-                order: 0
+                order:    0,
+                shortcut: {
+                    codes:      ['KeyI'],
+                    osModifier: true,
+                    shift:      false,
+                    alt:        false
+                }
             },
             {
                 type:    ToolBarElementType.BUTTON,
@@ -1080,14 +1111,26 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
                         icon:  'lightbulb',
                         id:    ToolbarAction.ADD_ACTUATOR,
                         hint:  'Register a new actuator',
-                        order: 0
+                        order:    0,
+                        shortcut: {
+                            codes:      ['KeyI'],
+                            osModifier: true,
+                            shift:      true,
+                            alt:        false
+                        }
                     },
                     {
                         type:  ToolBarElementType.BUTTON,
                         icon:  'detector',
                         id:    ToolbarAction.ADD_SENSOR,
                         hint:  'Register a new sensor',
-                        order: 2
+                        order:    2,
+                        shortcut: {
+                            codes:      ['KeyI'],
+                            osModifier: true,
+                            shift:      false,
+                            alt:        true
+                        }
                     }
                 ]
             }

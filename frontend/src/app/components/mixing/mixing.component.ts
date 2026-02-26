@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, Directive, ElementRef, Input, OnDestroy, QueryList, ViewChildren} from '@angular/core';
+import {AfterViewInit, Component, Directive, ElementRef, HostListener, Input, OnDestroy, QueryList, ViewChildren} from '@angular/core';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {Router} from '@angular/router';
 import {BetterMatDialog} from '../../utils/better-mat-dialog';
@@ -11,7 +11,7 @@ import {DynamicSvgComponent} from '../auxiliary/dynamic-svg/dynamic-svg.componen
 import {ACTUATOR_TYPE_ICON, SENSOR_TYPE_ICON} from '../entities/devices/device/constants';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {MatIcon} from '@angular/material/icon';
-import {Subscription} from 'rxjs';
+import {Subject, Subscription} from 'rxjs';
 import {Point} from '@angular/cdk/drag-drop';
 import {ResizeEventDirective} from '../../directives/resize-event/resize-event.directive';
 import {ConfirmDialogComponent} from '../dialogs/confirm-dialog/confirm-dialog.component';
@@ -180,6 +180,13 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         private snackBar: MatSnackBar
     ) {
         this.graphReady = this.reloadGraph();
+    }
+
+    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
+
+    @HostListener('keydown', ['$event'])
+    public onKeyDown(event: KeyboardEvent): void {
+        this.keySubject.next(event);
     }
 
     protected reload(): void {
@@ -1394,6 +1401,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'edit',
         id:    ToolbarAction.EDIT,
         hint:  'Edit mix',
+        shortcut: {
+            codes:      ['Enter', 'NumpadEnter'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -1401,6 +1414,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'delete',
         id:    ToolbarAction.DELETE,
         hint:  'Delete',
+        shortcut: {
+            codes:      ['Delete', 'Backspace'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -1408,6 +1427,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'add',
         id:    ToolbarAction.ADD,
         hint:  'Add a mix',
+        shortcut: {
+            codes:      ['KeyI'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     }
 

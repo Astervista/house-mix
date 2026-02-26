@@ -3,14 +3,33 @@
         @for (element of menu.menu; track element.id) {
             @switch (element.type) {
                 @case (ToolBarElementType.BUTTON) {
-                    <button mat-menu-item
-                            [matMenuTriggerFor]="getMenu(element.id)"
-                            (click)="onElementClick(element)">
-                        @if (element.icon != "") {
-                            <mat-icon>{{ element.icon }}</mat-icon>
-                        }
-                        <span>{{ element.hint }}</span>
-                    </button>
+                    @if (!element.shortcutOnly) {
+                        <button mat-menu-item
+                                class="menu-button"
+                                [matMenuTriggerFor]="getMenu(element.id)"
+                                (click)="onElementClick(element)">
+                            @if (element.icon != "") {
+                                <mat-icon>{{ element.icon }}</mat-icon>
+                            }
+                            <div class="menu-button-text">
+                                <span class="hint">{{ element.hint }}</span>
+                                <span class="shortcut">
+                                    @if (element.shortcut) {
+                                        @if (element.shortcut.alt) {
+                                            {{ MODIFIER_DISPLAY[Modifier.ALT] }}
+                                        }
+                                        @if (element.shortcut.shift) {
+                                            {{ MODIFIER_DISPLAY[Modifier.SHIFT] }}
+                                        }
+                                        @if (element.shortcut.osModifier) {
+                                            {{ MODIFIER_DISPLAY[Modifier.OS] }}
+                                        }
+                                        {{ KEY_DISPLAY[element.shortcut.codes[0] ?? ""] ?? element.shortcut.codes[0] ?? "" }}
+                                    }
+                                </span>
+                            </div>
+                        </button>
+                    }
                 }
                 @case (ToolBarElementType.DIVIDER) {
                     <mat-divider></mat-divider>
@@ -25,25 +44,28 @@
 @for (element of _elements; track element.id) {
     @switch (element.type) {
         @case (ToolBarElementType.BUTTON) {
-            @if (element.loading) {
-                <mat-spinner
-                    style="margin: 8px"
-                    [diameter]="24">
+            @if (!element.shortcutOnly) {
+                @if (element.loading) {
+                    <mat-spinner
+                        style="margin: 8px"
+                        [diameter]="24">
 
-                </mat-spinner>
-            } @else {
-                <button
-                    mat-icon-button
-                    matTooltipPosition="above"
-                    [matTooltip]="element.hint"
-                    [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
-                    [matMenuTriggerFor]="getMenu(element.id)"
-                    (click)="onElementClick(element)">
-                    <mat-icon
-                        aria-hidden="false"
-                        [matBadge]="element.badge == false ? null : (element.badge == true ? 1 : element.badge)"
-                        [matBadgeSize]="element.badge == true ? 'small' : 'large'">{{ element.icon }}</mat-icon>
-                </button>
+                    </mat-spinner>
+                } @else {
+                    <button
+                        mat-icon-button
+                        matTooltipPosition="above"
+                        [matTooltip]="getButtonTooltip(element)"
+                        [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
+                        [matMenuTriggerFor]="getMenu(element.id)"
+                        (click)="onElementClick(element)">
+                        <mat-icon
+                            aria-hidden="false"
+                            [matBadge]="element.badge == false ? null : (element.badge == true ? 1 : element.badge)"
+                            [matBadgeSize]="element.badge == true ? 'small' : 'large'">{{ element.icon }}
+                        </mat-icon>
+                    </button>
+                }
             }
         }
         @case (ToolBarElementType.DIVIDER) {

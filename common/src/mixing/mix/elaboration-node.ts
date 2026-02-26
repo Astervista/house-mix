@@ -4,6 +4,7 @@ import {Allow} from "../../decorators/decorators-mock";
 import {Color, ColorSpace} from "../../utils/color-convert";
 import {getTimes} from "suncalc";
 import {MixingStorage} from "./mix";
+import {MAX_ALLOWED_TEMP, MIN_ALLOWED_TEMP} from "../../utils/constants";
 
 /*
  * This file contains the class that describes a generic elaboration node used to manipulate data in a mix, together with a library of
@@ -38,10 +39,12 @@ import {MixingStorage} from "./mix";
  *      - Extract HSL: Color => (number, number, number)
  *      - Extract HSV: Color => (number, number, number)
  *      - Extract XY: Color => (number, number, number)
+ *      - Extract Color Temperature: Color Temperature => number
  *      - From RGB: (number, number, number) => Color
  *      - From HSL: (number, number, number) => Color
  *      - From HSV: (number, number, number) => Color
  *      - From XY: (number, number) => Color
+ *      - From Color Temperature: number => Color Temperature
  *   Date and time
  *      - Date values: Date => (number, number, number, number)
  *      - Time values: Time => (number, number, number)
@@ -67,41 +70,43 @@ export enum ElaborationNodeCode {
     SUBTRACTION           = "SUBTRACTION",
     MULTIPLICATION        = "MULTIPLICATION",
     DIVISION              = "DIVISION",
-    MODULO            = "MODULO",
+    MODULO             = "MODULO",
     MAX                   = "MAX",
     MIN                   = "MIN",
     CLAMP                 = "CLAMP",
     LERP                  = "LERP",
-    AND               = "AND",
-    OR                = "OR",
-    XOR               = "XOR",
-    NOT               = "NOT",
-    BUFFER            = "BUFFER",
+    AND                = "AND",
+    OR                 = "OR",
+    XOR                = "XOR",
+    NOT                = "NOT",
+    BUFFER             = "BUFFER",
     NULL_GUARD            = "NULL_GUARD",
     EQUALITY_CHECK        = "EQUALITY_CHECK",
     GREATER_THAN          = "GREATER_THAN",
     LESS_THAN             = "LESS_THAN",
-    CYCLE             = "CYCLE",
+    CYCLE              = "CYCLE",
     BINARY_CHOICE         = "BINARY_CHOICE",
-    MULTIPLE_CHOICE   = "MULTIPLE_CHOICE",
-    ENCODER           = "ENCODER",
+    MULTIPLE_CHOICE    = "MULTIPLE_CHOICE",
+    ENCODER            = "ENCODER",
     EXTRACT_RGB           = "EXTRACT_RGB",
     EXTRACT_HSL           = "EXTRACT_HSL",
     EXTRACT_HSV           = "EXTRACT_HSV",
     EXTRACT_XY            = "EXTRACT_XY",
+    EXTRACT_COLOR_TEMP = "EXTRACT_COLOR_TEMP",
     FROM_RGB              = "FROM_RGB",
     FROM_HSL              = "FROM_HSL",
     FROM_HSV              = "FROM_HSV",
     FROM_XY               = "FROM_XY",
+    FROM_COLOR_TEMP    = "FROM_COLOR_TEMP",
     DATE_VALUES           = "DATE_VALUES",
     TIME_VALUES           = "TIME_VALUES",
     DATE_TIME_VALUES      = "DATE_TIME_VALUES",
     DATE_FROM_VALUES      = "DATE_FROM_VALUES",
     TIME_FROM_VALUES      = "TIME_FROM_VALUES",
     DATE_TIME_FROM_VALUES = "DATE_TIME_FROM_VALUES",
-    DATE_COMPARE      = "DATE_COMPARE",
-    TIME_COMPARE      = "TIME_COMPARE",
-    DATE_TIME_COMPARE = "DATE_TIME_COMPARE",
+    DATE_COMPARE       = "DATE_COMPARE",
+    TIME_COMPARE       = "TIME_COMPARE",
+    DATE_TIME_COMPARE  = "DATE_TIME_COMPARE",
     COMBINE_DATE_TIME     = "COMBINE_DATE_TIME",
     EPOCH                 = "EPOCH",
     SUN_EVENTS            = "SUN_EVENTS",
@@ -227,6 +232,8 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeExtractHSV(id);
             case ElaborationNodeCode.EXTRACT_XY:
                 return new ElaborationNodeExtractXY(id);
+            case ElaborationNodeCode.EXTRACT_COLOR_TEMP:
+                return new ElaborationNodeExtractColorTemp(id);
             case ElaborationNodeCode.FROM_RGB:
                 return new ElaborationNodeFromRGB(id);
             case ElaborationNodeCode.FROM_HSL:
@@ -235,6 +242,8 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeFromHSV(id);
             case ElaborationNodeCode.FROM_XY:
                 return new ElaborationNodeFromXY(id);
+            case ElaborationNodeCode.FROM_COLOR_TEMP:
+                return new ElaborationNodeFromColorTemp(id);
             case ElaborationNodeCode.DATE_VALUES:
                 return new ElaborationNodeDateValues(id);
             case ElaborationNodeCode.TIME_VALUES:
@@ -1356,6 +1365,36 @@ export class ElaborationNodeExtractXY extends ElaborationNode {
     }
 }
 
+export class ElaborationNodeExtractColorTemp extends ElaborationNode {
+    
+    private static readonly COLOR_TEMP = "Color";
+    
+    private static readonly COLOR_TEMP_VALUE = "Temperature";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.EXTRACT_COLOR_TEMP);
+        this.inputs  = [
+            new Datum(ElaborationNodeExtractColorTemp.COLOR_TEMP, DatumType.COLOR_TEMP, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeExtractColorTemp.COLOR_TEMP_VALUE, DatumType.NUMBER, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const color = inputValues.get(ElaborationNodeExtractColorTemp.COLOR_TEMP) as number;
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeExtractColorTemp.COLOR_TEMP_VALUE, color
+                ]
+            ]);
+    }
+}
+
 export class ElaborationNodeFromRGB extends ElaborationNode {
     
     private static readonly RED   = "Red";
@@ -1528,6 +1567,38 @@ export class ElaborationNodeFromXY extends ElaborationNode {
         return new Map<string, unknown>([
                                             [
                                                 ElaborationNodeFromXY.OUTPUT, color
+                                            ]
+                                        ]);
+    }
+    
+}
+
+export class ElaborationNodeFromColorTemp extends ElaborationNode {
+    
+    private static readonly COLOR_TEMP_VALUE = "Temperature";
+    
+    private static readonly COLOR_TEMP = "Color";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    constructor(id: number) {
+        super(id, ElaborationNodeCode.FROM_COLOR_TEMP);
+        this.inputs  = [
+            new Datum(ElaborationNodeFromColorTemp.COLOR_TEMP_VALUE, DatumType.NUMBER, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeFromColorTemp.COLOR_TEMP, DatumType.COLOR_TEMP, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        let value = inputValues.get(ElaborationNodeFromColorTemp.COLOR_TEMP_VALUE) as number;
+        value     = Math.min(MAX_ALLOWED_TEMP, Math.max(MIN_ALLOWED_TEMP, value));
+        
+        return new Map<string, unknown>([
+                                            [
+                                                ElaborationNodeFromColorTemp.COLOR_TEMP, value
                                             ]
                                         ]);
     }

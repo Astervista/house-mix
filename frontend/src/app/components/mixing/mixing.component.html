@@ -1,6 +1,7 @@
 <!--suppress ALL -->
 <house-mix-toolbar
     [elements]="toolbarElements"
+    [keyObservable]="keySubject.asObservable()"
     (elementSelected)="toolbarClick(asToolbarAction($event))">
 
 </house-mix-toolbar>
@@ -41,7 +42,8 @@
     }
     @case (LoadingStatus.LOADED) {
         <div
-            class="main-content-scroll">
+            class="main-content-scroll"
+            tabindex="0">
             @if (graph != null) {
                 @if (!isGraphEmpty) {
                     <div

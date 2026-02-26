@@ -16,6 +16,12 @@
     flex-basis: 0;
     overflow-y: auto;
 
+    &:focus,
+    &:focus-visible {
+        outline: none;
+        border: none;
+    }
+
     .section-title {
         padding: dimensions.$margin-xlarge;
         font-size: 20px;

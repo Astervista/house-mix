@@ -2,7 +2,7 @@ import {AfterViewInit, Component, ElementRef, HostListener} from '@angular/core'
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
 import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
-import {firstValueFrom} from 'rxjs';
+import {firstValueFrom, Subject} from 'rxjs';
 import {MixingService} from '../../../services/mixing.service';
 import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
@@ -29,7 +29,6 @@ import {BackupDialogComponent} from './backup-dialog/backup-dialog.component';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {MixLayout} from '@common/mixing/mix/mix-layout';
 import {StringInputDialogComponent} from '../../dialogs/string-input-dialog/string-input-dialog.component';
-import {patchKeyboardEvent} from '../../../utils/keyboard-help';
 import {kelvinToColor} from '@common/utils/color-convert-table';
 import {DEFAULT_TEMP} from '@common/utils/constants';
 
@@ -845,6 +844,14 @@ export class MixComponent implements AfterViewInit {
             case ToolbarAction.REARRANGE:
             default:
                 return true;
+            case ToolbarAction.RENAME:
+                if (this.selectedElements.length == 1) {
+                    const selectedElement = this.selectedElements[0];
+                    if (selectedElement?.type == SelectedElementType.NODE_GROUP) {
+                        return true;
+                    }
+                }
+                return false;
             case ToolbarAction.DELETE:
                 return this.selectedElements.length > 0
                        &&
@@ -933,7 +940,24 @@ export class MixComponent implements AfterViewInit {
                     });
                 break;
             case ToolbarAction.BACK:
-                void this.router.navigate(['mixing']);
+                if (SAVE_BUTTON.badge == true) {
+                    this.matDialog.open(ConfirmDialogComponent, {
+                        data: {
+                            title:       'Confirm exit',
+                            message:     'There are unsaved changes. Do you want to leave? A backup of the unsaved changes will be kept.',
+                            confirmText: 'Leave',
+                            cancelText:  'Stay'
+                        }
+                    })
+                        .afterClosed()
+                        .subscribe(result => {
+                            if (result === true) {
+                                void this.router.navigate(['mixing']);
+                            }
+                        });
+                } else {
+                    void this.router.navigate(['mixing']);
+                }
                 break;
             case ToolbarAction.DELETE:
                 for (const selectedElement of this.selectedElements) {
@@ -970,7 +994,28 @@ export class MixComponent implements AfterViewInit {
                 this.selectedElements = [];
                 break;
             case ToolbarAction.REARRANGE:
-                this.uiManager.rearrangeNodes();
+                this.matDialog
+                    .open(ConfirmDialogComponent, {
+                        data: {
+                            title:       'Rearrange nodes',
+                            message:     'By rearranging the node, you will lose all the current placement of nodes. Do you want to proceed?',
+                            confirmText: 'Rearrange'
+                        }
+                    })
+                    .afterClosed()
+                    .subscribe(result => {
+                        if (result === true) {
+                            this.uiManager.rearrangeNodes();
+                        }
+                    });
+                break;
+            case ToolbarAction.RENAME:
+                if (this.selectedElements.length == 1) {
+                    const selectedElement = this.selectedElements[0];
+                    if (selectedElement?.type == SelectedElementType.NODE_GROUP) {
+                        this.changeGroupName(selectedElement.group);
+                    }
+                }
                 break;
             case ToolbarAction.SAVE: {
                 const mix                             = this.mix;
@@ -1098,71 +1143,11 @@ export class MixComponent implements AfterViewInit {
         }
     }
 
+    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
+
     @HostListener('keydown', ['$event'])
     public onKeyDown(event: KeyboardEvent): void {
-        const patchedEvent = patchKeyboardEvent(event);
-        if (patchedEvent.osModifier) {
-            switch (patchedEvent.code) {
-                case 'KeyG': {
-                    if (!patchedEvent.altKey) {
-                        if (!patchedEvent.shiftKey) {
-                            if (this.isToolbarElementVisible(ToolbarAction.GROUP)) {
-                                this.toolbarClick(ToolbarAction.GROUP);
-                            }
-                        } else {
-                            if (this.isToolbarElementVisible(ToolbarAction.UNGROUP)) {
-                                this.toolbarClick(ToolbarAction.UNGROUP);
-                            }
-                        }
-                    }
-                    break;
-                }
-                case 'KeyU': {
-                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
-                        if (this.isToolbarElementVisible(ToolbarAction.REMOVE_FROM_GROUP)) {
-                            this.toolbarClick(ToolbarAction.UNGROUP);
-                        }
-                    }
-                    break;
-                }
-                case 'KeyS': {
-                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
-                        if (this.isToolbarElementVisible(ToolbarAction.SAVE)) {
-                            this.toolbarClick(ToolbarAction.SAVE);
-                        }
-                    }
-                    break;
-                }
-                case 'KeyB': {
-                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
-                        if (this.isToolbarElementVisible(ToolbarAction.BACKUPS)) {
-                            this.toolbarClick(ToolbarAction.BACKUPS);
-                        }
-                    }
-                    break;
-                }
-                case 'KeyI': {
-                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
-                        if (this.isToolbarElementVisible(ToolbarAction.ADD)) {
-                            this.toolbarClick(ToolbarAction.ADD);
-                        }
-                    }
-                    break;
-                }
-                case 'KeyR': {
-                    if (!patchedEvent.shiftKey && !patchedEvent.altKey) {
-                        if (this.selectedElements.length == 1) {
-                            const selectedElement = this.selectedElements[0];
-                            if (selectedElement?.type == SelectedElementType.NODE_GROUP) {
-                                this.changeGroupName(selectedElement.group);
-                            }
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-        event.preventDefault();
+        this.keySubject.next(event);
     }
 
     protected doBackup(): void {
@@ -1211,9 +1196,8 @@ export class MixComponent implements AfterViewInit {
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
-    protected readonly kelvinToColor = kelvinToColor;
-    protected readonly onkeyup       = onkeyup;
-    protected readonly DEFAULT_TEMP  = DEFAULT_TEMP;
+    protected readonly kelvinToColor             = kelvinToColor;
+    protected readonly DEFAULT_TEMP              = DEFAULT_TEMP;
 }
 
 export interface NodeInputInfo {
@@ -1266,7 +1250,8 @@ enum ToolbarAction {
     REARRANGE         = 'rearrange',
     GROUP             = 'group',
     UNGROUP           = 'ungroup',
-    REMOVE_FROM_GROUP = 'remove-from-group'
+    REMOVE_FROM_GROUP = 'remove-from-group',
+    RENAME            = 'rename'
 }
 
 
@@ -1279,29 +1264,47 @@ const TOOLBAR_TITLE: ToolbarTitle = {
 
 
 const BACKUP_BUTTON: ToolbarButton = {
-    type:  ToolBarElementType.BUTTON,
-    icon:  'history',
-    id:    ToolbarAction.BACKUPS,
-    hint:  'Auto-saved versions',
-    order: 5
+    type:     ToolBarElementType.BUTTON,
+    icon:     'history',
+    id:       ToolbarAction.BACKUPS,
+    hint:     'Auto-saved versions',
+    shortcut: {
+        codes:      ['KeyB'],
+        osModifier: true,
+        shift:      false,
+        alt:        false
+    },
+    order:    5
 };
 
 const SAVE_BUTTON: ToolbarButton = {
-    type:  ToolBarElementType.BUTTON,
-    icon:  'save',
-    id:    ToolbarAction.SAVE,
-    hint:  'Save mix',
-    order: 5,
-    badge: false
+    type:     ToolBarElementType.BUTTON,
+    icon:     'save',
+    id:       ToolbarAction.SAVE,
+    hint:     'Save mix',
+    order:    5,
+    shortcut: {
+        codes:      ['KeyS'],
+        osModifier: true,
+        shift:      false,
+        alt:        false
+    },
+    badge:    false
 };
 
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
-        type:  ToolBarElementType.BUTTON,
-        icon:  'arrow_back',
-        id:    ToolbarAction.BACK,
-        hint:  'Go back',
-        order: 0
+        type:     ToolBarElementType.BUTTON,
+        icon:     'arrow_back',
+        id:       ToolbarAction.BACK,
+        hint:     'Go back',
+        shortcut: {
+            codes:      ['Escape'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
+        order:    0
     },
     TOOLBAR_TITLE,
     {
@@ -1310,18 +1313,30 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         order: 2
     },
     {
-        type:  ToolBarElementType.BUTTON,
-        icon:  'delete',
-        id:    ToolbarAction.DELETE,
-        hint:  'Delete',
-        order: 3
+        type:     ToolBarElementType.BUTTON,
+        icon:     'delete',
+        id:       ToolbarAction.DELETE,
+        hint:     'Delete',
+        shortcut: {
+            codes:      ['Delete', 'Backspace'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
     },
     {
-        type:  ToolBarElementType.BUTTON,
-        icon:  'add',
-        id:    ToolbarAction.ADD,
-        hint:  'Add node',
-        order: 3
+        type:     ToolBarElementType.BUTTON,
+        icon:     'add',
+        id:       ToolbarAction.ADD,
+        hint:     'Add node',
+        shortcut: {
+            codes:      ['KeyI'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
     },
     {
         type:    ToolBarElementType.BUTTON,
@@ -1331,34 +1346,71 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         hint:    'Grouping',
         submenu: [
             {
-                type:  ToolBarElementType.BUTTON,
-                icon:  'add',
-                id:    ToolbarAction.GROUP,
-                hint:  'Group nodes',
-                order: 3
+                type:     ToolBarElementType.BUTTON,
+                icon:     'add',
+                id:       ToolbarAction.GROUP,
+                hint:     'Group nodes',
+                shortcut: {
+                    codes:      ['KeyG', 'KeyU'],
+                    osModifier: true,
+                    shift:      false,
+                    alt:        false
+                },
+                order:    3
             },
             {
-                type:  ToolBarElementType.BUTTON,
-                icon:  'remove_selection',
-                id:    ToolbarAction.UNGROUP,
-                hint:  'Dissolve group',
-                order: 3
+                type:     ToolBarElementType.BUTTON,
+                icon:     'remove_selection',
+                id:       ToolbarAction.UNGROUP,
+                hint:     'Dissolve group',
+                shortcut: {
+                    codes:      ['KeyG', 'KeyU'],
+                    osModifier: true,
+                    shift:      false,
+                    alt:        false
+                },
+                order:    3
             },
             {
-                type:  ToolBarElementType.BUTTON,
-                icon:  'output',
-                id:    ToolbarAction.REMOVE_FROM_GROUP,
-                hint:  'Remove from containing group',
-                order: 3
+                type:     ToolBarElementType.BUTTON,
+                icon:     'output',
+                id:       ToolbarAction.REMOVE_FROM_GROUP,
+                hint:     'Remove from containing group',
+                shortcut: {
+                    codes:      ['KeyU'],
+                    osModifier: true,
+                    shift:      true,
+                    alt:        false
+                },
+                order:    3
             }
         ]
     },
     {
-        type:  ToolBarElementType.BUTTON,
-        icon:  'graph_1',
-        id:    ToolbarAction.REARRANGE,
-        hint:  'Rearrange nodes in order',
-        order: 3
+        type:     ToolBarElementType.BUTTON,
+        icon:     'graph_1',
+        id:       ToolbarAction.REARRANGE,
+        hint:     'Rearrange nodes in order',
+        shortcut: {
+            codes:      ['KeyD'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
+    },
+    {
+        type:         ToolBarElementType.BUTTON,
+        icon:         '',
+        id:           ToolbarAction.RENAME,
+        shortcut:     {
+            codes:      ['KeyR'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        shortcutOnly: true,
+        order:        3
     },
     {
         type:  ToolBarElementType.DIVIDER,

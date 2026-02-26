@@ -17,6 +17,12 @@
     flex-direction: column;
     flex-grow: 1;
     overflow-y: auto;
+
+    &:focus-visible,
+    &:focus {
+        outline: none;
+        border: none;
+    }
 }
 
 .main-content {

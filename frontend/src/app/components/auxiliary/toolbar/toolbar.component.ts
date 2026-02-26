@@ -7,6 +7,9 @@ import {MatDivider} from '@angular/material/divider';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
 import {MatBadge} from '@angular/material/badge';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
+import {Observable, Subscription} from 'rxjs';
+import {KeyboardEventPatch, patchKeyboardEvent} from '../../../utils/keyboard-help';
+import {KEY_DISPLAY, Modifier, MODIFIER_DISPLAY} from './constants';
 
 export class MenuRegistry {
 
@@ -60,6 +63,15 @@ export class ToolbarComponent implements AfterViewInit {
         this._elements = elements.slice().sort((a, b) => a.order - b.order);
         this.menus = [];
         this._elements.forEach(el => {this.extractMenus(el);});
+        this.allElements = flattenMenus(this._elements);
+    }
+
+    @Input() public set keyObservable(value: Observable<KeyboardEvent>) {
+        this.keySubscription?.unsubscribe();
+        this.keySubscription = value.subscribe(event => {
+            const patchedEvent = patchKeyboardEvent(event);
+            this.keyPressed(patchedEvent);
+        });
     }
 
     @Output() public elementSelected = new EventEmitter<string>;
@@ -72,7 +84,11 @@ export class ToolbarComponent implements AfterViewInit {
 
     protected menus: { for: string, menu: ToolbarElement[] }[] = [];
 
+    private allElements: ToolbarElement[] = [];
+
     private loaded: boolean = false;
+
+    private keySubscription: Subscription | null = null;
 
     protected onElementClick(element: ToolbarButton): void {
         if (element.submenu == null) {
@@ -105,8 +121,50 @@ export class ToolbarComponent implements AfterViewInit {
         }
     }
 
+    protected getButtonTooltip(element: ToolbarButton): string {
+        let result           = element.hint ?? '';
+        const likelyKeyboard =
+                  matchMedia('(hover: hover)').matches &&
+                  matchMedia('(pointer: fine)').matches;
+        if (!likelyKeyboard) {
+            return result;
+        }
+        if (element.shortcut) {
+            result += ' (';
+            if (element.shortcut.shift) {
+                result += MODIFIER_DISPLAY[Modifier.ALT];
+            }
+            if (element.shortcut.shift) {
+                result += MODIFIER_DISPLAY[Modifier.SHIFT];
+            }
+            if (element.shortcut.osModifier) {
+                result += MODIFIER_DISPLAY[Modifier.OS];
+            }
+            result += `${KEY_DISPLAY[element.shortcut.codes[0] ?? ''] ?? element.shortcut.codes[0] ?? ''})`;
+        }
+        return result;
+    }
+
+    private keyPressed(patchedEvent: KeyboardEvent & KeyboardEventPatch): void {
+        for (const element of this.allElements) {
+            if (element.type === ToolBarElementType.BUTTON) {
+                if (element.shortcut) {
+                    if (element.shortcut.codes.includes(patchedEvent.code) && element.shortcut.osModifier === patchedEvent.metaKey && element.shortcut.shift === patchedEvent.shiftKey &&
+                        element.shortcut.alt === patchedEvent.altKey) {
+                        this.onElementClick(element);
+                        patchedEvent.preventDefault();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
     protected readonly ToolBarElementType = ToolBarElementType;
-    protected readonly TOOLTIP_TIMEOUT    = TOOLTIP_TIMEOUT;
+    protected readonly TOOLTIP_TIMEOUT           = TOOLTIP_TIMEOUT;
+    protected readonly KEY_DISPLAY               = KEY_DISPLAY;
+    protected readonly Modifier                  = Modifier;
+    protected readonly MODIFIER_DISPLAY          = MODIFIER_DISPLAY;
 }
 
 export type ToolbarElement = ToolbarButton | ToolbarDivider | ToolbarSpacer | ToolbarTitle;
@@ -127,6 +185,8 @@ export interface ToolbarButton {
     submenu?: ToolbarElement[];
     badge?: number | boolean;
     loading?: boolean;
+    shortcut?: ToolbarShortcut;
+    shortcutOnly?: boolean;
 }
 
 export interface ToolbarDivider {
@@ -146,4 +206,19 @@ export interface ToolbarTitle {
     order: number;
     id: string;
     text: string | (() => string);
+}
+
+
+export interface ToolbarShortcut {
+    codes: string[],
+    osModifier: boolean,
+    shift: boolean,
+    alt: boolean
+}
+
+function flattenMenus(elements: ToolbarElement[]): ToolbarElement[] {
+    return elements.flatMap(element => [
+        element,
+        ...((element.type === ToolBarElementType.BUTTON && element.submenu) ? flattenMenus(element.submenu) : [])
+    ]);
 }

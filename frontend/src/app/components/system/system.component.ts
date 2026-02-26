@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, HostListener} from '@angular/core';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {Router} from '@angular/router';
 import {SystemParameter} from '@common/system/parameter/system-parameter';
@@ -27,6 +27,7 @@ import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device
 import {SystemAdjustmentDialogComponent} from '../dialogs/system-adjustment-dialog/system-adjustment-dialog.component';
 import {Adjustment} from '@common/system/adjustment/adjustment';
 import {AdjustmentComponent} from '../entities/system/adjustment/adjustment.component';
+import {Subject} from 'rxjs';
 
 
 @Component({
@@ -71,6 +72,13 @@ export class SystemComponent {
         this.loadTimers();
         this.loadDeviceMonitors();
         this.loadAdjustments();
+    }
+
+    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
+
+    @HostListener('keydown', ['$event'])
+    public onKeyDown(event: KeyboardEvent): void {
+        this.keySubject.next(event);
     }
 
     protected loadParameters(): void {
@@ -637,6 +645,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'edit_square',
         id:    ToolbarAction.CHANGE_PARAMETER_VALUE,
         hint:  'Change parameter value',
+        shortcut: {
+            codes:      ['Enter', 'NumpadEnter'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -644,6 +658,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'edit',
         id:    ToolbarAction.EDIT,
         hint:  'Edit',
+        shortcut: {
+            codes:      ['Enter', 'NumpadEnter'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -651,6 +671,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'delete',
         id:    ToolbarAction.DELETE,
         hint:  'Delete',
+        shortcut: {
+            codes:      ['Delete', 'Backspace'],
+            osModifier: false,
+            shift:      false,
+            alt:        false
+        },
         order: 2
     },
     {
@@ -663,6 +689,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         icon:  'settings',
         id:    ToolbarAction.SETTINGS,
         hint:  'System settings',
+        shortcut: {
+            codes:      ['KeyP'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
         order: 4
     }
 

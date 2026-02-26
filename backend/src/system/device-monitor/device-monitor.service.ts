@@ -8,6 +8,7 @@ import {DatumOrigin} from "@common/mixing/mix/datum";
 import {SystemOrigin} from "@common/system/constants";
 import MixService from "../../mixing/mix/mix.service";
 import {EngineService} from "../../engine/engine.service";
+import {SettingsService} from "../settings/settings.service";
 
 const SAVE_FILE = "system/device-monitor.json";
 
@@ -19,29 +20,38 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
         @Inject(forwardRef(() => MixService))
         private mixService: MixService,
         @Inject(forwardRef(() => EngineService))
-        private engineService: EngineService
+        private engineService: EngineService,
+        settingsService: SettingsService
     ) {
         super(fileService, SAVE_FILE, DeviceMonitorServiceData);
-        void this.checkAll();
+        this.doAfterLoad(async () => {
+            await settingsService.getSettings();
+            void this.checkStatus(true);
+            void this.checkStatus(false);
+        });
     }
     
     private lastResponses: Map<string, number> = new Map<string, number>();
     private _internetAccess: boolean | null = null;
     
-    private async checkAll(): Promise<void> {
-        const data                                                                         = await this.data;
+    public static offlineCheck: number       = 5 * 60;
+    public static onlineCheck: number        = 60;
+    public static unavailableTimeout: number = 5 * 60;
+    
+    private async checkStatus(checkOnline: boolean): Promise<void> {
+        const data: DeviceMonitorServiceData = await this.data;
         const promises: Promise<{ device: DeviceMonitorDevice | null, result: boolean }>[] = [];
-        const now = Date.now();
+        const now: number                    = Date.now();
         for (const device of data.devices) {
             const deviceIP = device.ip;
-            if (deviceIP != null) {
+            if (deviceIP != null && device.connected !== checkOnline) {
                 promises.push(this.checkOne(deviceIP).then(result => {
                     if (result) {
                         this.lastResponses.set(deviceIP, Date.now());
                     } else {
                         const lastResponse = this.lastResponses.get(deviceIP);
                         if (lastResponse != null) {
-                            result = now - lastResponse <= 1000 * 60 * 5;
+                            result = now - lastResponse <= 1000 * DeviceMonitorService.unavailableTimeout;
                         } else {
                             result = false;
                         }
@@ -50,12 +60,14 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
                 }));
             }
         }
-        promises.push(this.checkOne().then(result => {
-            this._internetAccess = result;
-            return ({device: null, result});
-        }));
+        if (checkOnline) {
+            promises.push(this.checkOne().then(result => {
+                this._internetAccess = result;
+                return ({device: null, result});
+            }));
+        }
         const results        = await Promise.all(promises);
-        const internetStatus = results.find(result => result.device == null)?.result ?? false;
+        const internetStatus                 = checkOnline ? (results.find(result => result.device == null)?.result ?? false) : true;
         if (internetStatus) {
             const changedDevices: DeviceMonitorDevice[] = [];
             for (const result of results) {
@@ -75,7 +87,7 @@ export class DeviceMonitorService extends PersistentDataService<DeviceMonitorSer
                 this.engineService.deviceStatusChanged(changedDevices);
             }
         }
-        setTimeout(() => {void this.checkAll();}, 1000 * 30);
+        setTimeout(() => {void this.checkStatus(checkOnline);}, 1000 * (checkOnline ? DeviceMonitorService.onlineCheck : DeviceMonitorService.offlineCheck));
     }
     
     private checkOne(address?: string): Promise<boolean> {

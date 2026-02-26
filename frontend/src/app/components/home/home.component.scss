@@ -28,6 +28,13 @@
     flex-direction: column;
     gap: dimensions.$margin-large;
     padding: dimensions.$margin-large;
+
+    &:focus,
+    &:focus-visible {
+        outline: none;
+        border: none;
+    }
+
 }
 
 .device-title {
@@ -67,6 +74,17 @@
     padding-right: dimensions.$margin-large;
 }
 
+.tree-devices-title {
+    font-size: 17px;
+    font-weight: 100;
+    margin: dimensions.$margin-medium;
+}
+
+.tree-devices {
+    display: flex;
+    flex-direction: row;
+    gap: dimensions.$margin-mlarge;
+}
 
 .tree div[role=group] {
 
@@ -75,16 +93,7 @@
     gap: dimensions.$margin-large;
     padding: dimensions.$margin-large 0;
 
-    > .tree-devices-title {
-        font-size: 17px;
-        font-weight: 100;
-        margin: dimensions.$margin-medium;
-    }
-
     > .tree-devices {
-        display: flex;
-        flex-direction: row;
-        gap: dimensions.$margin-mlarge;
         padding-left: dimensions.$indent-medium;
     }
 

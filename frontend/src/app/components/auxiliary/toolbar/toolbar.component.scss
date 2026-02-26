@@ -39,3 +39,22 @@
     font-weight: 200;
     font-size: 1.2rem;
 }
+
+.menu-button-text {
+    display: flex;
+    align-items: center;
+
+    .hint {
+        flex-grow: 1;
+    }
+
+    .shortcut {
+        opacity: 0.5;
+        margin-left: dimensions.$indent-large;
+        text-align: right;
+        display: none;
+        @media (hover: hover) and (pointer: fine) {
+            display: inline;
+        }
+    }
+}

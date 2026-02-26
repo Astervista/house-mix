@@ -1,10 +1,12 @@
 <house-mix-toolbar
     [elements]="toolbarElements"
+    [keyObservable]="keySubject.asObservable()"
     (elementSelected)="toolbarClick(asToolbarAction($event))">
 
 </house-mix-toolbar>
 <div
     class="main-content"
+    tabindex="0"
     (click)="this.selected = null">
     <div class="section-title">
         <span>
