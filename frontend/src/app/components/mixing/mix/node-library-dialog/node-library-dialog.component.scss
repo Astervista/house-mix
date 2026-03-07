@@ -32,6 +32,13 @@ h2 {
     }
 }
 
+house-mix-node {
+    &:focus-visible,
+    &:focus {
+        outline: none;
+        border: none;
+    }
+}
 
 .search-results {
     display: flex;
@@ -42,6 +49,12 @@ h2 {
     align-items: center;
     justify-content: space-around;
     flex-shrink: 0;
+
+    &:focus-visible,
+    &:focus {
+        outline: none;
+        border: none;
+    }
 
     @include colors.datum-type-colors();
 

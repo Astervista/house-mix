@@ -29,6 +29,6 @@
         </mat-error>
     }
 </mat-form-field>
-@if (_fixNullable == null) {
+@if (_fixNullable != true) {
     <mat-checkbox [formControl]="nullableFormControl">Nullable</mat-checkbox>
 }

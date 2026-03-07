@@ -1,8 +1,15 @@
 <h2 mat-dialog-title>Select an input</h2>
-<mat-dialog-content>
+<mat-dialog-content
+    house-mix-input-return-behavior
+    (on-stop)="confirm()">
     <mat-form-field>
         <mat-icon matPrefix>search</mat-icon>
-        <input matInput placeholder="Search for an input..." [formControl]="searchFormControl">
+        <input
+            house-mix-input-return-behavior-exclude
+            matInput
+            placeholder="Search for an input..."
+            [formControl]="searchFormControl"
+            (keydown)="searchKeyDown($event);">
         @if ((searchFormControl.value?.length ?? 0) > 0) {
             <button matSuffix matIconButton aria-label="Clear" (click)="searchFormControl.setValue(null)">
                 <mat-icon>close</mat-icon>
@@ -11,10 +18,14 @@
     </mat-form-field>
     @if (this.searchResults != null && this.searchResults.length > 0) {
         <div
-            class="search-results">
+            #searchResultsDiv
+            house-mix-input-return-behavior-exclude
+            class="search-results"
+            tabindex="0"
+            (keydown)="searchResultsKeyDown($event);">
             @for (input of searchResults; track input.uniqueName) {
                 <ng-container
-                    *ngTemplateOutlet="inputTemplate; context: { input: input }">
+                    *ngTemplateOutlet="inputTemplate; context: { input: input, scrollOnSelect: true }">
                 </ng-container>
             }
         </div>
@@ -31,7 +42,7 @@
                     <div class="option-list">
                         @for (input of inputs; track input.uniqueName) {
                             <ng-container
-                                *ngTemplateOutlet="inputTemplate; context: { input: input }">
+                                *ngTemplateOutlet="inputTemplate; context: { input: input, scrollOnSelect: false }">
                             </ng-container>
                         }
                     </div>
@@ -47,19 +58,20 @@
         Cancel
     </button>
     <button mat-button
-            (click)="closeDialog(selectedInput)" [disabled]="selectedInput == null">
+            (click)="confirm()" [disabled]="selectedInput == null">
         Select
     </button>
 </mat-dialog-actions>
-<ng-template #inputTemplate let-input="input">
+<ng-template #inputTemplate let-input="input" let-scrollOnSelect="scrollOnSelect">
     @let typedInput = asExportedDatum(input);
     @if (typedInput) {
         <div
             class="input-preview"
-            [class.selected]="selectedInput == typedInput"
             matTooltipPosition="above"
             [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
             [matTooltip]="typedInput.name == typedInput.displayName ? null : `Codename: ${typedInput.name}`"
+            [class.selected]="selectedInput == typedInput"
+            [house-mix-scroll-on-selected]="(selectedInput == typedInput) && scrollOnSelect"
             (click)="this.selectedInput = typedInput">
             <span class="origin-name">
                 {{ getExternalDatumOriginDisplay(typedInput) }}

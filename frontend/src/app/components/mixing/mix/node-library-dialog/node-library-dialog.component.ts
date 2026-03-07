@@ -1,4 +1,4 @@
-import {Component} from '@angular/core';
+import {Component, ElementRef, ViewChild} from '@angular/core';
 import {FormControl, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MatButton, MatIconButton} from '@angular/material/button';
 import {MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
@@ -13,6 +13,8 @@ import {MatTooltip} from '@angular/material/tooltip';
 import {TOOLTIP_TIMEOUT} from '../../../../utils/constants';
 import {MatFormField, MatInput, MatPrefix, MatSuffix} from '@angular/material/input';
 import {LocalStorageService} from '../../../../services/local-storage.service';
+import {InputReturnBehaviorDirective, InputReturnBehaviorExcludeDirective} from '../../../../directives/input-return-behavior/input-return-behavior.directive';
+import {ScrollOnSelectedDirective} from '../../../../directives/scroll-on-selected/scroll-on-selected.directive';
 
 const NODE_LIBRARY_STATUS_STORAGE_KEY = {name: 'node-library-status', defaultValue: {expanded: true}};
 
@@ -36,7 +38,10 @@ const NODE_LIBRARY_STATUS_STORAGE_KEY = {name: 'node-library-status', defaultVal
                    MatFormField,
                    MatInput,
                    MatPrefix,
-                   MatSuffix
+                   MatSuffix,
+                   InputReturnBehaviorDirective,
+                   InputReturnBehaviorExcludeDirective,
+                   ScrollOnSelectedDirective
                ],
                templateUrl: './node-library-dialog.component.html',
                styleUrl:    './node-library-dialog.component.scss'
@@ -51,6 +56,9 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
 
     protected searchResults: ElaborationNodeLibraryItem[] | null = null;
 
+    @ViewChild('searchResultsDiv')
+    private searchResultsDiv?: ElementRef<HTMLDivElement>;
+
     constructor(
         dialogRef: MatDialogRef<NodeLibraryDialogComponent, ElaborationNodeLibraryItem>,
         private localStorageService: LocalStorageService
@@ -64,9 +72,9 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
                         examples[item.code] = new item.constructor(0, {dataType: item.datumType});
                     } else {
                         if (item.arbitraryNumber) {
-                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullMarked, inputNumber: 1});
+                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullableMark, inputNumber: 1});
                         } else {
-                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullMarked});
+                            examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullableMark});
                         }
                     }
                 } else {
@@ -86,17 +94,25 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
                                      .nodes
                                      .map(node => ({node, sectionName: section.sectionName}))
                     )
-                    .filter(nodeInfo => {
+                    .map((nodeInfo): [number, ElaborationNodeLibraryItem] => {
                         const candidates = [
-                            nodeInfo.sectionName.toLowerCase(),
-                            nodeInfo.node.description.toLowerCase(),
-                            ELABORATION_NODE_DISPLAY_NAME[nodeInfo.node.code].toLowerCase(),
-                            ...(examples[nodeInfo.node.code]?.inputs.map(input => input.name.toLowerCase()) ?? []),
-                            ...(examples[nodeInfo.node.code]?.outputs.map(output => output.name.toLowerCase()) ?? [])
+                            [ELABORATION_NODE_DISPLAY_NAME[nodeInfo.node.code].toLowerCase()],
+                            [nodeInfo.node.description.toLowerCase()],
+                            examples[nodeInfo.node.code]?.inputs.map(input => input.name.toLowerCase()) ?? [],
+                            examples[nodeInfo.node.code]?.outputs.map(output => output.name.toLowerCase()) ?? [],
+                            [nodeInfo.sectionName.toLowerCase()]
                         ];
-                        return candidates.some(candidate => pieces.every(piece => candidate.includes(piece)));
+                        return [candidates.findIndex(section => section.some(candidate => pieces.every(piece => candidate.includes(piece)))), nodeInfo.node];
                     })
-                    .map(node => node.node);
+                    .filter(([matchIndex]) => matchIndex != -1)
+                    .sort(([aIndex, aNode], [bIndex, bNode]) => {
+                        if (aIndex != bIndex) {
+                            return aIndex - bIndex;
+                        } else {
+                            return ELABORATION_NODE_DISPLAY_NAME[aNode.code].toLowerCase().localeCompare(ELABORATION_NODE_DISPLAY_NAME[bNode.code].toLowerCase());
+                        }
+                    })
+                    .map(([_, node]) => node);
             }
         });
     }
@@ -117,6 +133,44 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
             NODE_LIBRARY_STATUS_STORAGE_KEY,
             {expanded: value}
         );
+    }
+
+    protected filterSearchNodes(nodes: ElaborationNodeLibraryItem[]): ElaborationNodeLibraryItem[] {
+        return nodes.filter(node => this.searchResults == null ? true : this.searchResults.includes(node));
+    }
+
+    protected searchKeyDown(event: KeyboardEvent): void {
+        if (event.key == 'Enter' && this.searchResultsDiv) {
+            event.preventDefault();
+            this.searchResultsDiv.nativeElement.focus();
+            if (this.result == null || this.searchResults?.includes(this.result) == false) {
+                this.result = null;
+            }
+            this.result ??= this.searchResults?.[0] ?? null;
+        }
+    }
+
+    protected searchResultsKeyDown(event: KeyboardEvent): void {
+        if (event.code == 'ArrowRight') {
+            event.preventDefault();
+            if (this.result == null || this.searchResults == null || this.searchResults.length == 0) {
+                this.result ??= this.searchResults?.[0] ?? null;
+            } else {
+                const index = (this.searchResults.indexOf(this.result) + 1) % this.searchResults.length;
+                this.result = this.searchResults[index] ?? null;
+            }
+        } else if (event.code == 'ArrowLeft') {
+            event.preventDefault();
+            if (this.result == null || this.searchResults == null || this.searchResults.length == 0) {
+                this.result ??= this.searchResults?.[0] ?? null;
+            } else {
+                const index = (this.searchResults.indexOf(this.result) + this.searchResults.length - 1) % this.searchResults.length;
+                this.result = this.searchResults[index] ?? null;
+            }
+        } else if (event.code == 'Enter') {
+            event.preventDefault();
+            this.confirm();
+        }
     }
 
     protected confirm(): void {

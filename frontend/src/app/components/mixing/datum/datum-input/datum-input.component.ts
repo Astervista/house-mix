@@ -24,11 +24,9 @@ import {DatumType} from '@common/mixing/mix/datum';
 export class DatumInputComponent {
 
     @Input({required: false})
-    public set fixNullable(value: boolean | null) {
+    public set fixNullable(value: boolean) {
         this._fixNullable = value;
-        if (this._fixNullable != null) {
-            this.nullableFormControl.setValue(this._fixNullable);
-        }
+        this.nullableFormControl.setValue(this._fixNullable);
     }
 
     public _fixNullable: boolean | null = null;

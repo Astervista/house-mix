@@ -16,6 +16,12 @@
     align-items: center;
     flex-shrink: 0;
 
+    &:focus-visible,
+    &:focus {
+        outline: none;
+        border: none;
+    }
+
     .input-preview {
         flex-shrink: 0;
         max-width: 150px;

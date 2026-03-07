@@ -108,7 +108,7 @@
                 margin-right: dimensions.$margin-msmall;
                 position: relative;
 
-                &.nullable:after {
+                &:after {
                     content: " ";
                     position: absolute;
                     width: 4px;
@@ -117,6 +117,10 @@
                     top: 3px;
                     background-color: var(--type-color, --mat-sys-on-background);
                     border-radius: 3px;
+                }
+
+                &.nullable:after {
+                    background-color: transparent;
                 }
             }
         }

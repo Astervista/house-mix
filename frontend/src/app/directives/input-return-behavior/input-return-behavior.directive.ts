@@ -1,6 +1,16 @@
 import {AfterViewInit, Directive, ElementRef, EventEmitter, OnDestroy, Output} from '@angular/core';
 
 @Directive({
+               selector: '[house-mix-input-return-behavior-exclude]'
+           })
+export class InputReturnBehaviorExcludeDirective {
+
+    constructor(private el: ElementRef<HTMLElement>) {
+        this.el.nativeElement.setAttribute('data-exclude-from-parent', 'true');
+    }
+}
+
+@Directive({
                selector: '[house-mix-input-return-behavior]'
            })
 export class InputReturnBehaviorDirective implements AfterViewInit, OnDestroy {
@@ -99,13 +109,14 @@ function getTabbableElements(host: HTMLElement): HTMLElement[] {
             if (el.hidden) {
                 return false;
             }
+            if (el.getAttribute('data-exclude-from-parent') == 'true') {
+                return false;
+            }
             if (getComputedStyle(el).visibility === 'hidden') {
                 return false;
             }
-            if (getComputedStyle(el).display === 'none') {
-                return false;
-            }
-            return true;
+            return getComputedStyle(el).display !== 'none';
+
         })
         .sort((a, b) => {
             if (a.tabIndex === b.tabIndex) {

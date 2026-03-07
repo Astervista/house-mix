@@ -39,7 +39,7 @@ import {InputReturnBehaviorDirective} from '../../../directives/input-return-beh
 
 @Component({
                selector:    'house-mix-add-entity-dialog',
-               imports:     [
+               imports: [
                    MatDialogContent,
                    MatDialogActions,
 

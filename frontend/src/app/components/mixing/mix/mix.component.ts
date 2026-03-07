@@ -791,10 +791,9 @@ export class MixComponent implements AfterViewInit {
     }
 
     private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean;
-    private isToolbarElementVisible(action: ToolbarAction): boolean;
 
-    private isToolbarElementVisible(elementOrAction: ToolbarElement | ToolbarAction): boolean {
-        const action = (typeof elementOrAction == 'string' ? elementOrAction : elementOrAction.id) as ToolbarAction;
+    private isToolbarElementVisible(elementOrAction: ToolbarElement): boolean {
+        const action = elementOrAction.id as ToolbarAction;
         if (this.loadingStatus !== LoadingStatus.LOADED) {
             return action == ToolbarAction.BACK;
         }
@@ -1043,6 +1042,11 @@ export class MixComponent implements AfterViewInit {
                             this.restoredOutputs = [];
                             mix.id               = newId;
                         })
+                        .then(() =>
+                                  this
+                                      .mixService
+                                      .updateMixLayout(this.uiManager.exportLayout(), {id: mix.id as number})
+                        )
                         .catch((error: unknown) => {
                             SAVE_BUTTON.loading = false;
                             SAVE_BUTTON.badge   = true;
@@ -1126,13 +1130,6 @@ export class MixComponent implements AfterViewInit {
                                     duration: SNACKBAR_TIMEOUT
                                 }
                             );
-                        });
-                    this
-                        .mixService
-                        .updateMixLayout(this.uiManager.exportLayout(), {id: mix.id as number})
-                        .catch(() => {
-                            SAVE_BUTTON.loading = false;
-                            SAVE_BUTTON.badge   = true;
                         });
                 }
                 break;

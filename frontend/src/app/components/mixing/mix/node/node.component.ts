@@ -25,7 +25,14 @@ export class NodeComponent {
 
     public item?: ElaborationNodeLibraryItem;
     @Input({required: true}) public examples!: Record<ElaborationNodeCode, ElaborationNode>;
-    @Input() public selected: boolean = false;
+
+    @Input() public set selected(value: boolean) {
+        this._selected = value;
+    }
+
+    public get selected(): boolean {
+        return this._selected;
+    }
     @Input() public expanded: boolean = true;
 
     @Input({alias: 'library-item', required: true}) public set libraryItem(value: ElaborationNodeLibraryItem) {
@@ -44,6 +51,8 @@ export class NodeComponent {
     }
 
     @Output('onSelected') public selectedEmitter: EventEmitter<void> = new EventEmitter<void>();
+
+    protected _selected: boolean = false;
 
     protected datumTypeFormControl: FormControl<DatumType | null> = new FormControl<DatumType | null>(DatumType.BOOLEAN);
     protected nullMarkFormControl: FormControl<boolean | null>    = new FormControl<boolean | null>(false);

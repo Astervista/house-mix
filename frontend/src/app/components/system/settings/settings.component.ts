@@ -228,7 +228,7 @@ export class SettingsComponent {
             });
     }
 
-    private updateUnavailable(result: number) {
+    private updateUnavailable(result: number): void {
         const rollBackValue = this.settings.unavailableTimeout;
         if (rollBackValue != result) {
             this.settings.unavailableTimeout = result;

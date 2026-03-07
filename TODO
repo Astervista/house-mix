@@ -1,6 +1,6 @@
 // TODO: Put the new node in the center
 // TODO: Copy/paste nodes
-// TODO: Tab order in node/input library + in compact view nullable circle is opposite + when nullable is choosable wrong display of the connector + search hierarchy
-// TODO: New expose in actuator should leave the nullability
-// TODO: Sometimes the mix save request fails
 // TODO: Check what happens when multiple choice index is -1
+// TODO: Exports library
+// TODO: Check if sensor inputs are sent anyway at every cycle from the last value but without being marked as new
+
