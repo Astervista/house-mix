@@ -37,11 +37,13 @@ export class NodeComponent {
 
     @Input({alias: 'library-item', required: true}) public set libraryItem(value: ElaborationNodeLibraryItem) {
         if (value.special) {
-            this.datumTypeFormControl.setValue(value.datumType);
-            if (value.nullMarked) {
-                this.nullMarkFormControl.setValue(value.nullableMark);
-            } else {
-                this.nullMarkFormControl.setValue(null);
+            if (!value.isTimeout) {
+                this.datumTypeFormControl.setValue(value.datumType);
+                if (value.nullMarked) {
+                    this.nullMarkFormControl.setValue(value.nullableMark);
+                } else {
+                    this.nullMarkFormControl.setValue(null);
+                }
             }
         } else {
             this.datumTypeFormControl.setValue(null);
@@ -76,8 +78,12 @@ export class NodeComponent {
                         this.item.nullableMark = this.nullMarkFormControl.value ?? this.item.nullableMark;
                         this.item.datumType    = value;
                     } else {
-                        this.examples[this.item.code] = new this.item.constructor(0, {dataType: value});
-                        this.item.datumType           = value;
+                        if (this.item.isTimeout) {
+                            this.examples[this.item.code] = new this.item.constructor(0, {creationTimestamp: Date.now()});
+                        } else {
+                            this.examples[this.item.code] = new this.item.constructor(0, {dataType: value});
+                            this.item.datumType           = value;
+                        }
                     }
                 }
             }
@@ -99,8 +105,12 @@ export class NodeComponent {
                         this.item.nullableMark = value;
                         this.item.datumType    = this.datumTypeFormControl.value ?? this.item.datumType;
                     } else {
-                        this.examples[this.item.code] = new this.item.constructor(0, {dataType: this.datumTypeFormControl.value ?? this.item.datumType});
-                        this.item.datumType           = this.datumTypeFormControl.value ?? this.item.datumType;
+                        if (this.item.isTimeout) {
+                            this.examples[this.item.code] = new this.item.constructor(0, {creationTimestamp: Date.now()});
+                        } else {
+                            this.examples[this.item.code] = new this.item.constructor(0, {dataType: this.datumTypeFormControl.value ?? this.item.datumType});
+                            this.item.datumType           = this.datumTypeFormControl.value ?? this.item.datumType;
+                        }
                     }
                 }
             }

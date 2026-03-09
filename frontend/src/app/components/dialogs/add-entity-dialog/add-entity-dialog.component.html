@@ -110,11 +110,17 @@
             <p>{{ data.entityType == EntityType.ACTUATOR ? 'Actuator properties' : 'Sensor properties' }}</p>
             <button
                 mat-icon-button
+                matTooltip="Add a new property"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                 (click)="addExposes()">
                 <mat-icon>add</mat-icon>
             </button>
             <button
                 mat-icon-button
+                matTooltip="Add property from library"
+                matTooltipPosition="above"
+                [matTooltipShowDelay]="TOOLTIP_TIMEOUT"
                 [matMenuTriggerFor]="data.entityType == EntityType.ACTUATOR ? actuatorDataLibrary : sensorDataLibrary">
                 <mat-icon>newsstand</mat-icon>
             </button>
@@ -228,7 +234,7 @@
 <mat-menu
     #actuatorDataLibrary="matMenu"
     xPosition="before">
-    @for (datum of ACTUATOR_PROPERTIES_LIBRARY; track datum.display) {
+    @for (datum of getSuggestedExposes(ACTUATOR_PROPERTIES_LIBRARY, this.actuatorTypeFormControl.value); track datum.display) {
         <button
             mat-menu-item
             (click)="deviceExposesFromLibrary = datum.data">{{ datum.display }}
@@ -238,7 +244,7 @@
 <mat-menu
     #sensorDataLibrary="matMenu"
     xPosition="before">
-    @for (datum of SENSOR_PROPERTIES_LIBRARY; track datum.display) {
+    @for (datum of getSuggestedExposes(SENSOR_PROPERTIES_LIBRARY, this.sensorTypeFormControl.value); track datum.display) {
         <button
             mat-menu-item
             (click)="deviceExposesFromLibrary = datum.data">{{ datum.display }}

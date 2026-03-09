@@ -6,6 +6,7 @@ import {LOCAL_SETTINGS_KEY} from './components/system/settings/settings.componen
 import {SystemService} from './services/system.service';
 import {Title} from '@angular/platform-browser';
 import {SystemSettings} from '@common/system/settings/settings';
+import {COPY_STORAGE_KEY} from './components/mixing/mix/mix.component';
 
 @Component({
                selector:    'house-mix-root',
@@ -43,7 +44,7 @@ export class AppComponent implements AfterViewInit {
             .subscribe(settings => {
                 this.updatedSettings(settings);
             });
-
+        this.localStorageService.setItem(COPY_STORAGE_KEY, null);
     }
 
     private updatedSettings(settings: SystemSettings): void {

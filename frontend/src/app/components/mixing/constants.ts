@@ -48,6 +48,8 @@ import {
     ElaborationNodeSunEvents,
     ElaborationNodeTimeCompare,
     ElaborationNodeTimeFromValues,
+    ElaborationNodeTimeout,
+    ElaborationNodeTimeoutImplementationConstructor,
     ElaborationNodeTimeValues,
     ElaborationNodeXor,
     TypedElaborationNodeImplementationConstructor,
@@ -79,6 +81,14 @@ export type ElaborationNodeLibraryItem = {
     code: ElaborationNodeCode;
     special: false;
 } | {
+    constructor: ElaborationNodeTimeoutImplementationConstructor;
+    description: string;
+    code: ElaborationNodeCode;
+    special: true;
+    isTimeout: true;
+    isTyped: false,
+    nullMarked: false,
+} | {
     special: true,
     isTyped: true,
     nullMarked: false,
@@ -86,7 +96,8 @@ export type ElaborationNodeLibraryItem = {
     constructor: TypedElaborationNodeImplementationConstructor;
     description: string;
     code: ElaborationNodeCode;
-    datumType: DatumType
+    datumType: DatumType;
+    isTimeout: false;
 } | {
     special: true,
     isTyped: true,
@@ -99,6 +110,7 @@ export type ElaborationNodeLibraryItem = {
     code: ElaborationNodeCode;
     datumType: DatumType;
     nullableMark: boolean
+    isTimeout: false;
 } | {
     special: true,
     isTyped: true,
@@ -111,6 +123,7 @@ export type ElaborationNodeLibraryItem = {
     code: ElaborationNodeCode;
     datumType: DatumType;
     nullableMark: boolean
+    isTimeout: false;
 };
 
 export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> = {
@@ -147,6 +160,7 @@ export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> 
     FROM_HSV:              'Color from HSV',
     FROM_XY:               'Color from XY',
     FROM_COLOR_TEMP:    'Color temp from K',
+    TIMEOUT:            'Timeout',
     DATE_VALUES:           'Values from date',
     TIME_VALUES:           'Values from time',
     DATE_TIME_VALUES:      'Values from date time',
@@ -260,7 +274,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: true
+                arbitraryNumber: true,
+                isTimeout:       false
             },
             {
                 constructor:     ElaborationNodeOr,
@@ -273,7 +288,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: true
+                arbitraryNumber: true,
+                isTimeout:       false
             },
             {
                 constructor:     ElaborationNodeXor,
@@ -286,7 +302,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: true
+                arbitraryNumber: true,
+                isTimeout:       false
             },
             {
                 constructor: ElaborationNodeNot,
@@ -308,7 +325,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: false
+                arbitraryNumber: false,
+                isTimeout:       false
             },
             {
                 constructor: ElaborationNodeNullGuard,
@@ -317,7 +335,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 datumType:  DatumType.NUMBER,
                 special:    true,
                 isTyped:    true,
-                nullMarked: false
+                nullMarked: false,
+                isTimeout:  false
             },
             {
                 constructor: ElaborationNodeEqualityCheck,
@@ -326,18 +345,20 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 datumType:   DatumType.NUMBER,
                 special:     true,
                 isTyped:     true,
-                nullMarked:  false
+                nullMarked: false,
+                isTimeout:  false
             },
             {
-                constructor:  ElaborationNodeBinaryChoice,
-                description:  'Selects one of two values, depending on the value of "Choose first?". If it\'s true, the first is chosen, otherwise the second one is.',
-                code:         ElaborationNodeCode.BINARY_CHOICE,
-                datumType:    DatumType.NUMBER,
-                nullableMark: false,
-                special:      true,
-                isTyped:      true,
+                constructor:     ElaborationNodeBinaryChoice,
+                description:     'Selects one of two values, depending on the value of "Choose first?". If it\'s true, the first is chosen, otherwise the second one is.',
+                code:            ElaborationNodeCode.BINARY_CHOICE,
+                datumType:       DatumType.NUMBER,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: false
+                arbitraryNumber: false,
+                isTimeout:       false
             },
             {
                 constructor:     ElaborationNodeMultipleChoice,
@@ -348,7 +369,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: true
+                arbitraryNumber: true,
+                isTimeout:       false
             },
             {
                 constructor:     ElaborationNodeEncoder,
@@ -363,7 +385,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 special:         true,
                 isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: true
+                arbitraryNumber: true,
+                isTimeout:       false
             }
         ]
     },
@@ -435,6 +458,15 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
     {
         sectionName: 'Date and time',
         nodes:       [
+            {
+                constructor: ElaborationNodeTimeout,
+                description: 'When "Reset" is true, a new calculation of the mix will be scheduled in "Timeout" seconds, after which the output "Triggered" will be true (only once).',
+                code:        ElaborationNodeCode.TIMEOUT,
+                special:     true,
+                isTimeout:   true,
+                isTyped:     false,
+                nullMarked:  false
+            },
             {
                 constructor: ElaborationNodeDateValues,
                 description: 'Exposes the single components of a date. Day of the week is a number from 1 (Monday) to 7 (Sunday)',
@@ -514,27 +546,29 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
         nodes:       [
             {
                 constructor:     ElaborationNodeSave,
-                description:  'Stores a value in permanent storage so it can be retrieved in a future elaboration of the mix through a "Retrieve a value" node.' +
-                              ' Different values can be saved independently with a different name',
-                code:         ElaborationNodeCode.SAVE,
-                datumType:    DatumType.BOOLEAN,
-                nullableMark: false,
-                special:      true,
-                isTyped:      true,
+                description:     'Stores a value in permanent storage so it can be retrieved in a future elaboration of the mix through a "Retrieve a value" node.' +
+                                 ' Different values can be saved independently with a different name',
+                code:            ElaborationNodeCode.SAVE,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: false
+                arbitraryNumber: false,
+                isTimeout:       false
             },
             {
                 constructor:     ElaborationNodeRetrieve,
-                description:  'Retrieves a value from permanent storage that was previously stored with a "Store a value" node' +
-                              ' Different values can be saved independently with a different name',
-                code:         ElaborationNodeCode.RETRIEVE,
-                datumType:    DatumType.BOOLEAN,
-                nullableMark: false,
-                special:      true,
-                isTyped:      true,
+                description:     'Retrieves a value from permanent storage that was previously stored with a "Store a value" node' +
+                                 ' Different values can be saved independently with a different name',
+                code:            ElaborationNodeCode.RETRIEVE,
+                datumType:       DatumType.BOOLEAN,
+                nullableMark:    false,
+                special:         true,
+                isTyped:         true,
                 nullMarked:      true,
-                arbitraryNumber: false
+                arbitraryNumber: false,
+                isTimeout:       false
             }
         ]
     }

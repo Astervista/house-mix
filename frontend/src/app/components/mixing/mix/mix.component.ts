@@ -1,12 +1,22 @@
 import {AfterViewInit, Component, ElementRef, HostListener} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {LoadingStatus} from '../../../utils/enums';
-import {Connection, ConnectionDrainToNode, ConnectionDrainToOutput, ConnectionDrainType, ConnectionSourceFromConstant, ConnectionSourceType, Mix, MixJSON} from '@common/mixing/mix/mix';
+import {
+    Connection,
+    ConnectionDrainToNode,
+    ConnectionDrainToOutput,
+    ConnectionDrainType,
+    ConnectionJSON,
+    ConnectionSourceFromConstant,
+    ConnectionSourceType,
+    Mix,
+    MixJSON
+} from '@common/mixing/mix/mix';
 import {firstValueFrom, Subject} from 'rxjs';
 import {MixingService} from '../../../services/mixing.service';
 import {Datum, DatumType, DatumTypeColorBase, ExportedDatum} from '@common/mixing/mix/datum';
 import {InputLibraryDialogComponent} from './input-library-dialog/input-library-dialog.component';
-import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';
+import {ArbitraryInputsElaborationNode, ElaborationNode, ElaborationNodeJSON} from '@common/mixing/mix/elaboration-node';
 import {DATUM_ORIGIN_DISPLAY, ELABORATION_NODE_DISPLAY_NAME, getColorVarNameForType, getExternalDatumOriginNameDisplay, graphConnectionSmoothPath, MEASURES} from '../constants';
 import {MixUiManager, NodeGroup} from './mix-ui-manager';
 import {MatButton} from '@angular/material/button';
@@ -31,6 +41,7 @@ import {MixLayout} from '@common/mixing/mix/mix-layout';
 import {StringInputDialogComponent} from '../../dialogs/string-input-dialog/string-input-dialog.component';
 import {kelvinToColor} from '@common/utils/color-convert-table';
 import {DEFAULT_TEMP} from '@common/utils/constants';
+import {Point} from '@angular/cdk/drag-drop';
 
 
 @Component({
@@ -70,6 +81,8 @@ export class MixComponent implements AfterViewInit {
 
     protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
 
+    protected copiedElements: MixCopy | null;
+
     constructor(
         private route: ActivatedRoute,
         private router: Router,
@@ -81,6 +94,8 @@ export class MixComponent implements AfterViewInit {
         private snackBar: MatSnackBar,
         private localStorageService: LocalStorageService
     ) {
+        this.copiedElements = localStorageService.getItem(COPY_STORAGE_KEY);
+        SAVE_BUTTON.badge   = false;
         this.reload();
     }
 
@@ -362,10 +377,14 @@ export class MixComponent implements AfterViewInit {
             dialogRef.afterClosed().subscribe(result => {
                 if ((result != null) && (this.mix != null)) {
                     let newNode: ElaborationNode;
-                    const nextId = this.mix.nodes.reduce((accum, node) => Math.max(accum, node.id), -1) + 1;
+                    const nextId = this.nextId;
                     if (result.special) {
                         if (!result.nullMarked) {
-                            newNode = new result.constructor(nextId, {dataType: result.datumType});
+                            if (result.isTimeout) {
+                                newNode = new result.constructor(nextId, {creationTimestamp: Date.now()});
+                            } else {
+                                newNode = new result.constructor(nextId, {dataType: result.datumType});
+                            }
                         } else {
                             if (result.arbitraryNumber) {
                                 newNode = new result.constructor(nextId, {dataType: result.datumType, nullable: result.nullableMark, inputNumber: 1});
@@ -382,6 +401,10 @@ export class MixComponent implements AfterViewInit {
                 }
             });
         }
+    }
+
+    private get nextId(): number {
+        return (this.mix?.nodes.reduce((accum, node) => Math.max(accum, node.id), -1) ?? -1) + 1;
     }
 
     protected addOutput(): void {
@@ -798,6 +821,17 @@ export class MixComponent implements AfterViewInit {
             return action == ToolbarAction.BACK;
         }
         switch (action) {
+            case ToolbarAction.CUT:
+            case ToolbarAction.COPY:
+                return this.selectedElements
+                           .every(
+                               selectedElement =>
+                                   selectedElement.type == SelectedElementType.NODE
+                                   || selectedElement.type == SelectedElementType.NODE_GROUP
+                           )
+                       && (this.selectedElements.length != 0);
+            case ToolbarAction.PASTE:
+                return this.copiedElements != null;
             case ToolbarAction.UNGROUP:
                 return this.selectedElements.length == 1
                        && this.selectedElements
@@ -992,12 +1026,189 @@ export class MixComponent implements AfterViewInit {
                 }
                 this.selectedElements = [];
                 break;
+            case ToolbarAction.CUT: {
+                this.toolbarClick(ToolbarAction.COPY);
+                this.toolbarClick(ToolbarAction.DELETE);
+                break;
+            }
+            case ToolbarAction.COPY: {
+                if (this.mix != null) {
+                    const nodesToCopy   = [
+                        ...(
+                            new Set<ElaborationNode>(
+                                this
+                                    .selectedElements
+                                    .flatMap(
+                                        element => {
+                                            if (element.type == SelectedElementType.NODE) {
+                                                return [element.node];
+                                            } else if (element.type == SelectedElementType.NODE_GROUP) {
+                                                return element.group.allNodes;
+                                            } else {
+                                                return [];
+                                            }
+                                        }
+                                    )
+                            )
+                        ).values()
+                    ];
+                    const nodeReference = nodesToCopy[0];
+                    if (nodeReference == null) {
+                        return;
+                    }
+                    const connectionsToCopy     = this.mix.connections.filter(connection => {
+                        let sourceOk = false;
+                        if (connection.sourceType == ConnectionSourceType.CONSTANT) {
+                            sourceOk = true;
+                        }
+                        if (connection.sourceType == ConnectionSourceType.NODE) {
+                            sourceOk = nodesToCopy.some(node => node.id == connection.sourceNodeId);
+                        }
+                        if (!sourceOk) {
+                            return false;
+                        }
+                        if (connection.drainType == ConnectionDrainType.NODE) {
+                            return nodesToCopy.some(node => node.id == connection.drainNodeId);
+                        } else {
+                            return false;
+                        }
+                    });
+                    const nodeReferencePosition = this.uiManager.getNodePosition(nodeReference);
+                    this.copiedElements         = {
+                        nodes:        nodesToCopy.map(node => node.toJSON()),
+                        connections:  connectionsToCopy.map(connection => ConnectionJSON.fromConnection(connection)),
+                        translations: nodesToCopy.map(node => {
+                            const position = this.uiManager.getNodePosition(node);
+                            return {
+                                id:          node.id,
+                                translation: {
+                                    x: position.x - nodeReferencePosition.x,
+                                    y: position.y - nodeReferencePosition.y
+                                }
+                            };
+                        })
+                    };
+                    this.localStorageService.setItem(COPY_STORAGE_KEY, this.copiedElements);
+                }
+                break;
+            }
+            case ToolbarAction.PASTE: {
+                const mix = this.mix;
+                if (mix != null) {
+                    const copiedElements = this.copiedElements;
+                    if (copiedElements == null) {
+                        break;
+                    }
+                    const idMaps: Map<number, number> = new Map<number, number>();
+                    const baseId                      = this.nextId;
+                    copiedElements.nodes.sort((a, b) => a.id - b.id);
+                    copiedElements.nodes.forEach((node, index) => idMaps.set(node.id, baseId + index));
+                    const minX =
+                              copiedElements
+                                  .translations
+                                  .reduce<number | null>
+                                  (
+                                      (accum, translation) =>
+                                          accum == null
+                                              ? translation.translation.x
+                                              : Math.min(accum, translation.translation.x),
+                                      null
+                                  );
+                    const minY =
+                              copiedElements
+                                  .translations
+                                  .reduce<number | null>
+                                  (
+                                      (accum, translation) =>
+                                          accum == null
+                                              ? translation.translation.y
+                                              : Math.min(accum, translation.translation.y),
+                                      null
+                                  );
+                    const maxX =
+                              copiedElements
+                                  .translations
+                                  .reduce<number | null>
+                                  (
+                                      (accum, translation) =>
+                                          accum == null
+                                              ? translation.translation.x
+                                              : Math.max(accum, translation.translation.x + MEASURES.NODE_WIDTH),
+                                      null
+                                  );
+                    const maxY =
+                              copiedElements
+                                  .translations
+                                  .reduce<number | null>
+                                  (
+                                      (accum, translation) =>
+                                          accum == null
+                                              ? translation.translation.y
+                                              : Math.min(
+                                                  accum,
+                                                  translation.translation.y + MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT + MEASURES.NODE_INTERNAL_SPACING * 2
+                                              ),
+                                      null
+                                  );
+                    if (minX == null || minY == null || maxX == null || maxY == null) {
+                        break;
+                    }
+                    const center = this.uiManager.screenCenter;
+                    const baseX  = Math.max(0, center.x - (maxX - minX) / 2);
+                    const baseY  = center.y - (maxY - minY) / 2;
+                    copiedElements.nodes.forEach(nodeJSON => {
+                        const oldId = nodeJSON.id;
+                        const newId = idMaps.get(nodeJSON.id);
+                        if (newId != null) {
+                            nodeJSON.id = newId;
+                            const node  = ElaborationNode.fromJSON(nodeJSON);
+                            mix.addNode(node);
+                            this.uiManager.addNode(node);
+                            const translation =
+                                      copiedElements
+                                          .translations
+                                          .find(
+                                              otherTranslation =>
+                                                  otherTranslation.id == oldId)
+                                          ?.translation ?? {x: 0, y: 0};
+                            this.uiManager.setNodePosition(
+                                node,
+                                {
+                                    x: baseX + translation.x,
+                                    y: baseY + translation.y
+                                }
+                            );
+                        }
+                    });
+                    copiedElements.connections.forEach(connectionJSON => {
+                        const connection = ConnectionJSON.toConnection(connectionJSON);
+                        if (connection.sourceType == ConnectionSourceType.NODE) {
+                            const nodeId = idMaps.get(connection.sourceNodeId);
+                            if (nodeId == null) {
+                                return;
+                            }
+                            connection.sourceNodeId = nodeId;
+                        }
+                        if (connection.drainType == ConnectionDrainType.NODE) {
+                            const nodeId = idMaps.get(connection.drainNodeId);
+                            if (nodeId == null) {
+                                return;
+                            }
+                            connection.drainNodeId = nodeId;
+                        }
+                        mix.addConnection(connection);
+                        this.uiManager.addConnection(connection);
+                    });
+                    this.doBackup();
+                }
+                break;
+            }
             case ToolbarAction.REARRANGE:
                 this.matDialog
                     .open(ConfirmDialogComponent, {
                         data: {
                             title:       'Rearrange nodes',
-                            message:     'By rearranging the node, you will lose all the current placement of nodes. Do you want to proceed?',
+                            message: 'By rearranging the mix, you will lose all the current placement of nodes. Do you want to proceed?',
                             confirmText: 'Rearrange'
                         }
                     })
@@ -1193,8 +1404,8 @@ export class MixComponent implements AfterViewInit {
     protected readonly SelectedElementType                                 = SelectedElementType;
     protected readonly graphConnectionSmoothPath                           = graphConnectionSmoothPath;
     protected readonly getDateDisplayFormat                                = getDateDisplayFormat;
-    protected readonly kelvinToColor             = kelvinToColor;
-    protected readonly DEFAULT_TEMP              = DEFAULT_TEMP;
+    protected readonly kelvinToColor = kelvinToColor;
+    protected readonly DEFAULT_TEMP  = DEFAULT_TEMP;
 }
 
 export interface NodeInputInfo {
@@ -1244,6 +1455,9 @@ enum ToolbarAction {
     BACKUPS           = 'backups',
     ADD               = 'add',
     DELETE            = 'delete',
+    CUT   = 'cut',
+    COPY  = 'copy',
+    PASTE = 'paste',
     REARRANGE         = 'rearrange',
     GROUP             = 'group',
     UNGROUP           = 'ungroup',
@@ -1271,7 +1485,7 @@ const BACKUP_BUTTON: ToolbarButton = {
         shift:      false,
         alt:        false
     },
-    order:    5
+    order: 7
 };
 
 const SAVE_BUTTON: ToolbarButton = {
@@ -1279,7 +1493,7 @@ const SAVE_BUTTON: ToolbarButton = {
     icon:     'save',
     id:       ToolbarAction.SAVE,
     hint:     'Save mix',
-    order:    5,
+    order: 7,
     shortcut: {
         codes:      ['KeyS'],
         osModifier: true,
@@ -1311,6 +1525,19 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     },
     {
         type:     ToolBarElementType.BUTTON,
+        icon:     'add',
+        id:       ToolbarAction.ADD,
+        hint:     'Add node',
+        shortcut: {
+            codes:      ['KeyI'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
+    },
+    {
+        type:     ToolBarElementType.BUTTON,
         icon:     'delete',
         id:       ToolbarAction.DELETE,
         hint:     'Delete',
@@ -1324,11 +1551,11 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     },
     {
         type:     ToolBarElementType.BUTTON,
-        icon:     'add',
-        id:       ToolbarAction.ADD,
-        hint:     'Add node',
+        icon:     'content_cut',
+        id:       ToolbarAction.CUT,
+        hint:     'Cut',
         shortcut: {
-            codes:      ['KeyI'],
+            codes:      ['KeyX'],
             osModifier: true,
             shift:      false,
             alt:        false
@@ -1336,9 +1563,40 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
         order:    3
     },
     {
+        type:     ToolBarElementType.BUTTON,
+        icon:     'content_copy',
+        id:       ToolbarAction.COPY,
+        hint:     'Copy',
+        shortcut: {
+            codes: ['KeyC'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
+    },
+    {
+        type:     ToolBarElementType.BUTTON,
+        icon:     'content_paste',
+        id:       ToolbarAction.PASTE,
+        hint:     'Paste',
+        shortcut: {
+            codes:      ['KeyV'],
+            osModifier: true,
+            shift:      false,
+            alt:        false
+        },
+        order:    3
+    },
+    {
+        type:  ToolBarElementType.DIVIDER,
+        id:    'divider-1',
+        order: 4
+    },
+    {
         type:    ToolBarElementType.BUTTON,
         icon:    'cards',
-        order:   3,
+        order:   5,
         id:      'group-menu',
         hint:    'Grouping',
         submenu: [
@@ -1353,7 +1611,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
                     shift:      false,
                     alt:        false
                 },
-                order:    3
+                order: 1
             },
             {
                 type:     ToolBarElementType.BUTTON,
@@ -1366,7 +1624,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
                     shift:      false,
                     alt:        false
                 },
-                order:    3
+                order: 1
             },
             {
                 type:     ToolBarElementType.BUTTON,
@@ -1379,7 +1637,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
                     shift:      true,
                     alt:        false
                 },
-                order:    3
+                order: 1
             }
         ]
     },
@@ -1394,7 +1652,7 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
             shift:      false,
             alt:        false
         },
-        order:    3
+        order: 5
     },
     {
         type:         ToolBarElementType.BUTTON,
@@ -1407,12 +1665,12 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
             alt:        false
         },
         shortcutOnly: true,
-        order:        3
+        order: 5
     },
     {
         type:  ToolBarElementType.DIVIDER,
-        id:    'divider-1',
-        order: 4
+        id:    'divider-2',
+        order: 6
     },
     BACKUP_BUTTON,
     SAVE_BUTTON
@@ -1551,3 +1809,14 @@ export interface MixBackupJSON {
     mix: MixJSON,
     layout: MixLayout
 }
+
+export interface MixCopy {
+    nodes: ElaborationNodeJSON[],
+    connections: ConnectionJSON[],
+    translations: {
+        translation: Point,
+        id: number
+    }[]
+}
+
+export const COPY_STORAGE_KEY: LocalStorageObject<MixCopy | null> = new LocalStorageObject<MixCopy | null>('mix-copied-elements', null);

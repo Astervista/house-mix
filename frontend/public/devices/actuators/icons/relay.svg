@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <defs>
+        <style>
+            .dynamic-stroke-main {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .dynamic-stroke-main, .dynamic-stroke-accent {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .dynamic-stroke-accent {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <path class="dynamic-stroke-main"
+          d="M41.1388,12.9393l30.7045-5.3088c3.1276-.5408,5.4557,2.8272,3.8445,5.562l-20.6535,35.0576c-.3778.6414.1681,1.4312.9016,1.3045l5.5583-.9602c1.2676-.219,2.2109,1.1461,1.5579,2.2544l-24.6226,41.7857,6.8299-39.5238c.1491-.8631-.6014-1.6136-1.4645-1.4644l-5.2655.9104c-1.7486.3023-3.2694-1.2182-2.9673-2.9669l4.854-28.0992"/>
+    <polyline class="dynamic-stroke-accent stroke-color-animation"
+              points="80.7907 81.8708 85.7409 69.6287 76.9641 71.1447 81.9143 58.9026"/>
+    <polyline class="dynamic-stroke-accent stroke-color-animation"
+              points="15.0834 42.1027 20.0336 29.8606 11.2568 31.3766 16.207 19.1345"/>
+</svg>

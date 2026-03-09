@@ -14,7 +14,7 @@ import {MatError, MatFormField, MatHint, MatLabel, MatSelect, MatSelectTrigger} 
 import {
     ACTUATOR_PROPERTIES_LIBRARY,
     ACTUATOR_TYPE_DISPLAY,
-    ACTUATOR_TYPE_ICON,
+    ACTUATOR_TYPE_ICON, DeviceLibraryProperty,
     SENSOR_PROPERTIES_LIBRARY,
     SENSOR_TYPE_DISPLAY,
     SENSOR_TYPE_ICON
@@ -36,6 +36,8 @@ import {DeviceService} from '../../../services/device.service';
 import {LockedExposes} from '@common/devices/rest-classes';
 import {MixPhase, MixPositionInfo, MixTarget} from '@common/mixing/mix/rest-classes';
 import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
+import {MatTooltip} from '@angular/material/tooltip';
+import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
 
 @Component({
                selector:    'house-mix-add-entity-dialog',
@@ -63,7 +65,8 @@ import {InputReturnBehaviorDirective} from '../../../directives/input-return-beh
                    DynamicSvgComponent,
                    MatSelectTrigger,
                    LoadingScrimComponent,
-                   InputReturnBehaviorDirective
+                   InputReturnBehaviorDirective,
+                   MatTooltip
                ],
                templateUrl: './add-entity-dialog.component.html',
                styleUrl:    './add-entity-dialog.component.scss'
@@ -481,6 +484,34 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    protected getSuggestedExposes(library: DeviceLibraryProperty[], type: ActuatorType | SensorType | null): DeviceLibraryProperty[] {
+        return library.slice().sort((a, b) => {
+            let aLevel = 0;
+            if (a.for.length == 0) {
+                aLevel = 1;
+            }
+            if (type != null && a.for.includes(type)) {
+                if (a.for.length == 1) {
+                    aLevel = 3;
+                } else {
+                    aLevel = 2;
+                }
+            }
+            let bLevel = 0;
+            if (b.for.length == 0) {
+                bLevel = 1;
+            }
+            if (type != null && b.for.includes(type)) {
+                if (b.for.length == 1) {
+                    bLevel = 3;
+                } else {
+                    bLevel = 2;
+                }
+            }
+            return bLevel - aLevel;
+        });
+    }
+
     protected set deviceExposesFromLibrary(data: Datum[]) {
         this.deviceExposes.push(
             ...data
@@ -554,7 +585,8 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
     protected readonly SENSOR_PROPERTIES_LIBRARY = SENSOR_PROPERTIES_LIBRARY;
     protected readonly LoadingStatus             = LoadingStatus;
     protected readonly MixPhase                  = MixPhase;
-    protected readonly MixTarget                 = MixTarget;
+    protected readonly MixTarget       = MixTarget;
+    protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
 }
 
 export type AddEntityDialogData = {

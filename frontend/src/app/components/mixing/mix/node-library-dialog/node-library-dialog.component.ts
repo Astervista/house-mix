@@ -69,7 +69,11 @@ export class NodeLibraryDialogComponent extends MatDialogComponent<undefined, El
             for (const item of section.nodes) {
                 if (item.special) {
                     if (!item.nullMarked) {
-                        examples[item.code] = new item.constructor(0, {dataType: item.datumType});
+                        if (item.isTimeout) {
+                            examples[item.code] = new item.constructor(0, {creationTimestamp: Date.now()});
+                        } else {
+                            examples[item.code] = new item.constructor(0, {dataType: item.datumType});
+                        }
                     } else {
                         if (item.arbitraryNumber) {
                             examples[item.code] = new item.constructor(0, {dataType: item.datumType, nullable: item.nullableMark, inputNumber: 1});

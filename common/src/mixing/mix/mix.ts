@@ -1,6 +1,6 @@
 import {Allow, IsArray, IsDefined, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, Type, ValidateIf, ValidateNested} from "rest-decorators";
 import {Datum, DatumJSON, DatumOrigin, DatumType, ExportedDatum, ExportedDatumJSON} from "./datum";
-import {ElaborationNode, ElaborationNodeJSON, ElaborationNodeRetrieve, ElaborationNodeSave} from "./elaboration-node";
+import {ElaborationNode, ElaborationNodeJSON, ElaborationNodeRetrieve, ElaborationNodeSave, ElaborationNodeTimeout} from "./elaboration-node";
 
 
 export enum MixCalculationErrorType {
@@ -269,7 +269,7 @@ export class Mix {
         }
     }
     
-    public calculate(inputValues: Map<string, unknown>, storage: MixingStorage): MixingCalculationResult {
+    public calculate(inputValues: Map<string, unknown>, storage: MixingStorage, timedOut: number[]): MixingCalculationResult {
         if (this.containsCycles) {
             throw new MixCalculationError(MixCalculationErrorType.CYCLIC_GRAPH);
         }
@@ -281,6 +281,7 @@ export class Mix {
         const result: MixingCalculationResult       = {
             outputs:       new Map<string, unknown>(),
             storageUpdate: [],
+            newTimeouts: [],
             nodeOutputs:   {}
         };
         
@@ -350,14 +351,17 @@ export class Mix {
                     if (node instanceof ElaborationNodeRetrieve) {
                         node.allSaves = storage;
                     }
+                    if (node instanceof ElaborationNodeTimeout && timedOut.includes(node.options.creationTimestamp)) {
+                        node.hasTimedOut = true;
+                    }
                     for (const input of node.inputs) {
                         if (!nodeKnownInputs.has(input.name)) {
                             nodeKnownInputs.set(input.name, null);
                         }
                     }
-                    const outputs = node.elaborate(nodeKnownInputs);
-                    const outputObject          = {};
-                    result.nodeOutputs[node.id] = outputObject;
+                    const outputs: Map<string, unknown> = node.elaborate(nodeKnownInputs);
+                    const outputObject                  = {};
+                    result.nodeOutputs[node.id]         = outputObject;
                     for (const nodeOutput of node.outputs) {
                         outputObject[nodeOutput.name] = Datum.valueToJSON(outputs.get(nodeOutput.name), nodeOutput.type);
                     }
@@ -369,6 +373,15 @@ export class Mix {
                                                           name:      lastElaborationSave.name,
                                                           value:     lastElaborationSave.value
                                                       });
+                        }
+                    }
+                    if (node instanceof ElaborationNodeTimeout) {
+                        if (node.nextTrigger != null) {
+                            result.newTimeouts.push(
+                                {
+                                    expiration:            node.nextTrigger,
+                                    nodeCreationTimestamp: node.options.creationTimestamp
+                                });
                         }
                     }
                     // Get all the outgoing connections to update
@@ -830,12 +843,14 @@ export function storageUpdateFromJSON(storageUpdateJSON: StorageUpdateJSON): Sto
 export interface MixingCalculationResult {
     outputs: Map<string, unknown>;
     storageUpdate: StorageUpdate[];
+    newTimeouts: MixNodeTimeout[];
     nodeOutputs: Record<number, Record<string, unknown>>;
 }
 
 export interface MixingCalculationResultJSON {
     outputs: Record<string, unknown>;
     storageUpdate: StorageUpdateJSON[];
+    newTimeouts: MixNodeTimeout[];
     nodeOutputs: Record<number, Record<string, unknown>>;
 }
 
@@ -843,6 +858,7 @@ export function mixingCalculationResultToJSON(result: MixingCalculationResult): 
     return {
         outputs:       Object.fromEntries(result.outputs),
         storageUpdate: result.storageUpdate.map(storageUpdateToJSON),
+        newTimeouts: result.newTimeouts,
         nodeOutputs:   result.nodeOutputs
     };
 }
@@ -851,6 +867,7 @@ export function mixingCalculationResultFromJSON(resultJSON: MixingCalculationRes
     return {
         outputs:       new Map(Object.entries(resultJSON.outputs)),
         storageUpdate: resultJSON.storageUpdate.map(storageUpdateFromJSON),
+        newTimeouts: resultJSON.newTimeouts,
         nodeOutputs:   resultJSON.nodeOutputs
     };
 }
@@ -1048,4 +1065,9 @@ export class ConnectionJSON {
         return result;
     }
     
+}
+
+export interface MixNodeTimeout {
+    expiration: number,
+    nodeCreationTimestamp: number
 }

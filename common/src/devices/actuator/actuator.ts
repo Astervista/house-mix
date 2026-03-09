@@ -40,7 +40,13 @@ export class Actuator extends Device {
 
 export enum ActuatorType {
     BULB    = "BULB",
+    PLUG    = "PLUG",
+    RELAY   = "RELAY",
     STRIP   = "STRIP",
+    BELL    = "BELL",
+    CURTAIN = "CURTAIN",
+    WATER   = "WATER",
+    OTHER   = "OTHER",
     UNKNOWN = "UNKNOWN",
 }
 

@@ -137,7 +137,7 @@ describe("Composition", () => {
             [DatumType.NUMBER]:    new Map<string, unknown>(),
             [DatumType.STRING]:    new Map<string, unknown>()
             
-        });
+        }, []);
         
         expect(result.outputs.get("pay")).toBeCloseTo(0.8 * 12 * 1.5 * 1.22, 7);
         expect(result.outputs.get("time")).toBeCloseTo(1.5, 7);

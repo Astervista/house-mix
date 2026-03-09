@@ -42,6 +42,13 @@ export enum SensorType {
     BUTTON = "BUTTON",
     LIGHT = "LIGHT",
     ROTARY = "ROTARY",
+    MOVEMENT             = "MOVEMENT",
+    TEMPERATURE          = "TEMPERATURE",
+    HUMIDITY             = "HUMIDITY",
+    HUMIDITY_TEMPERATURE = "HUMIDITY_TEMPERATURE",
+    DOOR                 = "DOOR",
+    SMOKE                = "SMOKE",
+    OTHER                = "OTHER",
     UNKNOWN = "UNKNOWN",
 }
 

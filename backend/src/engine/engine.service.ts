@@ -17,6 +17,7 @@ import {
     MixingStorage,
     MixingStorageJSON,
     mixingStorageToJSON,
+    MixNodeTimeout,
     StorageUpdate
 } from "@common/mixing/mix/mix";
 import {Color} from "@common/utils/color-convert";
@@ -148,6 +149,10 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         const mixResults: Map<number, MixingCalculationResult> = new Map<number, MixingCalculationResult>();
         const orderedStorageUpdate: StorageUpdate[]            = [];
         const now                                             = new Date();
+        const newTimeouts: MixNodeTimeout[]                   = [];
+        const pastTimeouts                                    = data.timeouts
+                                                                    .filter(timeout => timeout.expiration <= now.getTime())
+                                                                    .map(timeout => timeout.nodeCreationTimestamp);
         for (const mixingGraphSensor of mixingGraph.sensors) {
             const mix = mixes.find(otherMix => otherMix.id == mixingGraphSensor.mix);
             if (mix == null) {
@@ -175,8 +180,9 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 }
             }
             try {
-                const mixResult = mix.calculate(inputs, storage);
+                const mixResult = mix.calculate(inputs, storage, pastTimeouts);
                 orderedStorageUpdate.push(...mixResult.storageUpdate);
+                newTimeouts.push(...mixResult.newTimeouts);
                 mixResults.set(mix.id as number, mixResult);
             } catch (e) {
                 if (e instanceof MixCalculationError) {
@@ -220,8 +226,9 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                     }
                 }
                 try {
-                    const mixResult = mix.calculate(inputs, storage);
+                    const mixResult = mix.calculate(inputs, storage, pastTimeouts);
                     orderedStorageUpdate.push(...mixResult.storageUpdate);
+                    newTimeouts.push(...mixResult.newTimeouts);
                     mixResults.set(mix.id as number, mixResult);
                 } catch (e) {
                     if (e instanceof MixCalculationError) {
@@ -265,8 +272,9 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 }
             }
             try {
-                const mixResult = mix.calculate(inputs, storage);
+                const mixResult = mix.calculate(inputs, storage, pastTimeouts);
                 orderedStorageUpdate.push(...mixResult.storageUpdate);
+                newTimeouts.push(...mixResult.newTimeouts);
                 mixResults.set(mix.id as number, mixResult);
             } catch (e) {
                 if (e instanceof MixCalculationError) {
@@ -304,8 +312,9 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                     }
                 }
                 try {
-                    const mixResult = mix.calculate(inputs, storage);
+                    const mixResult = mix.calculate(inputs, storage, pastTimeouts);
                     orderedStorageUpdate.push(...mixResult.storageUpdate);
+                    newTimeouts.push(...mixResult.newTimeouts);
                     mixResults.set(mix.id as number, mixResult);
                 } catch (e) {
                     if (e instanceof MixCalculationError) {
@@ -344,8 +353,9 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 }
             }
             try {
-                const actuatorResult = mix.calculate(inputs, storage);
+                const actuatorResult = mix.calculate(inputs, storage, pastTimeouts);
                 orderedStorageUpdate.push(...actuatorResult.storageUpdate);
+                newTimeouts.push(...actuatorResult.newTimeouts);
                 actuatorResults.set(mixingGraphActuator.name, actuatorResult);
             } catch (e) {
                 if (e instanceof MixCalculationError) {
@@ -359,6 +369,12 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         for (const update of orderedStorageUpdate) {
             storage[update.datumType].set(update.name, update.value);
         }
+        
+        for (const timeout of newTimeouts) {
+            data.timeouts.push(timeout);
+            setTimeout(() => { this.tick(); }, timeout.expiration - now.getTime());
+        }
+        data.timeouts = data.timeouts.filter(timeout => timeout.expiration > now.getTime());
         
         for (const [actuatorName, actuatorChange] of actuatorResults.entries()) {
             const actuator = actuators.find(otherActuator => otherActuator.name == actuatorName);
@@ -398,6 +414,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             }
             this.zigbeeService.setStatus(actuator.zigbeeAddress, actuator.name, update);
         }
+        
         data.executions.push(EngineExecution.create(new Date(), mixResults, storage));
         if (data.executions.length > 50) {
             data.executions.shift();
@@ -771,6 +788,8 @@ export class EngineServiceData {
     
     public location?: { latitude: number, longitude: number };
     
+    public timeouts: MixNodeTimeout[];
+    
     constructor(engineServiceDataJSON?: EngineServiceDataJSON) {
         this.storage    = {
             [DatumType.BOOLEAN]:    new Map<string, unknown>(),
@@ -783,6 +802,7 @@ export class EngineServiceData {
             [DatumType.STRING]:     new Map<string, unknown>()
         };
         this.executions = [];
+        this.timeouts = [];
         if (engineServiceDataJSON != null) {
             for (const type of Object.values(DatumType)) {
                 if (engineServiceDataJSON.storage[type] != null) {
@@ -791,8 +811,11 @@ export class EngineServiceData {
                     }
                 }
             }
-            this.executions = engineServiceDataJSON.executions.map(execution => EngineExecution.fromJSON(execution));
-            this.location = engineServiceDataJSON.location;
+            this.executions   = engineServiceDataJSON.executions.map(execution => EngineExecution.fromJSON(execution));
+            this.location     = engineServiceDataJSON.location;
+            const now: number = Date.now();
+            this.timeouts     = (engineServiceDataJSON.timeouts ?? [])
+                .filter(e => e.expiration > now);
         }
     }
     
@@ -801,10 +824,14 @@ export class EngineServiceData {
         for (const type of Object.values(DatumType)) {
             result[type] = Object.fromEntries<unknown>(this.storage[type].entries());
         }
+        const now = Date.now();
         return {
             storage:    result,
             executions: this.executions.map(execution => execution.toJSON()),
-            location:   this.location
+            location: this.location,
+            timeouts: this
+                          .timeouts
+                          .filter(e => e.expiration > now)
         };
     }
     
@@ -812,6 +839,7 @@ export class EngineServiceData {
 
 export interface EngineServiceDataJSON {
     storage: Partial<Record<DatumType, Record<string, unknown>>>;
+    timeouts?: MixNodeTimeout[];
     executions: EngineExecutionJSON[];
     location?: { latitude: number, longitude: number };
 }

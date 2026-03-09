@@ -46,15 +46,16 @@ import {MAX_ALLOWED_TEMP, MIN_ALLOWED_TEMP} from "../../utils/constants";
  *      - From XY: (number, number) => Color
  *      - From Color Temperature: number => Color Temperature
  *   Date and time
+ *      x Timeout: number => boolean
  *      - Date values: Date => (number, number, number, number)
  *      - Time values: Time => (number, number, number)
  *      - Date Time values: Date Time => (number, number, number, number, number, number, number)
  *      - Date from values: (number, number, number) => Date
  *      - Time from values: (number, number, number) => Time
  *      - Date Time from values: (number, number, number, number, number, number) => Date Time
- *      L Date compare: (Date, Date) => (boolean, boolean, boolean)
- *      L Time compare: (Time, Time) => (boolean, boolean, boolean)
- *      L Date time compare: (Date Time, Date Time) => (boolean, boolean, boolean)
+ *      - Date compare: (Date, Date) => (boolean, boolean, boolean)
+ *      - Time compare: (Time, Time) => (boolean, boolean, boolean)
+ *      - Date time compare: (Date Time, Date Time) => (boolean, boolean, boolean)
  *      - Combine Date and Time: (Date, Time) => Date Time
  *      - Epoch: Date Time => number
  *      - Sun events: Date => (Time [...x14])
@@ -98,6 +99,7 @@ export enum ElaborationNodeCode {
     FROM_HSV              = "FROM_HSV",
     FROM_XY               = "FROM_XY",
     FROM_COLOR_TEMP    = "FROM_COLOR_TEMP",
+    TIMEOUT            = "TIMEOUT",
     DATE_VALUES           = "DATE_VALUES",
     TIME_VALUES           = "TIME_VALUES",
     DATE_TIME_VALUES      = "DATE_TIME_VALUES",
@@ -244,6 +246,8 @@ export abstract class ElaborationNode {
                 return new ElaborationNodeFromXY(id);
             case ElaborationNodeCode.FROM_COLOR_TEMP:
                 return new ElaborationNodeFromColorTemp(id);
+            case ElaborationNodeCode.TIMEOUT:
+                return new ElaborationNodeTimeout(id, options as ElaborationNodeTimeoutOptions);
             case ElaborationNodeCode.DATE_VALUES:
                 return new ElaborationNodeDateValues(id);
             case ElaborationNodeCode.TIME_VALUES:
@@ -280,6 +284,7 @@ export abstract class ElaborationNode {
 }
 
 export type ElaborationNodeImplementationConstructor = new (id: number) => ElaborationNode;
+export type ElaborationNodeTimeoutImplementationConstructor = new (id: number, options: ElaborationNodeTimeoutOptions) => ElaborationNode;
 export type TypedElaborationNodeImplementationConstructor = new (id: number, options: TypedElaborationNodeOptions) => ElaborationNode;
 export type TypedNullMarkedElaborationNodeImplementationConstructor = new (id: number, options: TypedNullMarkedElaborationNodeOptions) => ElaborationNode;
 export type ArbitraryInputsElaborationNodeImplementationConstructor = new (id: number, options: ArbitraryInputsElaborationNodeOptions) => ElaborationNode;
@@ -1101,7 +1106,7 @@ export class ElaborationNodeMultipleChoice extends ArbitraryInputsElaborationNod
     protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
         let chooserValue  = inputValues.get(ElaborationNodeMultipleChoice.INDEX) as number;
         chooserValue      = Math.round(chooserValue);
-        chooserValue      = chooserValue % this.options.inputNumber;
+        chooserValue = (chooserValue % this.options.inputNumber + this.options.inputNumber) % this.options.inputNumber;
         const chosenValue = inputValues.get(ArbitraryInputsElaborationNode.getInputName(chooserValue));
         return new Map<string, unknown>(
             [
@@ -1601,6 +1606,62 @@ export class ElaborationNodeFromColorTemp extends ElaborationNode {
                                                 ElaborationNodeFromColorTemp.COLOR_TEMP, value
                                             ]
                                         ]);
+    }
+    
+}
+
+export interface ElaborationNodeTimeoutOptions {
+    creationTimestamp: number;
+}
+
+export class ElaborationNodeTimeout extends ElaborationNode {
+    
+    private static readonly TIMEOUT = "Timeout (s)";
+    private static readonly RESET   = "Reset";
+    
+    private static readonly TRIGGERED = "Triggered";
+    
+    public readonly inputs: readonly Datum[];
+    public readonly outputs: readonly Datum[];
+    
+    private _nextTrigger: number | null = null;
+    
+    public get nextTrigger(): number | null {
+        return this._nextTrigger;
+    }
+    
+    public hasTimedOut: boolean = false;
+    
+    constructor(id: number, public options: ElaborationNodeTimeoutOptions) {
+        super(id, ElaborationNodeCode.TIMEOUT);
+        this.inputs  = [
+            new Datum(ElaborationNodeTimeout.TIMEOUT, DatumType.NUMBER, false),
+            new Datum(ElaborationNodeTimeout.RESET, DatumType.BOOLEAN, false)
+        ];
+        this.outputs = [
+            new Datum(ElaborationNodeTimeout.TRIGGERED, DatumType.BOOLEAN, false)
+        ];
+    }
+    
+    protected calculate(inputValues: Map<string, unknown>): Map<string, unknown> {
+        const reset = inputValues.get(ElaborationNodeTimeout.RESET) as boolean;
+        if (reset) {
+            let timeout       = inputValues.get(ElaborationNodeTimeout.TIMEOUT) as number;
+            timeout           = Math.max(10, timeout);
+            this._nextTrigger = Date.now() + timeout * 1000;
+        }
+        return new Map<string, unknown>(
+            [
+                [
+                    ElaborationNodeTimeout.TRIGGERED, this.hasTimedOut
+                ]
+            ]);
+    }
+    
+    public override toJSON(): ElaborationNodeJSON {
+        const result   = super.toJSON();
+        result.options = this.options;
+        return result;
     }
     
 }

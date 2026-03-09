@@ -8,6 +8,8 @@ export interface StatusUpdate<T> {
     new: T
 }
 
+export const FORCE_UPDATE_PERIOD = 60 * 1000 * 5;
+
 @Injectable()
 export class ZigbeeService {
     
@@ -18,6 +20,8 @@ export class ZigbeeService {
     private deviceToListenSubjects: Map<string, Subject<StatusUpdate<unknown>>> = new Map<string, Subject<StatusUpdate<unknown>>>();
     
     private _deviceStatusCache: Map<string, Record<string, unknown>> = new Map<string, Record<string, unknown>>();
+    
+    private _lastDeviceUpdate: Map<string, number> = new Map<string, number>();
     
     private queue: { address: string, value: Record<string, unknown>, futureSends: Record<string, unknown>[], futureSendDelays: number[] }[] = [];
     
@@ -198,7 +202,8 @@ export class ZigbeeService {
     
     private enqueue(address: string, value: Record<string, unknown>, futureSends: Record<string, unknown>[], futureSendDelays: number[]): void {
         const currentStatusForAddress = this._deviceStatusCache.get(address);
-        const needsUpdate             = currentStatusForAddress == null || this.checkAdditionForChanges(currentStatusForAddress, value);
+        const lastUpdate  = this._lastDeviceUpdate.get(address) ?? 0;
+        const needsUpdate = currentStatusForAddress == null || (lastUpdate - Date.now() > FORCE_UPDATE_PERIOD) || this.checkAdditionForChanges(currentStatusForAddress, value);
         const pendingUpdate           = this.queue.find(item => item.address == address);
         if (needsUpdate && pendingUpdate == null) {
             this.queue.push({address, value, futureSends, futureSendDelays});
@@ -214,6 +219,9 @@ export class ZigbeeService {
                 this.enqueue(address, nextFuture, futureSends, futureSendDelays.slice(1));
                 return;
             }
+        }
+        if (needsUpdate) {
+            this._lastDeviceUpdate.set(address, Date.now());
         }
         this.advanceSendQueue();
     }

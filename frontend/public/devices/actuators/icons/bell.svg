@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Dynamic SVG -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100">
+    <defs>
+        <style>
+            .dynamic-stroke-main {
+                stroke: var(--ink-color, #000);
+                stroke-width: 4.5px;
+            }
+
+            .dynamic-stroke-main, .dynamic-stroke-accent {
+                fill: none;
+                stroke-linecap: round;
+                stroke-linejoin: round;
+            }
+
+            .dynamic-stroke-accent {
+                stroke: var(--highlight-color, #000);
+                stroke-width: 2px;
+            }
+        </style>
+    </defs>
+    <path class="dynamic-stroke-main"
+          d="M91.2173,76.6261h0c-8.2365,1.4227-16.0669-4.101-17.4896-12.3375l-3.7112-21.4857c-2.5093-14.5271-16.32-24.2695-30.8471-21.7603h0c-14.5271,2.5093-24.2695,16.32-21.7603,30.8472l3.7112,21.4857c1.4227,8.2365-4.101,16.0669-12.3375,17.4896h0"/>
+    <path class="dynamic-stroke-accent stroke-color-animation"
+          d="M77.7556,79.5115l-23.9241,4.1324c.0941.5484.1431,1.1123.1431,1.6876,0,5.4751-4.4384,9.9135-9.9135,9.9135-4.8998,0-8.9693-3.5547-9.7704-8.2259l-12.0462,2.0807"/>
+    <path class="dynamic-stroke-accent stroke-color-animation"
+          d="M44.2369,15.3245c.2132-.6567.3285-1.3575.3285-2.0853,0-3.7257-3.0203-6.746-6.746-6.746s-6.746,3.0203-6.746,6.746c0,1.5481.5215,2.9744,1.3983,4.1128"/>
+</svg>

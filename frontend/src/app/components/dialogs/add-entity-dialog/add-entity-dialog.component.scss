@@ -29,7 +29,7 @@ house-mix-entity-location-input {
         --icon-highlight:  var(--mat-sys-secondary);
 
         &.trigger {
-            --icon-highlight:  transparent;
+            --icon-highlight: var(--mat-sys-primary);
             width: 20px;
             height: 20px;
         }
@@ -37,6 +37,10 @@ house-mix-entity-location-input {
         &.selected {
             --highlight-color: var(--icon-highlight);
         }
+    }
+
+    > span {
+        flex-basis: 0;
     }
 
 }

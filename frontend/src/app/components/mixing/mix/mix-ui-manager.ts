@@ -51,6 +51,13 @@ export class MixUiManager {
         this._viewSize = {x: resizeEvent.width, y: resizeEvent.height};
     }
 
+    public get screenCenter(): Point {
+        return {
+            x: (-this.translation.x + (this.svgElement?.getBoundingClientRect().width ?? 0) / 2) / this.scale,
+            y: (-this.translation.y + (this.svgElement?.getBoundingClientRect().height ?? 0) / 2) / this.scale
+        };
+    }
+
     public refreshMix(): void {
         // Sometimes changes made to the mix are not catchable. This function refreshes these changes
         const mix = this._mix;
@@ -467,21 +474,13 @@ export class MixUiManager {
     }
 
     public addNode(node: ElaborationNode): void {
-        let maxX =
-                [...this.nodePositions.values()]
-                    .reduce<number | null>(
-                        (acc, val) =>
-                            acc == null ? val.x : Math.max(acc, val.x), null
-                    );
-        if (maxX == null) {
-            maxX = 0;
-        } else {
-            maxX += MEASURES.NODE_WIDTH + MEASURES.NODE_SPACING;
-        }
         const stacks = Math.max(this.getNodeInputCount(node), node.outputs.length);
         const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
-        this.nodePositions.set(node, {x: maxX, y: -height / 2 + MEASURES.NODE_HEADING_HEIGHT / 2});
-        this.maxNodeXPosition = Math.max(this.maxNodeXPosition, maxX + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
+        const center  = this.screenCenter;
+        const centerX = center.x - MEASURES.SECTIONS_SEPARATOR / 2;
+        const centerY = center.y;
+        this.nodePositions.set(node, {x: Math.max(0, centerX - MEASURES.NODE_WIDTH / 2), y: centerY - height / 2});
+        this.maxNodeXPosition = Math.max(this.maxNodeXPosition, centerX + MEASURES.NODE_WIDTH / 2);
         this._mix
             ?.connections
             .filter(connection => connection.drainType == ConnectionDrainType.OUTPUT)
@@ -660,6 +659,11 @@ export class MixUiManager {
 
     public getNodePosition(node: ElaborationNode): Point {
         return {...this.nodePositions.get(node) ?? {x: 0, y: 0}};
+    }
+
+    public setNodePosition(node: ElaborationNode, position: Point): void {
+        this.nodePositions.set(node, position);
+        this.maxNodeXPosition = Math.max(this.maxNodeXPosition, position.x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
     }
 
     public getNodeConnectorPosition(node: ElaborationNode, connector: Datum, rightFacing: boolean, additional?: boolean): Point {
