@@ -83,6 +83,22 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 }
             }
             ElaborationNodeSunEvents.coordinates = data.location;
+            
+            const now = Date.now();
+            data.timeouts.forEach(timeout => {
+                if (timeout.expiration > now) {
+                    const newHandle = setTimeout(
+                        () => {
+                            this.invalidated = true;
+                            if (this.timeoutHandles.has(timeout.nodeCreationTimestamp)) {
+                                this.timeoutHandles.delete(timeout.nodeCreationTimestamp);
+                            }
+                        },
+                        timeout.expiration - now
+                    );
+                    this.timeoutHandles.set(timeout.nodeCreationTimestamp, newHandle);
+                }
+            });
         });
     }
     
@@ -105,6 +121,8 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
     }
     
     private readonly elaborationQueue: Promise<void>[] = [];
+    
+    private readonly timeoutHandles: Map<number, NodeJS.Timeout> = new Map<number, NodeJS.Timeout>();
     
     private tick(sensorDataChange?: SensorDataChange, timerDataChange?: TimerDataChange, updateDeviceStatuses: DeviceMonitorDevice[] = []): void {
         let promise: Promise<void>;
@@ -153,6 +171,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         const pastTimeouts                                    = data.timeouts
                                                                     .filter(timeout => timeout.expiration <= now.getTime())
                                                                     .map(timeout => timeout.nodeCreationTimestamp);
+        console.log(`${now.toLocaleString()}: Ticked.`);
         for (const mixingGraphSensor of mixingGraph.sensors) {
             const mix = mixes.find(otherMix => otherMix.id == mixingGraphSensor.mix);
             if (mix == null) {
@@ -371,8 +390,25 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         }
         
         for (const timeout of newTimeouts) {
-            data.timeouts.push(timeout);
-            setTimeout(() => { this.tick(); }, timeout.expiration - now.getTime());
+            data.timeouts.push({
+                                   nodeCreationTimestamp: timeout.nodeCreationTimestamp,
+                                   expiration:            timeout.expiration + now.getTime()
+                               });
+            if (this.timeoutHandles.has(timeout.nodeCreationTimestamp)) {
+                clearTimeout(this.timeoutHandles.get(timeout.nodeCreationTimestamp));
+            }
+            const newHandle = setTimeout(
+                () => {
+                    console.log(`${new Date().toLocaleString()}: timeout elapsed.`);
+                    this.invalidated = true;
+                    if (this.timeoutHandles.has(timeout.nodeCreationTimestamp)) {
+                        this.timeoutHandles.delete(timeout.nodeCreationTimestamp);
+                    }
+                },
+                timeout.expiration
+            );
+            console.log(`${now.toLocaleString()}: scheduled a timeout in ${timeout.expiration}ms`);
+            this.timeoutHandles.set(timeout.nodeCreationTimestamp, newHandle);
         }
         data.timeouts = data.timeouts.filter(timeout => timeout.expiration > now.getTime());
         
@@ -601,8 +637,7 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         if (center == null) {
             throw new TickError(TickErrorType.UNAVAILABLE_CENTER, {mixId: mix.id as number, centerName: imp.originName, import: imp});
         }
-        const mixId     = center.mix;
-        const mixResult = availableResults.get(mixId);
+        const mixResult = availableResults.get(center.mix);
         if (mixResult?.outputs.has(imp.name) != true) {
             throw new TickError(TickErrorType.UNAVAILABLE_IMPORT, {mixId: mix.id as number, centerName: imp.originName, import: imp});
         }

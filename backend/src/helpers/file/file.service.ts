@@ -11,6 +11,8 @@ export class FileService {
     
     private readonly readyPromise: Promise<void>;
     
+    private readonly isProd = process.env["NODE_ENV"] === "production";
+    
     constructor() {
         const baseDir = process.env["APP_BASE_DIR"] ?? process.cwd();
         if (baseDir.startsWith("/")) {
@@ -105,7 +107,7 @@ export class FileService {
         await this.readyPromise;
         return new Promise((resolve, reject) => {
             const finalPath = nodePath.join(this.baseDir, "data", path);
-            nodeFs.writeFile(finalPath, JSON.stringify(data), {encoding: "utf8"}, (writeFileErr) => {
+            nodeFs.writeFile(finalPath, JSON.stringify(data, null, this.isProd ? undefined : 2), {encoding: "utf8"}, (writeFileErr) => {
                 if (writeFileErr != null) {
                     reject(writeFileErr);
                 } else {

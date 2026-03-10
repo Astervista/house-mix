@@ -460,7 +460,9 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
         nodes:       [
             {
                 constructor: ElaborationNodeTimeout,
-                description: 'When "Reset" is true, a new calculation of the mix will be scheduled in "Timeout" seconds, after which the output "Triggered" will be true (only once).',
+                description: 'When "Reset" is true, a new calculation of the mix will be scheduled in "Timeout" seconds, after which the output "Triggered" will be true (only once). ' +
+                             'Setting "Reset" to true before the previous timeout has expired will cancel it, and the next triggering will be scheduled calculating the timeout from' +
+                             'the most recent reset.',
                 code:        ElaborationNodeCode.TIMEOUT,
                 special:     true,
                 isTimeout:   true,

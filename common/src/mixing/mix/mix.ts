@@ -351,8 +351,9 @@ export class Mix {
                     if (node instanceof ElaborationNodeRetrieve) {
                         node.allSaves = storage;
                     }
-                    if (node instanceof ElaborationNodeTimeout && timedOut.includes(node.options.creationTimestamp)) {
-                        node.hasTimedOut = true;
+                    if (node instanceof ElaborationNodeTimeout) {
+                        node.hasTimedOut = timedOut.includes(node.options.creationTimestamp);
+                        console.log(`The node has${node.hasTimedOut ? "" : " not"} timed out.`);
                     }
                     for (const input of node.inputs) {
                         if (!nodeKnownInputs.has(input.name)) {

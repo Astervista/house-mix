@@ -1648,7 +1648,9 @@ export class ElaborationNodeTimeout extends ElaborationNode {
         if (reset) {
             let timeout       = inputValues.get(ElaborationNodeTimeout.TIMEOUT) as number;
             timeout           = Math.max(10, timeout);
-            this._nextTrigger = Date.now() + timeout * 1000;
+            this._nextTrigger = timeout * 1000;
+        } else {
+            this._nextTrigger = null;
         }
         return new Map<string, unknown>(
             [
