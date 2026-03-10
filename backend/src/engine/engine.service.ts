@@ -171,7 +171,6 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
         const pastTimeouts                                    = data.timeouts
                                                                     .filter(timeout => timeout.expiration <= now.getTime())
                                                                     .map(timeout => timeout.nodeCreationTimestamp);
-        console.log(`${now.toLocaleString()}: Ticked.`);
         for (const mixingGraphSensor of mixingGraph.sensors) {
             const mix = mixes.find(otherMix => otherMix.id == mixingGraphSensor.mix);
             if (mix == null) {
@@ -399,7 +398,6 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
             }
             const newHandle = setTimeout(
                 () => {
-                    console.log(`${new Date().toLocaleString()}: timeout elapsed.`);
                     this.invalidated = true;
                     if (this.timeoutHandles.has(timeout.nodeCreationTimestamp)) {
                         this.timeoutHandles.delete(timeout.nodeCreationTimestamp);
@@ -407,7 +405,6 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
                 },
                 timeout.expiration
             );
-            console.log(`${now.toLocaleString()}: scheduled a timeout in ${timeout.expiration}ms`);
             this.timeoutHandles.set(timeout.nodeCreationTimestamp, newHandle);
         }
         data.timeouts = data.timeouts.filter(timeout => timeout.expiration > now.getTime());
