@@ -63,6 +63,10 @@ jobs:
         working-directory: ./backend
         run: npm run build
 
+      - name: Use package README
+        working-directory: ./backend
+        run: cp README-package.md README.md
+
       - name: Publish Backend Package to GitHub Packages
         working-directory: ./backend
         run: npm publish
