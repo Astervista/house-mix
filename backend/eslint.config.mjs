@@ -58,6 +58,7 @@ const rules = {
         "error",
         {
             "ignoreDifferentlyNamedParameters": true,
+            "ignoreOverloadsWithDifferentJSDoc": true
         }
     ],
     "@typescript-eslint/no-unused-vars": [

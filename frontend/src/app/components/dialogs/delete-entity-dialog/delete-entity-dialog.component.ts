@@ -20,7 +20,8 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {MatIcon} from '@angular/material/icon';
 import {UnavailableParents} from '@common/devices/rest-classes';
 import {NgTemplateOutlet} from '@angular/common';
-import {SystemEntity, SystemOrigin} from '@common/system/constants';
+import {SystemOrigin} from '@common/system/constants';
+import {SystemEntity} from '../../system/constants';
 import {SystemParameter} from '@common/system/parameter/system-parameter';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {SystemTimer} from '@common/system/timer/system-timer';

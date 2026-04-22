@@ -1,13 +1,13 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Actuator } from '@common/devices/actuator/actuator';
-import { Sensor } from '@common/devices/sensor/sensor';
-import { ActuatorCreateOptions, ActuatorEditChanges } from '@common/devices/actuator/rest-classes';
-import { SensorCreateOptions, SensorEditChanges } from '@common/devices/sensor/rest-classes';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {Actuator} from '@common/devices/actuator/actuator';
+import {Sensor} from '@common/devices/sensor/sensor';
+import {ActuatorCreateOptions, ActuatorEditChanges} from '@common/devices/actuator/rest-classes';
+import {SensorCreateOptions, SensorEditChanges} from '@common/devices/sensor/rest-classes';
 import {BasePath, Delete, Get, Patch, Post} from '../utils/networking/decorators';
 import {ChangeParentChange} from '@common/devices/group/rest-classes';
-import { GetDevicesOptions, LockedExposes, UnavailableParents } from "@common/devices/rest-classes";
-import { EntityPathParams } from "@common/utils/rest-classes";
+import {GetDevicesOptions, LockedExposes, UnavailableParents} from '@common/devices/rest-classes';
+import {EntityPathParams} from '@common/utils/rest-classes';
 import {mixInfoFromJSON, MixPositionInfo, MixPositionInfoJSON} from '@common/mixing/mix/rest-classes';
 
 @Injectable({
@@ -104,7 +104,7 @@ export class DeviceService {
             }
         }
     )
-    public createSensor!: (group: Sensor, options?: SensorCreateOptions) => Promise<void>;
+    public createSensor!: (sensor: Sensor, options?: SensorCreateOptions) => Promise<void>;
 
     @Patch<SensorEditChanges, null>(
         '/sensors/:name'

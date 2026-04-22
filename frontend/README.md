@@ -1,59 +1,72 @@
-# ZigbeeLights
+<p align="center">
+  <img src="../assets/banners/frontend-banner.svg" height="120" alt="HouseMix Logo - Frontend" />
+</p>
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.4.
+This is the frontend for HouseMix, written in Angular (currently 21.1.1).
 
-## Development server
+# Running
 
-To start a local development server, run:
+## Prerequisites
 
-```bash
-ng serve
-```
+To get started, ensure you have the following tools installed on your development machine:
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+* Node.js
+* npm
+* Angular CLI (> 21.1.1)
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+and then install the dependencies
 
 ```bash
-ng generate --help
+npm install
 ```
 
-## Building
+## Development
 
-To build the project run:
+### Default development server
 
 ```bash
-ng build
+npm start
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+This command is an alias for `ng serve`. It starts a development server using the standard **development configuration** on port `4200`. It features fast rebuilds, enables source maps, and disables optimizations to provide an efficient local coding experience.
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+### Custom development server (alternative port)
 
 ```bash
-ng test
+npm run start-dev
 ```
 
-## Running end-to-end tests
+This is equivalent to running `ng serve --build-target=house-mix:build:development --port 4201`. It explicitly selects the `development` build target and hosts the application on port `4201`, which is useful when the default port is already in use.
 
-For end-to-end (e2e) testing, run:
+### Watch mode (build without serving)
 
 ```bash
-ng e2e
+npm run watch
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+Watch mode continuously rebuilds the project whenever file changes are detected. It uses the development configuration but does not start a local web server. This is typically used when the assets are being served by an external backend or proxy.
 
-## Additional Resources
+## Build
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+### Full production build
+
+```bash
+npm run build
+```
+
+This command triggers a two-step build process to ensure the application is correctly prepared for hosting:
+
+```bash
+npm run build:common
+ng build --configuration production --base-href /house-mix/
+```
+
+First, it compiles the shared TypeScript code from `../common`. Then, it builds the Angular application in **production mode**, setting the base URL to `/house-mix/`. This base href is essential for deployments where the application is served from a subpath. The final assets are generated in the `dist/house-mix` directory.
+
+### Build shared common package only
+
+```bash
+npm run build:common
+```
+
+This command compiles the `common` TypeScript project independently. It is required before running the main build and should be executed whenever changes are made to the shared logic.

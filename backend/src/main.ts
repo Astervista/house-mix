@@ -29,7 +29,7 @@ async function bootstrap(): Promise<void> {
     }
     
     const config = new DocumentBuilder()
-      .setTitle('My API')
+        .setTitle("HouseMix API")
       .setVersion('1.0')
       .build();
     

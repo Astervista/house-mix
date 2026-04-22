@@ -9,7 +9,6 @@
         "build": "npm run build:common && ng build --configuration production --base-href /house-mix/",
         "watch": "ng build --watch --configuration development",
         "test": "ng test",
-        "serve:ssr:house-mix": "node dist/house-mix/server/server.mjs"
     },
     "private": true,
     "dependencies": {

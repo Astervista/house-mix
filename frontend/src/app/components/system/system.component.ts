@@ -20,7 +20,6 @@ import {ConstantEditDialogComponent} from '../mixing/mix/constant-edit-dialog/co
 import {Datum} from '@common/mixing/mix/datum';
 import {HttpErrorResponse, HttpStatusCode} from '@angular/common/http';
 import {DeleteEntityDialogComponent, DeleteEntityDialogData} from '../dialogs/delete-entity-dialog/delete-entity-dialog.component';
-import {SystemEntity} from '@common/system/constants';
 import {DeviceMonitorDevice} from '@common/system/device-monitor/device-monitor-device';
 import {DeviceMonitorDeviceComponent} from '../entities/system/device-monitor-device/device-monitor-device.component';
 import {SystemDeviceMonitorDeviceDialogComponent} from '../dialogs/system-device-monitor-device-dialog/system-device-monitor-device-dialog.component';
@@ -28,6 +27,7 @@ import {SystemAdjustmentDialogComponent} from '../dialogs/system-adjustment-dial
 import {Adjustment} from '@common/system/adjustment/adjustment';
 import {AdjustmentComponent} from '../entities/system/adjustment/adjustment.component';
 import {Subject} from 'rxjs';
+import {SystemEntity} from './constants';
 
 
 @Component({

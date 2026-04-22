@@ -1,6 +1,15 @@
+/**
+ * This module contains facility functions to transform color temperature to color.
+ *
+ * @module
+ */
 import {Color, ColorSpace} from "./color-convert";
 import {MAX_ALLOWED_TEMP, MIN_ALLOWED_TEMP} from "./constants";
 
+/**
+ * Lookup table for the transformation. Each element is a color temperature in Kelvin and the x, y coordinates in the CIE 1931 XY color space.
+ * Points are spaced such that the intermediate values can be approximated using linear interpolation.
+ */
 const xyKelvinTable: [number, number, number][] = [
     [1000, 0.6527500558, 0.3444622272],
     [1190, 0.626401838, 0.3664110461],
@@ -23,6 +32,12 @@ const xyKelvinTable: [number, number, number][] = [
     [20000, 0.2564564394, 0.2576285522]
 ];
 
+/**
+ * Converts a color temperature in Kelvin to CIE 1931 XY coordinates.
+ *
+ * @param {number} temp - The temperature in Kelvin.
+ * @returns {{x: number, y: number}} An object containing the x and y coordinates.
+ */
 export function kelvinToXY(temp: number): { x: number, y: number } {
     temp = Math.min(MAX_ALLOWED_TEMP, Math.max(MIN_ALLOWED_TEMP, temp));
     for (let i = 0; i < xyKelvinTable.length - 1; i++) {
@@ -50,6 +65,12 @@ export function kelvinToXY(temp: number): { x: number, y: number } {
     
 }
 
+/**
+ * Converts a color temperature in Kelvin to a Color object in the sRGB color space.
+ *
+ * @param {number} temp - The temperature in Kelvin.
+ * @returns {Color} A Color object representing the temperature.
+ */
 export function kelvinToColor(temp: number): Color {
     const xy = kelvinToXY(temp);
     return ColorSpace.sRGB.colorFromXYY(xy.x, xy.y, 0.75);

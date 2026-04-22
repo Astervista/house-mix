@@ -184,7 +184,7 @@ export const SENSOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
         data:    [
             new Datum(
                 'contact',
-                DatumType.NUMBER,
+                DatumType.BOOLEAN,
                 true
             )
         ]

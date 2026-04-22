@@ -2,6 +2,12 @@ import {TimerType} from '@common/system/timer/system-timer';
 import {SystemOrigin} from '@common/system/constants';
 import {AdjustmentType} from '@common/system/adjustment/adjustment';
 
+export enum SystemEntity {
+    PARAMETER     = 'PARAMETER',
+    TIMER         = 'TIMER',
+    DEVICE_STATUS = 'DEVICE_STATUS',
+    ADJUSTMENT    = 'ADJUSTMENT'
+}
 
 export const SYSTEM_TIMER_TYPE_DISPLAY: Record<TimerType, string> = {
     DAILY:  'Every day',

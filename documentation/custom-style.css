@@ -1,0 +1,31 @@
+@font-face {
+    font-family: "Ligconsolata Extended";
+    src: url("../../fonts/Ligconsolata-Pro-Regular.woff2") format("woff2"),
+    url("../../fonts/Ligconsolata-Pro-Regular.woff") format("woff");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Ligconsolata Extended";
+    src: url("../../fonts/Ligconsolata-Pro-Bold.woff2") format("woff2"),
+    url("../../fonts/Ligconsolata-Pro-Bold.woff") format("woff");
+    font-weight: 700;
+    font-style: normal;
+}
+
+code,
+pre,
+.tsd-signature-type,
+.tsd-tag,
+.tsd-signature,
+.tsd-signature-symbol,
+.tsd-code {
+    font-family: "Ligconsolata Extended", "Ligconsolata", monospace;
+    font-size: 1.15rem;
+}
+
+
+body {
+    --font-family-code: "Ligconsolata Extended", "Ligconsolata", monospace;
+}

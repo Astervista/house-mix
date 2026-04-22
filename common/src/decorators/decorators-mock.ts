@@ -1,4 +1,4 @@
-
+/* eslint-disable */
 function makeFn() {
     return function (..._params: unknown[]): PropertyDecorator {
         return () => {

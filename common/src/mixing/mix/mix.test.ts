@@ -1,3 +1,8 @@
+/**
+ * This test module tests if the elaboration of a mix is performed correctly.
+ *
+ * @module
+ */
 import {ConnectionDrainType, ConnectionSourceType, Mix} from "./mix";
 import {DatumType} from "./datum";
 import {ElaborationNodeCode} from "./elaboration-node";
