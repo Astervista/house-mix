@@ -3,6 +3,7 @@
 import eslint from "@eslint/js";
 import {defineConfig} from "eslint/config";
 import tseslint from "typescript-eslint";
+import {jsdoc} from "eslint-plugin-jsdoc";
 
 const rules = {
     "@typescript-eslint/no-inferrable-types":           "off",
@@ -68,8 +69,103 @@ const rules = {
     "@typescript-eslint/no-unnecessary-type-parameters": "off"
 };
 
+const jsdocRules = {
+    "jsdoc/tag-lines":                               [
+        "warn",
+        "always",
+        {
+            count:                0,
+            endLines:             1,
+            startLinesWithNoTags: 0,
+            startLines:           1
+        }
+    ],
+    "jsdoc/require-returns":                         [
+        "warn",
+        {
+            checkGetters: false
+        }
+    ],
+    "jsdoc/require-hyphen-before-param-description": [
+        "warn",
+        "always"
+    ],
+    "jsdoc/require-description-complete-sentence":   [
+        "warn",
+        {
+            tags: ["see", "copyright"]
+        }
+    ],
+    "jsdoc/require-description":                     [
+        "warn"
+    ],
+    "jsdoc/require-throws":                          [
+        "warn"
+    ],
+    "jsdoc/require-file-overview":                   [
+        "warn",
+        {
+            "tags": {
+                "module": {
+                    "mustExist": true
+                }
+            }
+        }
+    ],
+    "jsdoc/require-jsdoc":                           [
+        "warn",
+        {
+            require:     {
+                FunctionDeclaration: true,
+                MethodDefinition:    true,
+                ClassDeclaration:    true
+            },
+            enableFixer: false,
+            contexts:    [
+                "ClassProperty",
+                "PropertyDefinition",     // modern class fields
+                "TSTypeAliasDeclaration TSPropertySignature",
+                "TSInterfaceDeclaration TSPropertySignature",
+                "TSEnumDeclaration",
+                "Program > VariableDeclaration",
+                "ExportNamedDeclaration > VariableDeclaration",
+                "ExportDefaultDeclaration > VariableDeclaration",
+                "PropertyDefinition[value.type='ArrowFunctionExpression']",
+                "PropertyDefinition[value.type='FunctionExpression']",
+                "ClassProperty[value.type='ArrowFunctionExpression']",
+                "ClassProperty[value.type='FunctionExpression']",
+                "TSInterfaceDeclaration",
+                "TSTypeAliasDeclaration",
+                "MethodDefinition[kind='method'][abstract=true]"
+            ]
+        }
+    ],
+    "jsdoc/require-asterisk-prefix":                 [
+        "warn",
+        "always"
+    ],
+    "jsdoc/require-template":                        [
+        "warn",
+        {
+            requireSeparateTemplates: true
+        }
+    ],
+    "jsdoc/require-template-description":            "warn"
+};
+
 export default defineConfig(
     eslint.configs.recommended,
+    jsdoc({
+              config:          "flat/recommended",
+              languageOptions: {
+                  parserOptions: {
+                      projectService:  true,
+                      tsconfigRootDir: import.meta.dirname
+                  }
+              },
+              rules:           jsdocRules
+          }
+    ),
     tseslint.configs.strictTypeChecked,
     {
         languageOptions: {

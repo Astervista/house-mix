@@ -85,7 +85,7 @@ export class AdjustmentsService extends PersistentDataService<AdjustmentData, Ad
 }
 
 
-class AdjustmentData {
+export class AdjustmentData {
     
     public adjustments: Adjustment<unknown, unknown>[];
     
@@ -113,7 +113,7 @@ class AdjustmentData {
     
 }
 
-interface AdjustmentDataJSON {
+export interface AdjustmentDataJSON {
     adjustments: AdjustmentJSON<unknown>[];
     nextId: number;
 }

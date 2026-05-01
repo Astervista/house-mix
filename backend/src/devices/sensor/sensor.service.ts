@@ -207,7 +207,7 @@ export class SensorService extends PersistentDataService<SensorData, SensorDataJ
 }
 
 
-class SensorData {
+export class SensorData {
     
     public sensors: Sensor[];
     
@@ -227,6 +227,6 @@ class SensorData {
     
 }
 
-interface SensorDataJSON {
+export interface SensorDataJSON {
     sensors: SensorJSON[];
 }

@@ -696,12 +696,12 @@ export class EngineService extends PersistentDataService<EngineServiceData, Engi
 }
 
 
-interface SensorDataChange {
+export interface SensorDataChange {
     zigbeeId: string,
     valueChange: StatusUpdate<unknown>
 }
 
-interface TimerDataChange {
+export interface TimerDataChange {
     time: Date,
     name: string,
 }
@@ -738,7 +738,7 @@ export const TICK_ERROR_MESSAGES: Record<TickErrorType, string> = {
     WRONG_EXPOSED_VALUE:       "A result for an actuator contains an exposed property value that is of the wrong type"
 };
 
-interface TickErrorData {
+export interface TickErrorData {
     mixId?: number,
     import?: ExportedDatum,
     sensorName?: string,

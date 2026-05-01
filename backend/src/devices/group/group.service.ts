@@ -233,7 +233,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
             if ((entityType == EntityType.GROUP) && (elementToMove instanceof Group)) {
                 const descendants = elementToMove.getAllDescendants(data.groups);
                 if (descendants.includes(newParentName)) {
-                    throw new BadRequestException(undefined, "Cannot move a group into one of its own descendants");
+                    throw new ConflictException(undefined, "Cannot move a group into one of its own descendants");
                 }
             }
         }
@@ -611,7 +611,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     
 }
 
-class GroupData {
+export class GroupData {
     
     public groups: Group[];
     
@@ -631,7 +631,7 @@ class GroupData {
     
 }
 
-interface GroupDataJSON {
+export interface GroupDataJSON {
     groups: GroupJSON[];
 }
 

@@ -23,7 +23,7 @@ import type {Mix} from "../../mixing/mix/mix";
 export class Sensor extends Device {
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {string} name - Same as in {@link Device|`new Device()`}.
      * @param {string} displayName - Same as in {@link Device|`new Device()`}.

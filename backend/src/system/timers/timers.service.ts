@@ -68,7 +68,7 @@ export class TimersService extends PersistentDataService<SystemTimerData, System
     
 }
 
-class SystemTimerData {
+export class SystemTimerData {
     
     public timers: SystemTimer[];
     
@@ -91,7 +91,7 @@ class SystemTimerData {
     
 }
 
-interface SystemTimerDataJSON {
+export interface SystemTimerDataJSON {
     timers: SystemTimerJSON[];
     nextId: number;
 }

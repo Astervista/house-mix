@@ -176,7 +176,7 @@ export class DeviceMonitorServiceData implements Serializable<DeviceMonitorServi
     
 }
 
-interface DeviceMonitorServiceDataJSON {
+export interface DeviceMonitorServiceDataJSON {
     devices: DeviceMonitorDeviceJSON[];
 }
 

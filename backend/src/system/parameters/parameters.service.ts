@@ -78,7 +78,7 @@ export class ParametersService extends PersistentDataService<ParameterData, Para
     }
 }
 
-class ParameterData {
+export class ParameterData {
     
     public parameters: SystemParameter[];
     
@@ -98,6 +98,6 @@ class ParameterData {
     }
 }
 
-interface ParameterDataJSON {
+export interface ParameterDataJSON {
     parameters: SystemParameterJSON[];
 }

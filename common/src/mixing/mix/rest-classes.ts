@@ -375,7 +375,7 @@ export class PutMixBodyJSON {
     public mix: MixJSON;
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {MixPositionInfoJSON} position - Value for {@link PutMixBodyJSON#position|`position`}.
      * @param {MixJSON} mix      - Value for {@link PutMixBodyJSON#mix|`mix`}.

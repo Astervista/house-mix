@@ -51,7 +51,7 @@ export class SettingsService extends PersistentDataService<SettingsData, Setting
 }
 
 
-class SettingsData {
+export class SettingsData {
     
     public settings: SystemSettings;
     
@@ -70,6 +70,6 @@ class SettingsData {
     }
 }
 
-interface SettingsDataJSON {
+export interface SettingsDataJSON {
     settings: SystemSettingsJSON;
 }

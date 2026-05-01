@@ -1,0 +1,3830 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "HouseMix REST API",
+        "description": "HouseMix REST API to communicate between the backend and the frontend.",
+        "version": "0.3.0"
+    },
+    "paths": {
+        "/device/actuators": {
+            "get": {
+                "summary": "Get all actuators",
+                "description": "Get all actuators in the system, optionally filtered by mix.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#getall'>`ActuatorController.getAll()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "mix",
+                        "in": "query",
+                        "description": "Requests the resulting devices to be filtered following this logic:\n - When a number, only devices that have a mix id equal to this value.\n - When `null`, only devices that have a mix id not set (equivalent to `anyMixed = false`).\n - When not specified, does not require any filtering on the mix id.",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/mix-id"
+                                }
+                            ],
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "name": "anyMixed",
+                        "in": "query",
+                        "description": "Requests the resulting devices to be filtered following this logic:\n\n- When `true`, only devices that have a mix id set to any mix id.\n- When `false`, only devices that have a mix id not set (equivalent to `mix = null`).\n- When not specified, does not require any filtering on the mix id.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false,
+                            "nullable": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the actuators in the system, filtered according to the parameters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Actuator"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The parameters weren't of the correct format, or both `mix` and `anyMixed` were specified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new actuator",
+                "description": "Create a new actuator, and register it in the system.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#create'>`ActuatorController.create()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "parent",
+                        "in": "query",
+                        "description": "Which parent group the actuator will be assigned to. If not specified, it will not be added to any group.",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new actuator's data, containing all the properties needed for its creation.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Actuator"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "The specified parent group does not exist."
+                    },
+                    "409": {
+                        "description": "An actuator with the specified unique name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/actuators/{name}": {
+            "get": {
+                "summary": "Get an actuator",
+                "description": "Get an actuator with a specific name.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#getbyname'>`ActuatorController.getByName()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator to retrieve.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved. Returns the actuator's data.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Actuator"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Edit an actuator",
+                "description": "Edit an actuator's properties, given its `name`.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#edit'>`ActuatorController.edit()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator to edit.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new actuator data",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ActuatorEditChanges"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator was found with the specified name."
+                    },
+                    "409": {
+                        "description": "A new name for the actuator was specified, but an actuator with that name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete an actuator",
+                "description": "Removes an actuator from the system by its name, if possible.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#delete'>`ActuatorController.delete()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator to remove.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The actuator cannot be deleted because it is linked to a mix that is referenced in a mix downstream."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/actuators/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks",
+                "description": "Gets all the conflicts that prevent an actuator from being deleted.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#candelete'>`ActuatorController.canDelete()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator to check.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the actuator and prevent it from being deleted.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/actuators/{name}/parent": {
+            "patch": {
+                "summary": "Change actuator parent",
+                "description": "Changes the parent group of an actuator.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#changeparent'>`ActuatorController.changeParent()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "An object with the name of the new parent group, or null to remove the parent.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeParentChange"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Parent changed successfully."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator or destination group was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The actuator cannot be moved to the requested group, because the actuator's mix contains dependencies that would break"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/actuators/{name}/unavailable-parents": {
+            "get": {
+                "summary": "Get unavailable parents",
+                "description": "Returns information about all the groups that cannot be parents for this actuator, because they would break dependencies inside the mixes. For example, if an actuator's mix references a parent group's mix, this parent must remain in the hierarchy, otherwise the actuator's mix will not be able to reach it.<br><a class='tsdoc-link' href='../backend/classes/devices_actuator_actuator.controller.ActuatorController.html#getunavailableparents'>`ActuatorController.getUnavailableParents()`</a>",
+                "tags": [
+                    "Actuators"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the actuator.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the list of unavailable parent names.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnavailableParents"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No actuator was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors": {
+            "get": {
+                "summary": "Get all sensors",
+                "description": "Get all sensors in the system, optionally filtered by mix.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#getall'>`SensorController.getAll()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "mix",
+                        "in": "query",
+                        "description": "Requests the resulting devices to be filtered following this logic:\n - When a number, only devices that have a mix id equal to this value.\n - When `null`, only devices that have a mix id not set (equivalent to `anyMixed = false`).\n - When not specified, does not require any filtering on the mix id.",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/mix-id"
+                                }
+                            ],
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "name": "anyMixed",
+                        "in": "query",
+                        "description": "Requests the resulting devices to be filtered following this logic:\n\n- When `true`, only devices that have a mix id set to any mix id.\n- When `false`, only devices that have a mix id not set (equivalent to `mix = null`).\n- When not specified, does not require any filtering on the mix id.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false,
+                            "nullable": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the sensors in the system, filtered according to the parameters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Sensor"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The parameters weren't of the correct format, or both `mix` and `anyMixed` were specified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new sensor",
+                "description": "Create a new sensor, and register it in the system.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#create'>`SensorController.create()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "parent",
+                        "in": "query",
+                        "description": "Which parent group the sensor will be assigned to. If not specified, it will not be added to any group.",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new sensor's data, containing all the properties needed for its creation.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Sensor"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "The specified parent group does not exist."
+                    },
+                    "409": {
+                        "description": "A sensor with the specified unique name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors/{name}": {
+            "get": {
+                "summary": "Get a sensor",
+                "description": "Get a sensor with a specific name.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#getbyname'>`SensorController.getByName()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor to retrieve.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved. Returns the sensor's data.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Sensor"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Edit a sensor",
+                "description": "Edit a sensor's properties, given its `name`.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#edit'>`SensorController.edit()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor to edit.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new sensor data",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SensorEditChanges"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "409": {
+                        "description": "A new name for the sensor was specified, but a sensor with that name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a sensor",
+                "description": "Removes a sensor from the system by its name, if possible.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#delete'>`SensorController.delete()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor to remove.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The sensor cannot be deleted because it is linked to a mix that is referenced in a mix downstream."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks",
+                "description": "Gets all the conflicts that prevent a sensor from being deleted.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#candelete'>`SensorController.canDelete()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor to check.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the sensor and prevent it from being deleted.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors/{name}/parent": {
+            "patch": {
+                "summary": "Change sensor parent",
+                "description": "Changes the parent group of a sensor.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#changeparent'>`SensorController.changeParent()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "An object with the name of the new parent group, or null to remove the parent.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeParentChange"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Parent changed successfully."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor or destination group was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The sensor cannot be moved to the requested group, because it would break dependencies in mixes that depend on data related to the sensor or its linked mix."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors/{name}/unavailable-parents": {
+            "get": {
+                "summary": "Get unavailable parents",
+                "description": "Returns information about all the groups that cannot be parents for this sensor, because they would break dependencies inside the mixes. For example, if a sensor's mix references a child group's mix, this child must remain in the hierarchy, otherwise the sensor's mix will not be able to reach it.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#getunavailableparents'>`SensorController.getUnavailableParents()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the list of unavailable parent names.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnavailableParents"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/device/sensors/{name}/locked-exposes": {
+            "get": {
+                "summary": "Get locked exposes",
+                "description": "Returns information about all the exposes that cannot be removed from this sensor, because they are referenced in a mix upstream.<br><a class='tsdoc-link' href='../backend/classes/devices_sensor_sensor.controller.SensorController.html#getlockedexposes'>`SensorController.getLockedExposes()`</a>",
+                "tags": [
+                    "Sensors"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the sensor.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the list of locked exposes.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LockedExposes"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No sensor was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/groups": {
+            "get": {
+                "summary": "Get all groups",
+                "description": "Get all groups in the system, optionally filtered by mix.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#getall'>`GroupController.getAll()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "sensorMix",
+                        "in": "query",
+                        "description": "Requests the resulting groups to be filtered following this logic:\n- When a number, only groups that have a sensor mix id equal to this value.\n- When `null`, only groups that have a sensor mix id not set\n- When undefined, does not require any filtering on the sensor mix id.",
+                        "required": false,
+                        "schema": {
+                            "oneOf": [
+                                {
+                                    "$ref": "#/components/schemas/mix-id"
+                                }
+                            ],
+                            "nullable": true
+                        }
+                    },
+                    {
+                        "name": "actuatorMix",
+                        "in": "query",
+                        "description": "Requests the resulting groups to be filtered following this logic:\n- When a number, only groups that have an actuator mix id equal to this value.\n- When `null`, only groups that have an actuator mix id not set\n- When undefined, does not require any filtering on the actuator mix id.",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/mix-id"
+                        }
+                    },
+                    {
+                        "name": "anyMixed",
+                        "in": "query",
+                        "description": "Requests the resulting groups to be filtered following this logic:\n- When `true`, only groups that have either the actuator mix id or sensor mix id set to any mix id.\n- When `false`, only groups that have both the actuator mix id and sensor mix id not set.\n- When not specified, does not require any filtering on the actuator mix id or sensor mix id.",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false,
+                            "nullable": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the groups in the system, filtered according to the parameters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Group"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The parameters weren't of the correct format, or more than one of `sensorMix`, `actuatorMix` were specified when `anyMixed` was also specified.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new group",
+                "description": "Creates a new group in the system.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#create'>`GroupController.create()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "parent",
+                        "in": "query",
+                        "description": "Parent group name.",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new group's data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Group"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "The specified parent group does not exist."
+                    },
+                    "409": {
+                        "description": "A group with the specified unique name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/groups/{name}": {
+            "get": {
+                "summary": "Get a group",
+                "description": "Get a group with a specific name.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#getbyname'>`GroupController.getByName()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group to retrieve.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved. Returns the group's data.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Group"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No group was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new group with path name",
+                "description": "Creates a new group using the name specified in the path.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#createname'>`GroupController.createName()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group to create.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    },
+                    {
+                        "name": "parent",
+                        "in": "query",
+                        "description": "Which parent group the new group will be assigned to. If not specified, it will not be added to any group.",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new group's data, containing all the properties needed for its creation.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Group"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "The specified parent group does not exist."
+                    },
+                    "409": {
+                        "description": "A group with the specified unique name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Edit a group",
+                "description": "Edit a group's properties, given its `name`.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#edit'>`GroupController.edit()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group to edit.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new group data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GroupEditChanges"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No group was found with the specified name."
+                    },
+                    "409": {
+                        "description": "A new name for the group was specified, but a group with that name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a group",
+                "description": "Removes a group from the system by its name, if possible.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#delete'>`GroupController.delete()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group to remove.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Options regarding the deletion of the group, specifying what to do with its descendants.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeleteGroupOptions"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No froup was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The group cannot be deleted because it is linked to a mix that is referenced by another mix downstream."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/groups/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks",
+                "description": "Gets all the conflicts that prevent a group from being deleted.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#candelete'>`GroupController.canDelete()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group to check.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the group and prevent it from being deleted.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No group was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/groups/{name}/parent": {
+            "patch": {
+                "summary": "Change group parent",
+                "description": "Changes the parent of a group.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#changeparent'>`GroupController.changeParent()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "An object with the name of the new parent group, or null to remove the parent.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ChangeParentChange"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Parent changed successfully."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No group to move or destination group was found with the specified name."
+                    },
+                    "409": {
+                        "description": "The group cannot be moved to the requested destination, because it would break dependencies in mixes that depend on the group's mixes or the group's mix contains dependencies that would break."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/groups/{name}/unavailable-parents": {
+            "get": {
+                "summary": "Get unavailable parents",
+                "description": "Returns groups that cannot be parents for this group, because they would break dependencies inside the mixes. For example, if a group's mix references a parent group's mix, this parent must remain in the hierarchy, otherwise the group's mix will not be able to reach it.<br><a class='tsdoc-link' href='../backend/classes/devices_group_group.controller.GroupController.html#getunavailableparents'>`GroupController.getUnavailableParents()`</a>",
+                "tags": [
+                    "Groups"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the group.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the list of unavailable parent names.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UnavailableParents"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No group was found with the specified name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/mixes": {
+            "get": {
+                "summary": "Get all mixes",
+                "description": "Retrieves all the mixes in the system.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getall'>`MixController.getAll()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the resulting mixes' serializations.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Mix"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Create or update a mix",
+                "description": "Creates or updates a mix in the system, with the provided information and position.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#create'>`MixController.create()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "requestBody": {
+                    "description": "The information about the mix to create, and the context it's linked to.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PutMixBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the id of the created or updated mix.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-a": {
+                        "description": "The new mix has some inputs that are not corresponding to its imports",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "INPUTS_WITHOUT_IMPORT"
+                                        },
+                                        "orphanInputs": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Datum"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "showable",
+                                        "errorType",
+                                        "orphanInputs",
+                                        "message"
+                                    ],
+                                    "example": {
+                                        "showable": true,
+                                        "errorType": "INPUTS_WITHOUT_IMPORT",
+                                        "orphanInputs": [
+                                            {
+                                                "name": "brightness",
+                                                "type": "number",
+                                                "nullable": false
+                                            }
+                                        ],
+                                        "message": "The new mix has some inputs that are not corresponding to its imports"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-b": {
+                        "description": "The new mix has cycles that are reachable from the inputs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "CYCLE"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "showable",
+                                        "errorType",
+                                        "message"
+                                    ],
+                                    "example": {
+                                        "showable": true,
+                                        "errorType": "CYCLE",
+                                        "message": "The new mix has cycles that are reachable from the inputs"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-c": {
+                        "description": "Some connections are not correct",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "WRONG_CONNECTIONS"
+                                        },
+                                        "wrongConnections": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Connection"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "showable",
+                                        "errorType",
+                                        "wrongConnections",
+                                        "message"
+                                    ],
+                                    "example": {
+                                        "showable": true,
+                                        "errorType": "WRONG_CONNECTIONS",
+                                        "wrongConnections": [
+                                            {
+                                                "sourceType": "NODE",
+                                                "sourceNodeId": 1,
+                                                "sourceNodeOutputName": "out",
+                                                "drainType": "NODE",
+                                                "drainNodeId": 2,
+                                                "drainNodeInputName": "in"
+                                            }
+                                        ],
+                                        "message": "Some connections are not correct"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-d": {
+                        "description": "Validation errors that are not the user's fault:\n- Cannot set mix in a position different than the current one\n- The mix's output definitions don't correspond to the actuator's export\n- The mix contains outputs that are not defined in the actuator's exports\n- Cannot set an already created mix to an entity that doesn't have the mix assigned yet\n- Cannot set a new mix to an entity that already has a mix assigned to it\n- If an entity already has a mix assigned to it, only a mix with the same id can be used to update\n- Some inputs or imports are duplicated\n- Some outputs are duplicated\n- Cannot put a mix with an id that doesn't exist\n- The new mix has non-null inputs that are free-floating\n- The new mix has non-unique inbound connections",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "example": {
+                                        "message": "Decription of the error"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "The target sensor, actuator or group cannot be found."
+                    },
+                    "409-a": {
+                        "description": "The new mix requires imports that are either not existing anymore or outside the scope it is put into",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "IMPORTS_UNAVAILABLE"
+                                        },
+                                        "unavailableImports": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ExportedDatum"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "showable",
+                                        "errorType",
+                                        "unavailableImports",
+                                        "message"
+                                    ],
+                                    "example": {
+                                        "showable": true,
+                                        "errorType": "IMPORTS_UNAVAILABLE",
+                                        "unavailableImports": [],
+                                        "message": "The new mix requires imports that are either not existing anymore or outside the scope it is put into"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409-b": {
+                        "description": "Some removed outputs are used downstream by other mixes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "OUTPUTS_IN_USE"
+                                        },
+                                        "dependingOutputs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "showable",
+                                        "errorType",
+                                        "dependingOutputs",
+                                        "message"
+                                    ],
+                                    "example": {
+                                        "showable": true,
+                                        "errorType": "OUTPUTS_IN_USE",
+                                        "dependingOutputs": [
+                                            "brightness"
+                                        ],
+                                        "message": "Some outputs are used downstream by other mixes"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/mixes/{id}": {
+            "get": {
+                "summary": "Get a mix by id",
+                "description": "Retrieves a specific mix by its unique id number.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getbyid'>`MixController.getById()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix to retrieve.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully retrieved. Returns the mix's data.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Mix"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Edit a mix",
+                "description": "Updates an existing mix by its ID.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#editmix'>`MixController.editMix()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated mix data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Mix"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "400-a": {
+                        "description": "The new mix has some inputs that are not corresponding to its imports",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "INPUTS_WITHOUT_IMPORT"
+                                        },
+                                        "orphanInputs": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Datum"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-b": {
+                        "description": "The new mix has cycles that are reachable from the inputs",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "CYCLE"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-c": {
+                        "description": "Some connections are not correct",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "WRONG_CONNECTIONS"
+                                        },
+                                        "wrongConnections": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/Connection"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400-d": {
+                        "description": "Validation errors:\n- The sent mix id doesn't match with the path id requested\n- The mix's output definitions don't correspond to the actuator's export\n- The mix contains outputs that are not defined in the actuator's exports\n- Some inputs or imports are duplicated\n- Some outputs are duplicated\n- The new mix has non-null inputs that are free-floating\n- The new mix has non-unique inbound connections",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "409-a": {
+                        "description": "The updated mix requires imports that are either not existing anymore or outside the scope it is put into",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "IMPORTS_UNAVAILABLE"
+                                        },
+                                        "unavailableImports": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/components/schemas/ExportedDatum"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409-b": {
+                        "description": "Some removed outputs are used downstream by other mixes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "showable": {
+                                            "const": true
+                                        },
+                                        "errorType": {
+                                            "const": "OUTPUTS_IN_USE"
+                                        },
+                                        "dependingOutputs": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a mix",
+                "description": "Deletes a mix from the system.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#deletemix'>`MixController.deleteMix()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "409": {
+                        "description": "The mix cannot be deleted because it is currently being used or referenced downstream."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/mixes/{id}/position": {
+            "get": {
+                "summary": "Get mix position",
+                "description": "Retrieves the position information (context) for a specific mix.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getmixposition'>`MixController.getMixPosition()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the position information.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MixPositionInfo"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/mixes/{id}/layout": {
+            "get": {
+                "summary": "Get mix layout",
+                "description": "Retrieves the UI layout for a specific mix.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getmixlayout'>`MixController.getMixLayout()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the layout data.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MixLayout"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Save mix layout",
+                "description": "Saves the UI layout for a specific mix.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#savelayout'>`MixController.saveLayout()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The unique identifier of the mix.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The layout data to save.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MixLayout"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Layout saved successfully."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/available-imports": {
+            "get": {
+                "summary": "Get available imports",
+                "description": "Retrieves the list of available data that can be imported by a mix at a given position.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getavailableimports'>`MixController.getAvailableImports()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of available imports.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ExportedDatum"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No mix with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/graph": {
+            "get": {
+                "summary": "Get mixing graph",
+                "description": "Retrieves the global mixing graph representing all connections between mixes.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getgraph'>`MixController.getGraph()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the serialized graph.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MixingGraph"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/mixing/center-mixes-names": {
+            "get": {
+                "summary": "Get center mixes names",
+                "description": "Retrieves the names of all mixes positioned in the central part of the elaboration.<br><a class='tsdoc-link' href='../backend/classes/mixing_mix_mix.controller.MixController.html#getcentermixnames'>`MixController.getCenterMixNames()`</a>",
+                "tags": [
+                    "Mixing"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array of names to identify the mixes positioned in the center.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "example": "All lights mixing"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/adjustments": {
+            "get": {
+                "summary": "Get all adjustments",
+                "description": "Get all adjustments in the system.<br><a class='tsdoc-link' href='../backend/classes/system_adjustments_adjustments.controller.AdjustmentsController.html#getall'>`AdjustmentsController.getAll()`</a>",
+                "tags": [
+                    "Adjustments"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the adjustments.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Adjustment"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "put": {
+                "summary": "Create a new adjustment",
+                "description": "Creates a new adjustment in the system.<br><a class='tsdoc-link' href='../backend/classes/system_adjustments_adjustments.controller.AdjustmentsController.html#create'>`AdjustmentsController.create()`</a>",
+                "tags": [
+                    "Adjustments"
+                ],
+                "requestBody": {
+                    "description": "The new adjustment's data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Adjustment"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded. Returns the ID of the newly created adjustment.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The parameters or the adjustment value provided are not valid, or the new id is not `\"NEW\"`.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/adjustments/{id}": {
+            "patch": {
+                "summary": "Edit an adjustment",
+                "description": "Edit an adjustment's properties, given its `id`. This call cannot change an adjustment's type,\ndelete and recreate the adjustment to chagne it.<br><a class='tsdoc-link' href='../backend/classes/system_adjustments_adjustments.controller.AdjustmentsController.html#edit'>`AdjustmentsController.edit()`</a>",
+                "tags": [
+                    "Adjustments"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The ID of the adjustment to edit.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated adjustment data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Adjustment"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "description": "The parameters or the adjustment value provided are not valid, or the type in the update is different from the one stored.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No adjustment with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete an adjustment",
+                "description": "Removes an adjustment from the system by its ID.<br><a class='tsdoc-link' href='../backend/classes/system_adjustments_adjustments.controller.AdjustmentsController.html#delete'>`AdjustmentsController.delete()`</a>",
+                "tags": [
+                    "Adjustments"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "The ID of the adjustment to remove.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No adjustment with the specified ID exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/device-monitor": {
+            "get": {
+                "summary": "Get all monitored devices",
+                "description": "Get all monitored devices in the system.<br><a class='tsdoc-link' href='../backend/classes/system_device-monitor_device-monitor.controller.DeviceMonitorController.html#getall'>`DeviceMonitorController.getAll()`</a>",
+                "tags": [
+                    "Device Monitor"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the monitored devices.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/DeviceMonitorDevice"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Add a new monitored device",
+                "description": "Adds a new monitored device to the system.<br><a class='tsdoc-link' href='../backend/classes/system_device-monitor_device-monitor.controller.DeviceMonitorController.html#add'>`DeviceMonitorController.add()`</a>",
+                "tags": [
+                    "Device Monitor"
+                ],
+                "requestBody": {
+                    "description": "The new monitored device's data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeviceMonitorDevice"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "409": {
+                        "description": "A device with the same name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/device-monitor/{name}": {
+            "patch": {
+                "summary": "Edit a monitored device",
+                "description": "Edit a monitored device's properties, given its `name`. This call cannot change the name, to achieve this delete and recreate the device.<br><a class='tsdoc-link' href='../backend/classes/system_device-monitor_device-monitor.controller.DeviceMonitorController.html#edit'>`DeviceMonitorController.edit()`</a>",
+                "tags": [
+                    "Device Monitor"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the device to edit.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated device data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DeviceMonitorDevice"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "description": "The parameters or the device value provided are not valid, or the name in the update is different from the one required in the `name` path parameter.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No device with the specified name exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a monitored device",
+                "description": "Removes a monitored device from the system by its name.<br><a class='tsdoc-link' href='../backend/classes/system_device-monitor_device-monitor.controller.DeviceMonitorController.html#delete'>`DeviceMonitorController.delete()`</a>",
+                "tags": [
+                    "Device Monitor"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the device to remove.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No device with the specified name exists."
+                    },
+                    "409": {
+                        "description": "The device is used in a mix."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/device-monitor/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks for monitored device",
+                "description": "Gets all the conflicts that prevent a monitored device from being deleted.<br><a class='tsdoc-link' href='../backend/classes/system_device-monitor_device-monitor.controller.DeviceMonitorController.html#candelete'>`DeviceMonitorController.canDelete()`</a>",
+                "tags": [
+                    "Device Monitor"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the device to check.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the device.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No device with the specified name exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Device": {
+                "type": "object",
+                "description": "A generic device connected to the Zigbee network.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_device.DeviceJSON.html'>`DeviceJSON`</a>",
+                "properties": {
+                    "name": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name of this device.",
+                        "example": "bedroom_lamp"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "The name with which the device is shown in the frontend UI.",
+                        "example": "Bedroom lamp"
+                    },
+                    "zigbeeAddress": {
+                        "type": "string",
+                        "description": "The 8-byte (64-bit) address (in hex, **without** the `0x` prefix) of this device in the Zigbee network.",
+                        "pattern": "^[0-9a-f]+$",
+                        "example": "0123456789abcdef"
+                    },
+                    "exposes": {
+                        "type": "array",
+                        "description": "This is the list of exposed properties, attributes that are used to communicate to the device, as properties of the JSON object sent or received from the device through MQTT.",
+                        "items": {
+                            "$ref": "#/components/schemas/Datum"
+                        }
+                    },
+                    "mix": {
+                        "$ref": "#/components/schemas/mix-id",
+                        "description": "The mix linked to this device.",
+                        "example": 15
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "zigbeeAddress",
+                    "exposes",
+                    "mix"
+                ]
+            },
+            "DeviceEditChanges": {
+                "type": "object",
+                "description": "An update on the values of a device.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_rest-classes.DeviceEditChanges.html'>`DeviceEditChanges`</a>",
+                "properties": {
+                    "name": {
+                        "description": "The unique name of this device.",
+                        "$ref": "#/components/schemas/unique-string-id",
+                        "example": "bedroom_lamp"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "The name with which the device is shown in the frontend UI.",
+                        "example": "Bedroom lamp"
+                    },
+                    "zigbeeAddress": {
+                        "type": "string",
+                        "description": "The 8-byte (64-bit) address (in hex, **without** the `0x` prefix) of this device in the Zigbee network.",
+                        "pattern": "^[0-9a-f]+$",
+                        "example": "0123456789abcdef"
+                    },
+                    "exposes": {
+                        "type": "array",
+                        "description": "This is the list of exposed properties, attributes that are used to communicate to the device, as properties of the JSON object sent or received from the device through MQTT.",
+                        "items": {
+                            "$ref": "#/components/schemas/Datum"
+                        }
+                    },
+                    "mix": {
+                        "$ref": "#/components/schemas/mix-id",
+                        "description": "The mix linked to this device.",
+                        "example": 15,
+                        "nullable": true
+                    }
+                }
+            },
+            "Actuator": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Device",
+                        "description": "An actuator device is a device for which the properties of `exposes` can be sent to the `/zigbeeAddress/set` zigbee2mqtt topic to change the behavior of the zigbee device, such as changing the brightness of a lamp or the state of a relay.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_actuator_actuator.ActuatorJSON.html'>`ActuatorJSON`</a>"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "$ref": "#/components/schemas/ActuatorType",
+                                "description": "The type of the actuator."
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                ]
+            },
+            "ActuatorEditChanges": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceEditChanges",
+                        "description": "An update on the values of an actuator<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_actuator_rest-classes.ActuatorEditChanges.html'>`ActuatorEditChanges`</a>"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "$ref": "#/components/schemas/ActuatorType",
+                                "description": "The type of the actuator."
+                            }
+                        }
+                    }
+                ]
+            },
+            "ActuatorType": {
+                "description": "Enum representing different types of actuators that can be controlled\nwithin the system.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/devices_actuator_actuator.ActuatorType.html'>`ActuatorType`</a>",
+                "type": "string",
+                "enum": [
+                    "BULB",
+                    "PLUG",
+                    "RELAY",
+                    "STRIP",
+                    "BELL",
+                    "CURTAIN",
+                    "WATER",
+                    "OTHER",
+                    "UNKNOWN"
+                ]
+            },
+            "Sensor": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Device",
+                        "description": "A sensor device is a device that provides data to the system, such as temperature, humidity, or motion. The properties of `exposes` represent the data that the sensor can provide.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_sensor_sensor.SensorJSON.html'>`SensorJSON`</a>"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "$ref": "#/components/schemas/SensorType",
+                                "description": "The type of the sensor."
+                            }
+                        },
+                        "required": [
+                            "type"
+                        ]
+                    }
+                ]
+            },
+            "SensorEditChanges": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceEditChanges",
+                        "description": "An update on the values of a sensor<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_sensor_rest-classes.SensorEditChanges.html'>`SensorEditChanges`</a>"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "type": {
+                                "$ref": "#/components/schemas/SensorType",
+                                "description": "The type of the sensor."
+                            }
+                        }
+                    }
+                ]
+            },
+            "SensorType": {
+                "description": "Enum representing different types of sensors that can be used\nwithin the system.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/devices_sensor_sensor.SensorType.html'>`SensorType`</a>",
+                "type": "string",
+                "enum": [
+                    "TEMPERATURE",
+                    "HUMIDITY",
+                    "ILLUMINANCE",
+                    "MOTION",
+                    "CONTACT",
+                    "PRESENCE",
+                    "WATER_LEAK",
+                    "SMOKE",
+                    "GAS",
+                    "CARBON_MONOXIDE",
+                    "VIBRATION",
+                    "OPEN_CLOSE",
+                    "BUTTON",
+                    "SWITCH",
+                    "OCCUPANCY",
+                    "POWER",
+                    "CURRENT",
+                    "VOLTAGE",
+                    "ENERGY",
+                    "PRESSURE",
+                    "BRIGHTNESS",
+                    "COLOR",
+                    "COLOR_TEMP",
+                    "OTHER",
+                    "UNKNOWN"
+                ]
+            },
+            "Group": {
+                "type": "object",
+                "description": "A group of devices and other groups, to organize the devices in a hierarchy.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_group_group.GroupJSON.html'>`GroupJSON`</a>",
+                "properties": {
+                    "name": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name of this group.",
+                        "example": "bedroom"
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "The name with which the group is shown in the frontend UI.",
+                        "example": "Bedroom"
+                    },
+                    "groups": {
+                        "type": "array",
+                        "description": "The unique names of the first-level subgroups of this group.",
+                        "items": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    },
+                    "actuators": {
+                        "type": "array",
+                        "description": "The unique names of the actuator children this group.",
+                        "items": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    },
+                    "sensors": {
+                        "type": "array",
+                        "description": "The unique names of the sensor children this group.",
+                        "items": {
+                            "$ref": "#/components/schemas/unique-string-id"
+                        }
+                    },
+                    "sensorMix": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/mix-id"
+                            }
+                        ],
+                        "description": "The id of the mix relative to this group on the sensor phase (meaning on the side of the main cycle that goes from the sensors to the middle of the cycle).",
+                        "nullable": true
+                    },
+                    "actuatorMix": {
+                        "description": "The id of the mix relative to this group on the actuator phase (meaning on the side of the main cycle that goes from the middle of the cycle to the actuators).",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "groups",
+                    "actuators",
+                    "sensors"
+                ]
+            },
+            "GroupEditChanges": {
+                "type": "object",
+                "description": "Changes to be applied to a group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_group_rest-classes.GroupEditChanges.html'>`GroupEditChanges`</a>",
+                "properties": {
+                    "name": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The new group's name. If not specified, the group's name remains unchanged."
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "The new group's display name. If not specified, the group's display name remains unchanged. ."
+                    }
+                }
+            },
+            "Mix": {
+                "type": "object",
+                "description": "A collection of operations in a certain order that transforms some inputs into some outputs.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_mix.MixJSON.html'>`MixJSON`</a>",
+                "properties": {
+                    "id": {
+                        "oneOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            {
+                                "type": "string",
+                                "const": "NEW"
+                            }
+                        ],
+                        "description": "The mix's unique positive integer id, or 'NEW' to create a new mix."
+                    },
+                    "inputs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Datum"
+                        }
+                    },
+                    "outputs": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Datum"
+                        }
+                    },
+                    "imports": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ExportedDatum"
+                        }
+                    },
+                    "nodes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/ElaborationNode"
+                        }
+                    },
+                    "connections": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Connection"
+                        }
+                    }
+                },
+                "required": [
+                    "id",
+                    "inputs",
+                    "outputs",
+                    "imports",
+                    "nodes",
+                    "connections"
+                ]
+            },
+            "PutMixBody": {
+                "type": "object",
+                "description": "The body of a `PUT` request creating or updating a mix.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_rest-classes.PutMixBodyJSON.html'>`PutMixBodyJSON`</a>",
+                "properties": {
+                    "position": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MixPositionInfo"
+                            }
+                        ],
+                        "description": "The position indicating what the mix is associated with."
+                    },
+                    "mix": {
+                        "$ref": "#/components/schemas/Mix",
+                        "description": "The data of the mix."
+                    }
+                },
+                "required": [
+                    "position",
+                    "mix"
+                ]
+            },
+            "ElaborationNode": {
+                "type": "object",
+                "description": "A generic elaboration node used to manipulate data in a mix.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_node.ElaborationNodeJSON.html'>`ElaborationNodeJSON`</a>",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "The unique integer id to identify the node in a mix. It's also used to uniquely identify outputs and inputs in connections between nodes."
+                    },
+                    "code": {
+                        "$ref": "#/components/schemas/ElaborationNodeCode"
+                    },
+                    "options": {
+                        "description": "Serialization of the options used by some implementations of ElaborationNode. Refer to the <a href='../common/classes/mixing_mix_elaboration-node.ElaborationNode.html'>documentation</a> for information on the possible types.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "id",
+                    "code"
+                ]
+            },
+            "ConnectionSourceFromInput": {
+                "type": "object",
+                "description": "This interface describes the source side of a connection that is originating from an input.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_connection.ConnectionSourceFromInput.html'>`ConnectionSourceFromInput`</a>",
+                "properties": {
+                    "sourceType": {
+                        "type": "string",
+                        "const": "INPUT",
+                        "description": "The connection originates from a mix's input"
+                    },
+                    "inputName": {
+                        "type": "string",
+                        "description": "The name of the mix's input the connection originates from."
+                    }
+                },
+                "required": [
+                    "sourceType",
+                    "inputName"
+                ]
+            },
+            "ConnectionSourceFromNode": {
+                "type": "object",
+                "description": "This interface describes the source side of a connection that is originating from a node.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_connection.ConnectionSourceFromNode.html'>`ConnectionSourceFromNode`</a>",
+                "properties": {
+                    "sourceType": {
+                        "type": "string",
+                        "const": "NODE",
+                        "description": "The source type of this connection. The connection originates from a node's output"
+                    },
+                    "sourceNodeId": {
+                        "type": "integer",
+                        "description": "The id of the node the connection originates from."
+                    },
+                    "sourceNodeOutputName": {
+                        "type": "string",
+                        "description": "The name of the node's output the connection originates from."
+                    }
+                },
+                "required": [
+                    "sourceType",
+                    "sourceNodeId",
+                    "sourceNodeOutputName"
+                ]
+            },
+            "ConnectionSourceFromConstant": {
+                "type": "object",
+                "description": "This interface describes the source side of a connection that assigns a constant to its drain.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_connection.ConnectionSourceFromConstant.html'>`ConnectionSourceFromConstant`</a>",
+                "properties": {
+                    "sourceType": {
+                        "type": "string",
+                        "const": "CONST",
+                        "description": "The connection assigns a constant to its drain."
+                    },
+                    "sourceValue": {
+                        "nullable": true,
+                        "description": "The constant value to be assigned to the connection's drain."
+                    },
+                    "sourceValueType": {
+                        "$ref": "#/components/schemas/DatumType",
+                        "description": "The type of the constant value, for type checking with the drain."
+                    }
+                },
+                "required": [
+                    "sourceType",
+                    "sourceValue",
+                    "sourceValueType"
+                ]
+            },
+            "ConnectionSource": {
+                "description": "This type describes the source side of a connection.<br><a class='tsdoc-link tsdoc-link-model' href='../common/types/mixing_mix_connection.ConnectionSource.html'>`ConnectionSource`</a>",
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ConnectionSourceFromInput"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ConnectionSourceFromNode"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ConnectionSourceFromConstant"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "sourceType"
+                }
+            },
+            "ConnectionDrainToOutput": {
+                "type": "object",
+                "description": "This interface describes the drain side of a connection that is pointing to a mix's output.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_connection.ConnectionDrainToOutput.html'>`ConnectionDrainToOutput`</a>",
+                "properties": {
+                    "drainType": {
+                        "type": "string",
+                        "const": "OUTPUT",
+                        "description": "The connection points to a mix's output."
+                    },
+                    "outputName": {
+                        "type": "string",
+                        "description": "The name of the mix's output the connection points to."
+                    }
+                },
+                "required": [
+                    "drainType",
+                    "outputName"
+                ]
+            },
+            "ConnectionDrainToNode": {
+                "type": "object",
+                "description": "This interface describes the drain side of a connection that is pointing to a node's input.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_connection.ConnectionDrainToNode.html'>`ConnectionDrainToNode`</a>",
+                "properties": {
+                    "drainType": {
+                        "type": "string",
+                        "const": "NODE",
+                        "description": "The connection points to a node's input."
+                    },
+                    "drainNodeId": {
+                        "type": "integer",
+                        "description": "The id of the node the connection points to."
+                    },
+                    "drainNodeInputName": {
+                        "type": "string",
+                        "description": "The name of the node's input the connection points to."
+                    }
+                },
+                "required": [
+                    "drainType",
+                    "drainNodeId",
+                    "drainNodeInputName"
+                ]
+            },
+            "ConnectionDrain": {
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/ConnectionDrainToOutput"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ConnectionDrainToNode"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "drainType"
+                }
+            },
+            "Connection": {
+                "description": "In the context of a mix, a connection links two 'datum' so that the flow of data can be passed among elaboration nodes, mixes' outputs and inputs, and constant values.<br><a class='tsdoc-link tsdoc-link-model' href='../common/types/mixing_mix_connection.Connection.html'>`Connection`</a>",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ConnectionSource"
+                    },
+                    {
+                        "$ref": "#/components/schemas/ConnectionDrain"
+                    }
+                ]
+            },
+            "ElaborationNodeCode": {
+                "type": "string",
+                "description": "Enum representing all the possible types of ElaborationNode.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/mixing_mix_node.ElaborationNodeCode.html'>`ElaborationNodeCode`</a>",
+                "enum": [
+                    "ADDITION",
+                    "SUBTRACTION",
+                    "MULTIPLICATION",
+                    "DIVISION",
+                    "MODULO",
+                    "MAX",
+                    "MIN",
+                    "CLAMP",
+                    "LERP",
+                    "AND",
+                    "OR",
+                    "XOR",
+                    "NOT",
+                    "BUFFER",
+                    "NULL_GUARD",
+                    "EQUALITY_CHECK",
+                    "GREATER_THAN",
+                    "LESS_THAN",
+                    "CYCLE",
+                    "BINARY_CHOICE",
+                    "MULTIPLE_CHOICE",
+                    "ENCODER",
+                    "EXTRACT_RGB",
+                    "EXTRACT_HSL",
+                    "EXTRACT_HSV",
+                    "EXTRACT_XY",
+                    "EXTRACT_COLOR_TEMP",
+                    "FROM_RGB",
+                    "FROM_HSL",
+                    "FROM_HSV",
+                    "FROM_XY",
+                    "FROM_COLOR_TEMP",
+                    "TIMEOUT",
+                    "DATE_VALUES",
+                    "TIME_VALUES",
+                    "DATE_TIME_VALUES",
+                    "DATE_FROM_VALUES",
+                    "TIME_FROM_VALUES",
+                    "DATE_TIME_FROM_VALUES",
+                    "DATE_COMPARE",
+                    "TIME_COMPARE",
+                    "DATE_TIME_COMPARE",
+                    "COMBINE_DATE_TIME",
+                    "EPOCH",
+                    "SUN_EVENTS",
+                    "SAVE",
+                    "RETRIEVE",
+                    "TEST"
+                ]
+            },
+            "Datum": {
+                "description": "A single unit of data, or a variable, in the context of the main elaboration cycle. It can represent variables elaborated in a mix or exposed values in a device<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_datum.DatumJSON.html'>`DatumJSON`</a>",
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/DatumType",
+                        "description": "The type of the datum.",
+                        "example": "COLOR"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The unique name to identify the datum.",
+                        "example": "Ambient color"
+                    },
+                    "nullable": {
+                        "description": "Whether the value `null` is valid for this datum.",
+                        "type": "boolean",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "type",
+                    "name",
+                    "nullable"
+                ]
+            },
+            "ExportedDatum": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/Datum"
+                    },
+                    {
+                        "type": "object",
+                        "description": "A Datum when used as input or output for a Mix, including information about its origin.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_datum.ExportedDatumJSON.html'>`ExportedDatumJSON`</a>",
+                        "properties": {
+                            "origin": {
+                                "$ref": "#/components/schemas/DatumOrigin",
+                                "description": "The type of origin the datum is assigned to."
+                            },
+                            "originName": {
+                                "type": "string",
+                                "description": "The unique name of the origin the datum is assigned to."
+                            },
+                            "displayName": {
+                                "type": "string",
+                                "description": "The display name of the datum, used to identify it in the UI."
+                            },
+                            "originDisplayName": {
+                                "type": "string",
+                                "description": "The display name of the origin the datum is assigned to, used to identify the origin in the UI."
+                            }
+                        },
+                        "required": [
+                            "origin",
+                            "originName"
+                        ]
+                    }
+                ]
+            },
+            "DatumOrigin": {
+                "description": "The type of origin a datum can come from.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/mixing_mix_datum.DatumOrigin.html'>`DatumOrigin`</a>",
+                "type": "string",
+                "enum": [
+                    "SENSOR",
+                    "GROUP",
+                    "MIX"
+                ]
+            },
+            "DatumType": {
+                "description": "The abstract data type a datum can be assigned to.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/mixing_mix_datum.DatumType.html'>`DatumType`</a>",
+                "type": "string",
+                "enum": [
+                    "BOOLEAN",
+                    "NUMBER",
+                    "STRING",
+                    "COLOR",
+                    "COLOR_TEMP",
+                    "TIME",
+                    "DATE",
+                    "DATE_TIME"
+                ]
+            },
+            "MixPositionInfoSensorsDevice": {
+                "type": "object",
+                "description": "A MixPositionInfo describing a mix linked to a Sensor<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_rest-classes.MixPositionInfoSensorsDevice.html'>`MixPositionInfoSensorsDevice`</a>",
+                "properties": {
+                    "phase": {
+                        "type": "string",
+                        "enum": [
+                            "SENSORS"
+                        ],
+                        "description": "The phase is the sensor phase.",
+                        "example": "SENSORS"
+                    },
+                    "target": {
+                        "type": "string",
+                        "enum": [
+                            "DEVICE"
+                        ],
+                        "description": "The target of the mix is a device.",
+                        "example": "DEVICE"
+                    },
+                    "sensorName": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name identifying the sensor.",
+                        "example": "kitchen_temperature"
+                    },
+                    "sensorDisplayName": {
+                        "type": "string",
+                        "description": "The display name of the sensor, to display in the UI.",
+                        "example": "Kitchen temperature sensor"
+                    }
+                },
+                "required": [
+                    "phase",
+                    "target",
+                    "sensorName",
+                    "sensorDisplayName"
+                ]
+            },
+            "MixPositionInfoSensorsGroup": {
+                "type": "object",
+                "description": "A MixPositionInfo describing a mix linked to a Group, in the phase when the data coming from the sensors is elaborated towards the center of the system.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_rest-classes.MixPositionInfoSensorsGroup.html'>`MixPositionInfoSensorsGroup`</a>",
+                "properties": {
+                    "phase": {
+                        "type": "string",
+                        "enum": [
+                            "SENSORS"
+                        ],
+                        "description": "The phase is the sensor phase.",
+                        "example": "SENSORS"
+                    },
+                    "target": {
+                        "type": "string",
+                        "enum": [
+                            "GROUP"
+                        ],
+                        "description": "The target of the mix is a group.",
+                        "example": "GROUP"
+                    },
+                    "groupName": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name identifying the group.",
+                        "example": "kitchen"
+                    },
+                    "groupDisplayName": {
+                        "type": "string",
+                        "description": "The display name of the group, to display in the UI.",
+                        "example": "Kitchen"
+                    }
+                },
+                "required": [
+                    "phase",
+                    "target",
+                    "groupName",
+                    "groupDisplayName"
+                ]
+            },
+            "MixPositionInfoCenter": {
+                "type": "object",
+                "description": "A MixPositionInfo describing a mix in the center of the system, in the phase when the data coming from the center of the system is elaborated towards the actuators.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_rest-classes.MixPositionInfoCenter.html'>`MixPositionInfoCenter`</a>",
+                "properties": {
+                    "phase": {
+                        "type": "string",
+                        "enum": [
+                            "CENTER"
+                        ],
+                        "description": "The phase is the center phase.",
+                        "example": "CENTER"
+                    },
+                    "target": {
+                        "type": "string",
+                        "enum": [
+                            "CENTER"
+                        ],
+                        "description": "The target of the mix is the center of the system.",
+                        "example": "CENTER"
+                    },
+                    "mixName": {
+                        "type": "string",
+                        "description": "The name of the mix, to uniquely identify it within the system.",
+                        "example": "light_colors"
+                    },
+                    "mixDisplayName": {
+                        "type": "string",
+                        "description": "The display name of the mix, to display in the UI.",
+                        "example": "Color of the lights"
+                    }
+                },
+                "required": [
+                    "phase",
+                    "target",
+                    "mixName",
+                    "mixDisplayName"
+                ]
+            },
+            "MixPositionInfoActuatorsDevice": {
+                "type": "object",
+                "description": "A MixPositionInfo describing a mix linked to an Actuator<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_rest-classes.MixPositionInfoActuatorsDevice.html'>`MixPositionInfoActuatorsDevice`</a>",
+                "properties": {
+                    "phase": {
+                        "type": "string",
+                        "enum": [
+                            "ACTUATORS"
+                        ],
+                        "description": "The phase is the actuator phase.",
+                        "example": "ACTUATORS"
+                    },
+                    "target": {
+                        "type": "string",
+                        "enum": [
+                            "DEVICE"
+                        ],
+                        "description": "The target of the mix is a device.",
+                        "example": "DEVICE"
+                    },
+                    "actuatorName": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name identifying the actuator.",
+                        "example": "kitchen_counter"
+                    },
+                    "actuatorDisplayName": {
+                        "type": "string",
+                        "description": "The display name of the actuator, to display in the UI.",
+                        "example": "Kitchen counter"
+                    }
+                },
+                "required": [
+                    "phase",
+                    "target",
+                    "actuatorName",
+                    "actuatorDisplayName"
+                ]
+            },
+            "MixPositionInfoActuatorsGroup": {
+                "type": "object",
+                "description": "A MixPositionInfo describing a mix linked to a Group, in the phase when the data coming from the center of the system is elaborated towards the actuators.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_rest-classes.MixPositionInfoActuatorsGroup.html'>`MixPositionInfoActuatorsGroup`</a>",
+                "properties": {
+                    "phase": {
+                        "type": "string",
+                        "enum": [
+                            "ACTUATORS"
+                        ],
+                        "description": "The phase is the actuator phase.",
+                        "example": "ACTUATORS"
+                    },
+                    "target": {
+                        "type": "string",
+                        "enum": [
+                            "GROUP"
+                        ],
+                        "description": "The target of the mix is a group.",
+                        "example": "GROUP"
+                    },
+                    "groupName": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name identifying the group.",
+                        "example": "kitchen"
+                    },
+                    "groupDisplayName": {
+                        "type": "string",
+                        "description": "The display name of the group, to display in the UI."
+                    }
+                },
+                "required": [
+                    "phase",
+                    "target",
+                    "groupName",
+                    "groupDisplayName"
+                ]
+            },
+            "MixPositionInfoSensors": {
+                "description": "A MixPositionInfo describing a mix in the SENSORS phase.<br><a class='tsdoc-link tsdoc-link-model' href='../common/types/mixing_mix_rest-classes.MixPositionInfoSensors.html'>`MixPositionInfoSensors`</a>",
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoSensorsDevice"
+                    },
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoSensorsGroup"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "target"
+                }
+            },
+            "MixPositionInfoActuators": {
+                "description": "A MixPositionInfo describing a mix in the ACTUATORS phase.<br><a class='tsdoc-link tsdoc-link-model' href='../common/types/mixing_mix_rest-classes.MixPositionInfoActuators.html'>`MixPositionInfoActuators`</a>",
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoActuatorsDevice"
+                    },
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoActuatorsGroup"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "target"
+                }
+            },
+            "MixPositionInfo": {
+                "description": "This type identifies any mix in the system by describing its position in terms of the phase of the calculation of the system the mix is\nassigned to, and information about the target of the mix.<br><a class='tsdoc-link tsdoc-link-model' href='../common/types/mixing_mix_rest-classes.MixPositionInfo.html'>`MixPositionInfo`</a>",
+                "oneOf": [
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoSensors"
+                    },
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoCenter"
+                    },
+                    {
+                        "$ref": "#/components/schemas/MixPositionInfoActuators"
+                    }
+                ],
+                "discriminator": {
+                    "propertyName": "phase"
+                }
+            },
+            "ChangeParentChange": {
+                "type": "object",
+                "description": "Information about moving an entity to a new parent group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_group_rest-classes.ChangeParentChange.html'>`ChangeParentChange`</a>",
+                "properties": {
+                    "parent": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The name of the new parent group, or null to remove the parent.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "parent"
+                ]
+            },
+            "UnavailableParents": {
+                "type": "object",
+                "description": "The parents unavailable to a specific entity to be moved to.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_rest-classes.UnavailableParents.html'>`UnavailableParents`</a>",
+                "properties": {
+                    "names": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "nullable": true
+                        },
+                        "description": "The unique names of the parents unavailable for the operation. `null` is a valid item, and represents the root."
+                    },
+                    "displayNames": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "nullable": true
+                        },
+                        "description": "The display names of the parents unavailable for the operation. `null` is a valid item, and represents the root."
+                    },
+                    "unreachable": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MixPositionInfo"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "The nearest Mix that would become unreachable by this entity if it were to be moved, if the cause of the unavailability is upstream. `null` if there is no restriction."
+                    },
+                    "depending": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/MixPositionInfo"
+                            }
+                        ],
+                        "nullable": true,
+                        "description": "The nearest Mix that would become depending on this entity if it were to be moved, if the cause of the unavailability is downstream. `null` if there is no restriction."
+                    }
+                },
+                "required": [
+                    "names",
+                    "displayNames",
+                    "unreachable",
+                    "depending"
+                ]
+            },
+            "LockedExposes": {
+                "type": "object",
+                "description": "An exposed property of a device that cannot be removed from a sensor.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/devices_rest-classes.LockedExposes.html'>`LockedExposes`</a>",
+                "properties": {
+                    "exposeName": {
+                        "type": "string",
+                        "description": "The name of the expose that cannot be removed.",
+                        "example": "temperature"
+                    },
+                    "mixPosition": {
+                        "$ref": "#/components/schemas/MixPositionInfo",
+                        "description": "The position of the mix that references this expose and prevents its removal."
+                    }
+                },
+                "required": [
+                    "exposeName",
+                    "mixPosition"
+                ]
+            },
+            "Point": {
+                "type": "object",
+                "description": "A 2D point in the plane.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/mixing_mix_mix-layout.Point.html'>`Point`</a>",
+                "properties": {
+                    "x": {
+                        "type": "number",
+                        "example": 150.5
+                    },
+                    "y": {
+                        "type": "number",
+                        "example": 200.0
+                    }
+                },
+                "required": [
+                    "x",
+                    "y"
+                ]
+            },
+            "MixLayout": {
+                "type": "object",
+                "description": "Defines the visual arrangement of the elements inside a Mix.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_mix-layout.MixLayout.html'>`MixLayout`</a>",
+                "properties": {
+                    "nodePositions": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/Point"
+                        },
+                        "description": "The position of each node, indexed by node id.",
+                        "example": {
+                            "1": {
+                                "x": 10,
+                                "y": 11
+                            },
+                            "2": {
+                                "x": -10,
+                                "y": 11
+                            }
+                        }
+                    },
+                    "groups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/NodeGroup"
+                        }
+                    }
+                },
+                "required": [
+                    "nodePositions",
+                    "groups"
+                ]
+            },
+            "NodeGroup": {
+                "type": "object",
+                "description": "A group for containing nodes in a Mix for UI visualization.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_mix-layout.NodeGroupJSON.html'>`NodeGroupJSON`</a>",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "default": "Group",
+                        "example": "Math Operations"
+                    },
+                    "nodeIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "example": [
+                            1,
+                            2,
+                            3
+                        ]
+                    },
+                    "subGroupIds": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    "collapsed": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "showConnectors": {
+                        "type": "boolean",
+                        "default": true
+                    },
+                    "inputAliases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DatumAlias"
+                        }
+                    },
+                    "outputAliases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DatumAlias"
+                        }
+                    },
+                    "inputPositions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DatumPosition"
+                        }
+                    },
+                    "outputPositions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DatumPosition"
+                        }
+                    },
+                    "parentId": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "level": {
+                        "type": "integer",
+                        "default": 0
+                    }
+                },
+                "required": [
+                    "name",
+                    "nodeIds",
+                    "subGroupIds",
+                    "collapsed",
+                    "showConnectors",
+                    "inputAliases",
+                    "outputAliases",
+                    "inputPositions",
+                    "outputPositions",
+                    "parentId",
+                    "level"
+                ]
+            },
+            "DatumAlias": {
+                "type": "object",
+                "description": "Describes the aliasing of a node input/output in a group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_mix-layout.DatumAliasJSON.html'>`DatumAliasJSON`</a>",
+                "properties": {
+                    "datumName": {
+                        "type": "string",
+                        "example": "brightness"
+                    },
+                    "nodeId": {
+                        "type": "integer",
+                        "example": 5
+                    },
+                    "alias": {
+                        "type": "string",
+                        "example": "Main Brightness"
+                    }
+                },
+                "required": [
+                    "datumName",
+                    "nodeId",
+                    "alias"
+                ]
+            },
+            "DatumPosition": {
+                "type": "object",
+                "description": "Describes the order of a node input/output in a group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mix_mix-layout.DatumPositionJSON.html'>`DatumPositionJSON`</a>",
+                "properties": {
+                    "datumName": {
+                        "type": "string",
+                        "example": "color"
+                    },
+                    "nodeId": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "order": {
+                        "type": "number",
+                        "example": 1
+                    }
+                },
+                "required": [
+                    "datumName",
+                    "nodeId",
+                    "order"
+                ]
+            },
+            "MixingGraph": {
+                "type": "object",
+                "description": "A graph of all the system's mixes, their dependencies and their arrangement.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphJSON.html'>`MixingGraphJSON`</a>",
+                "properties": {
+                    "origins": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/DatumOrigin"
+                        }
+                    },
+                    "sensors": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphSensor"
+                        }
+                    },
+                    "sensorGroups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphGroup"
+                        }
+                    },
+                    "centers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphCenter"
+                        }
+                    },
+                    "actuatorGroups": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphGroup"
+                        }
+                    },
+                    "actuators": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphActuator"
+                        }
+                    }
+                },
+                "required": [
+                    "origins",
+                    "sensors",
+                    "sensorGroups",
+                    "centers",
+                    "actuatorGroups",
+                    "actuators"
+                ]
+            },
+            "MixingGraphDependency": {
+                "type": "object",
+                "description": "A dependency between a mix and an origin.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphDependencyJSON.html'>`MixingGraphDependency`</a>",
+                "properties": {
+                    "origin": {
+                        "$ref": "#/components/schemas/DatumOrigin"
+                    },
+                    "name": {
+                        "type": "string",
+                        "nullable": true,
+                        "example": "kitchen_temperature"
+                    }
+                },
+                "required": [
+                    "origin"
+                ]
+            },
+            "MixingGraphSensor": {
+                "type": "object",
+                "description": "A sensor in the mixing graph.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphSensorJSON.html'>`MixingGraphSensorJSON`</a>",
+                "properties": {
+                    "name": {
+                        "$ref": "#/components/schemas/unique-string-id"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/SensorType"
+                    },
+                    "dependingOn": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphDependency"
+                        }
+                    },
+                    "mix": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "type",
+                    "dependingOn",
+                    "mix"
+                ]
+            },
+            "MixingGraphCenter": {
+                "type": "object",
+                "description": "A center mix in the mixing graph.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphCenterJSON.html'>`MixingGraphCenterJSON`</a>",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "dependingOn": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphDependency"
+                        }
+                    },
+                    "mix": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "dependingOn",
+                    "mix"
+                ]
+            },
+            "MixingGraphGroup": {
+                "type": "object",
+                "description": "A group in the mixing graph.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphGroupJSON.html'>`MixingGraphGroupJSON`</a>",
+                "properties": {
+                    "name": {
+                        "$ref": "#/components/schemas/unique-string-id"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "sensorPhase": {
+                        "type": "boolean"
+                    },
+                    "dependingOn": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphDependency"
+                        }
+                    },
+                    "mix": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "sensorPhase",
+                    "dependingOn",
+                    "mix"
+                ]
+            },
+            "MixingGraphActuator": {
+                "type": "object",
+                "description": "An actuator in the mixing graph.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/mixing_mixing-graph.MixingGraphActuatorJSON.html'>`MixingGraphActuatorJSON`</a>",
+                "properties": {
+                    "name": {
+                        "$ref": "#/components/schemas/unique-string-id"
+                    },
+                    "displayName": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/ActuatorType"
+                    },
+                    "dependingOn": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/MixingGraphDependency"
+                        }
+                    },
+                    "mix": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "type",
+                    "dependingOn",
+                    "mix"
+                ]
+            },
+            "DeleteGroupOptions": {
+                "type": "object",
+                "description": "Options for deleting a group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/interfaces/devices_group_rest-classes.DeleteGroupOptions.html'>`DeleteGroupOptions`</a>",
+                "properties": {
+                    "fate": {
+                        "$ref": "#/components/schemas/DeleteGroupChildFate"
+                    },
+                    "parent": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The name of the new parent group, if fate is CHOOSE_WHERE.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "fate"
+                ]
+            },
+            "DeleteGroupChildFate": {
+                "type": "string",
+                "description": "What to do with the children of a deleted group.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/devices_group_rest-classes.DeleteGroupChildFate.html'>`DeleteGroupChildFate`</a>",
+                "enum": [
+                    "CURRENT_LEVEL",
+                    "ROOT_LEVEL",
+                    "CHOOSE_WHERE"
+                ]
+            },
+            "Adjustment": {
+                "type": "object",
+                "description": "An adjustment configuration for the system.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_adjustment_adjustment.AdjustmentJSON.html'>`AdjustmentJSON`</a>",
+                "properties": {
+                    "id": {
+                        "oneOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "string",
+                                "const": "NEW"
+                            }
+                        ],
+                        "description": "The unique ID of the adjustment, or 'NEW' for creation."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of the adjustment.<br><a class='tsdoc-link tsdoc-link-model' href='../common/enums/system_adjustment_adjustment.AdjustmentType.html'>`AdjustmentType`</a>",
+                        "enum": [
+                            "ANIMATION_OFF",
+                            "ANIMATION_ON",
+                            "SPLIT_COMMANDS"
+                        ]
+                    },
+                    "configuration": {
+                        "type": "object",
+                        "description": "The specific configuration for this adjustment type. Refer to the <a href='../common/classes/system_adjustment_adjustment.Adjustment.html'>documentation</a> for information on the possible types."
+                    }
+                },
+                "required": [
+                    "id",
+                    "type",
+                    "configuration"
+                ]
+            },
+            "DeviceMonitorDevice": {
+                "type": "object",
+                "description": "A device on the network that is monitored for its connection status.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_device-monitor_device-monitor-device.DeviceMonitorDeviceJSON.html'>`DeviceMonitorDeviceJSON`</a>",
+                "properties": {
+                    "ip": {
+                        "type": "string",
+                        "format": "ipv4",
+                        "description": "The IP address of the device on the network.",
+                        "example": "192.168.1.15"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "A unique name to give to the device.",
+                        "example": "Main Router"
+                    },
+                    "connected": {
+                        "type": "boolean",
+                        "description": "Whether the device is connected to the network or not. If not present, the status is unknown.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            },
+            "BadRequestErrorContent": {
+                "type": "object",
+                "description": "The typical content of the body of a response with code 400 - Bad request.",
+                "properties": {
+                    "message": {
+                        "type": "array",
+                        "description": "A list of error messages describing the validation failures.",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "name should not be empty",
+                            "displayName should not be empty"
+                        ]
+                    },
+                    "error": {
+                        "type": "string",
+                        "description": "The HTTP error status phrase.",
+                        "example": "Bad Request"
+                    },
+                    "statusCode": {
+                        "type": "integer",
+                        "description": "The HTTP status code.",
+                        "example": 400
+                    }
+                }
+            },
+            "mix-id": {
+                "description": "An id for a mix.",
+                "type": "integer",
+                "min": 0,
+                "example": 7
+            },
+            "unique-string-id": {
+                "description": "A unique string id.",
+                "type": "string",
+                "pattern": "^([a-z\\-0-9_]+)$",
+                "example": "kitchen_counter"
+            }
+        },
+        "responses": {
+            "InternalServerError": {
+                "description": "Internal server error."
+            },
+            "BadRequestError": {
+                "description": "The request does not meet the requirements, or violates some constraint.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/BadRequestErrorContent"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -26,9 +26,11 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
     }
     
     public async getAllActuators(options: GetDevicesOptions = {}): Promise<Actuator[]> {
-        if (options.anyMixed != undefined && options.anyMixed) {
+        if (options.anyMixed !== undefined) {
             if (options.mix !== undefined) {
-                throw new BadRequestException("Either set anyMixed to false/undefined, of do not specify the mix");
+                throw new BadRequestException([
+                                                  "Either set anyMixed to undefined, or do not specify the mix"
+                                              ]);
             }
         }
         return (await this.data)
@@ -37,6 +39,8 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
                 actuator => {
                     if (options.anyMixed === true) {
                         return actuator.mix != null;
+                    } else if (options.anyMixed === false) {
+                        return actuator.mix == null;
                     } else {
                         if (options.mix !== undefined) {
                             if (actuator.mix !== options.mix) {
@@ -167,7 +171,7 @@ export class ActuatorService extends PersistentDataService<ActuatorData, Actuato
 }
 
 
-class ActuatorData {
+export class ActuatorData {
     
     public actuators: Actuator[];
     
@@ -187,6 +191,6 @@ class ActuatorData {
     
 }
 
-interface ActuatorDataJSON {
+export interface ActuatorDataJSON {
     actuators: ActuatorJSON[];
 }

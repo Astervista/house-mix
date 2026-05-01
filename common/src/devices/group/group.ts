@@ -43,7 +43,7 @@ export class Group {
     public actuatorMix: number | null = null;
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {string} name - The unique name of this device. It must follow the {@link UNIQUE_NAME_PATTERN | `/^([a-z\-0-9_]+)$/`} pattern.
      * @param {string} displayName - The name with which the device is shown in the frontend UI.
@@ -367,7 +367,7 @@ export class GroupJSON {
     public actuatorMix: number | null = null;
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {string} name - The unique name of the group.
      * @param {string} displayName - The display name of the group.

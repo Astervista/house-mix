@@ -771,7 +771,7 @@ export class DatumTypeColor {
     private _base: DatumTypeColorBase;
     
     /**
-     * Constructs an instance of the class in the XY color space.
+     * Creates an instance of the class in the XY color space.
      *
      * @param {DatumTypeColorBase.XY} base - The color base {@link DatumTypeColorBase.XY|`XY`}.
      * @param {number} x - The x-coordinate value.
@@ -779,7 +779,7 @@ export class DatumTypeColor {
      */
     constructor(base: DatumTypeColorBase.XY, x: number, y: number);
     /**
-     * Constructs an instance of the class in the RGB color space.
+     * Creates an instance of the class in the RGB color space.
      *
      * @param {DatumTypeColorBase.RGB} base - The color base {@link DatumTypeColorBase.RGB|`RGB`}.
      * @param r - The red value.
@@ -788,7 +788,7 @@ export class DatumTypeColor {
      */
     constructor(base: DatumTypeColorBase.RGB, r: number, g: number, b: number);
     /**
-     * Constructs an instance of the class in the correct color space.
+     * Creates an instance of the class in the correct color space.
      *
      * @param {DatumTypeColorBase} base - The color base (or color space).
      * @param {number} valueA - The first value.

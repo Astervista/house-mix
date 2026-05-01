@@ -763,7 +763,7 @@ export class Gamut {
 }
 
 /**
- * Helper function to create an {@link XY} object.
+ * Helper function to create an {@link XY|` XY`} object.
  *
  * @param {number} x - The x coordinate.
  * @param {number} y - The y coordinate.

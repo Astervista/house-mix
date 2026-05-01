@@ -51,6 +51,26 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return (await this.data).mixes.find(a => a.id === id) ?? null;
     }
     
+    
+    /**
+     * Creates or updates a mix at a specific position.
+     *
+     * @param mix The mix to save.
+     * @param position The position (phase and target) where the mix is located.
+     * @returns The id of the saved mix.
+     * @throws {BadRequestException} {@link BadRequestException|`BadRequestException`} if:
+     * - the request is an update and the mix position is changed
+     * - the request is an update and the mix id does not exist yet
+     * - the request is an update and the position pointed to doesn't have the mix assigned to it already
+     * - if inputs/imports/outputs are duplicated
+     * - if inputs lack corresponding imports
+     * - the mix is linked to an actuator and the outputs of the mix contain outputs that are not defined in the actuator's exports, or that are defined differently.
+     * - if the mix contains cycles or connections are invalid.
+     * @throws {NotFoundException} If the target sensor, actuator, or group cannot be found.
+     * @throws {ConflictException} If an update removes or changes outputs that are currently in use by other mixes downstream,
+     *                             or if the inputs are not reachable by a mix in the specified position.
+     * @throws {InternalServerErrorException} If an unexpected state occurs during ID assignment or phase handling.
+     */
     public async putMix(mix: Mix, position: MixPositionInfo): Promise<number> {
         const data = await this.data;
         
@@ -119,7 +139,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                     if (correspondingOutput == null) {
                         mix.addOutput(Datum.fromJSON(output.toJSON()));
                     } else if (correspondingOutput.type != output.type || correspondingOutput.nullable != output.nullable) {
-                        throw new BadRequestException("The mix's outputs don't correspond to the actuator's export");
+                        throw new BadRequestException("The mix's output definitions don't correspond to the actuator's export");
                     }
                 });
                 if (
@@ -128,7 +148,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                             return actuator.exposes.every(exposed => exposed.name != output.name);
                         })
                 ) {
-                    throw new BadRequestException("The mix contains outputs that are not defined to the actuator's exports");
+                    throw new BadRequestException("The mix contains outputs that are not defined in the actuator's exports");
                 }
                 oldMixId = actuator.mix;
             } else { // MixTarget.GROUP
@@ -183,7 +203,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
             )
         );
         if (unavailableImports.length > 0) {
-            throw new BadRequestException(
+            throw new ConflictException(
                 {
                     showable:  true,
                     errorType: PutMixShowableError.IMPORTS_UNAVAILABLE,
@@ -1364,7 +1384,7 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
 export default MixService;
 
 
-class MixData {
+export class MixData {
     
     public mixes: Mix[];
     
@@ -1397,7 +1417,7 @@ class MixData {
     
 }
 
-interface MixDataJSON {
+export interface MixDataJSON {
     mixes: MixJSON[];
     nextId: number;
     centerMixes?: { name: string, displayName: string, mixId: number }[];

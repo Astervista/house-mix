@@ -59,7 +59,7 @@ export class GetGroupsOptions {
      * Requests the resulting groups to be filtered following this logic:
      * - When `true`, only groups that have either the {@link Group.actuatorMix|actuator mix id}
      *   or {@link Group.sensorMix|sensor mix id} set to any mix id.
-     * - When `true`, only groups that have both the {@link Group.actuatorMix|actuator mix id}
+     * - When `false`, only groups that have both the {@link Group.actuatorMix|actuator mix id}
      *   and {@link Group.sensorMix|sensor mix id} not set.
      * - When `undefined`, does not require any filtering on the  {@link Group.actuatorMix|actuator mix id} or {@link Group.sensorMix|sensor mix id}.
      */
@@ -70,12 +70,12 @@ export class GetGroupsOptions {
 }
 
 /**
- * Query parameters that represents the options during the request of the creation of a {@link Group|`Group`} in the REST API.
+ * Query parameters that represents the options during the request of the creation of a {@link Group|`Group`},  {@link Sensor|`Sensor`} or{@link Actuator|`Actuator`} in the REST API.
  */
 export class GroupCreateOptions {
     
     /**
-     * Which parent group the group will be assigned to. If not specified, it will not be added to any group.
+     * Which parent group the group, sensor or actuator will be assigned to. If not specified, it will not be added to any group.
      */
     @IsOptional()
     @IsNotEmpty()

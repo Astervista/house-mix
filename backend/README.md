@@ -115,4 +115,4 @@ The system components also expose their own controllers:
 - [`SettingsController`](src/system/settings/settings.controller.ts)
 - [`TimersController`](src/system/timers/timers.controller.ts)
 
-The REST endpoint is documented in the [REST documentation](/documentation/REST) which is compiled from the [yaml definitions](doc-src).
+The REST endpoint is documented in the [REST documentation](/documentation/REST) which is compiled from the [yaml definitions](/documentation/REST.yaml).

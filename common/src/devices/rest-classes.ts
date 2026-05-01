@@ -74,7 +74,7 @@ export class GetDevicesOptions {
     /**
      * Requests the resulting devices to be filtered following this logic:
      *  - When `true`, only devices that have a {@link Device.mix|mix id} set to any mix id.
-     *  - When `true`, only devices that have a {@link Device.mix|mix id} not set (equivalent to {@link GetDevicesOptions#mix|`mix`}` = null`).
+     *  - When `false`, only devices that have a {@link Device.mix|mix id} not set (equivalent to {@link GetDevicesOptions#mix|`mix`}` = null`).
      *  - When `undefined`, does not require any filtering on the {@link Device.mix|mix id}.
      */
     @IsBoolean()
@@ -112,14 +112,15 @@ export class LockedExposes {
 export class UnavailableParents {
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
-     * @param {Array<string | null>} names - The {@link Device#name|unique names} of the parents unavailable for the operation.
-     * @param {Array<string | null>} displayNames - The {@link Device#displayName|display names} of the parents unavailable for the operation.
+     * @param {Array<string | null>} names - The {@link Device#name|unique names} of the parents unavailable for the operation. `null` is a valid item, and represents the root.
+     * @param {Array<string | null>} displayNames - The {@link Device#displayName|display names} of the parents unavailable for the operation. `null` is a valid item, and represents the
+     *     root.
      * @param {MixPositionInfo | null} unreachable - The nearest {@link Mix|`Mix`} that would become unreachable by this entity if it were to be moved,
-     *                                               if the cause of the unavailability is upstream.
+     *                                               if the cause of the unavailability is upstream. `null` if there is no restriction.
      * @param {MixPositionInfo | null} depending - The nearest {@link Mix|`Mix`} that would become depending on this entity if it were to be moved,
-     *                                             if the cause of the unavailability is downstream.
+     *                                             if the cause of the unavailability is downstream. `null` if there is no restriction.
      */
     constructor(
         public names: (string | null)[],

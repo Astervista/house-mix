@@ -1,6 +1,6 @@
 {
     "$schema": "https://typedoc.org/schema.json",
-    "name": "Common project",
+    "name": "Backend project",
     "plugin": [
         "typedoc-rhineai-theme"
     ],
@@ -9,11 +9,11 @@
         "src"
     ],
     "exclude": [
-        "src/decorators/**/*",
+        "src/main.ts",
         "**/*.test.ts"
     ],
-    "out": "../documentation/common",
-    "json": "../documentation/json/common.json",
+    "readme": "README-docs.md",
+    "out": "../documentation/backend",
     "excludePrivate": false,
     "excludeProtected": false,
     "customCss": "../documentation/custom-style.css",
@@ -26,6 +26,12 @@
             "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
             "Record": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type",
             "ObjectConstructor.keys": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys"
+        },
+        "@nestjs/common": {
+            "ConflictException": "https://api-references-nestjs.netlify.app/api/common/ConflictException",
+            "NotFoundException": "https://api-references-nestjs.netlify.app/api/common/NotFoundException",
+            "BadRequestException": "https://api-references-nestjs.netlify.app/api/common/BadRequestException",
+            "InternalServerErrorException": "https://api-references-nestjs.netlify.app/api/common/InternalServerErrorException"
         }
     },
     "validation": {

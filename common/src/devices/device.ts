@@ -38,7 +38,7 @@ export class Device {
     public readonly exposes: Datum[] = [];
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {string} _zigbeeAddress - The 8-byte (64-bit) address (in hex, **without** the `0x` prefix) of this device in the Zigbee network.
      * @param {string} name - The unique name of this device. It must follow the {@link UNIQUE_NAME_PATTERN | `/^([a-z\-0-9_]+)$/`} pattern.
@@ -165,7 +165,7 @@ export class DeviceJSON {
     public mix: number | null = null;
     
     /**
-     * Constructs an instance of the class.
+     * Creates an instance of the class.
      *
      * @param {string} zigbeeAddress - Value for {@link DeviceJSON#zigbeeAddress|`zigbeeAddress`}.
      * @param {string} name - Value for {@link DeviceJSON#name|`name`}.

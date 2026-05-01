@@ -1,0 +1,12 @@
+{
+    "name": "housemix",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "sourcey dev",
+        "build": "sourcey build"
+    },
+    "dependencies": {
+        "sourcey": "^3.4.3"
+    }
+}
