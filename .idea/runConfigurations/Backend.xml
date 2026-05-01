@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Backend" type="js.build_tools.npm">
+    <package-json value="$DEBOUNCED_PATH$/house-mix/backend/package.json" />
+    <command value="run" />
+    <scripts>
+      <script value="start:debug" />
+    </scripts>
+    <node-interpreter value="project" />
+    <envs>
+      <env name="APP_BASE_DIR" value="$PROJECT_DIR$/backend/run-dir-test" />
+      <env name="MQTT_PASSWORD" value="$HM_BACKEND_MQTT_PASSWORD$" />
+      <env name="MQTT_URL" value="$HM_BACKEND_MQTT_URL$" />
+      <env name="MQTT_USERNAME" value="zigbee" />
+      <env name="PORT" value="3001" />
+    </envs>
+    <EXTENSION ID="com.intellij.javascript.debugger.execution.StartBrowserRunConfigurationExtension">
+      <browser with-js-debugger="true" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,21 +1,20 @@
 {
-  "linkFolder": "/Users/asteriofiora/WebstormProjects/zigbee-lights/",
+  "linkFolder": "./",
   "watch": [
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/backend/src",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/common/src",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/common/dist",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/frontend/src",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/frontend/public",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/hmr-trigger.txt"
+    "./backend/src",
+    "./common/src",
+    "./common/dist",
+    "./frontend/src",
+    "./frontend/public",
+    "./hmr-trigger.txt"
   ],
   "commitTriggers": [
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/hmr-trigger.txt"
+    "./hmr-trigger.txt"
   ],
-  "outputFolder": "/tmp/angular-debouncer/zigbee-lights/",
+  "outputFolder": "/tmp/folder-debouncer/house-mix/",
   "ignore": [
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/.idea/",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/.git/",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/.DS_Store",
-    "/Users/asteriofiora/WebstormProjects/zigbee-lights/backend/dist"
+    "./.idea/",
+    "./.git/",
+    "./backend/dist"
   ]
 }

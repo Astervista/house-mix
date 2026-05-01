@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Backend debug" type="ChromiumRemoteDebugType" factoryName="Chromium Remote" activateToolWindowBeforeRun="false" port="9229" restartOnDisconnect="true">
+    <mapping url="file://$DEBOUNCED_PATH$/house-mix/backend/src" local-file="$PROJECT_DIR$/backend/src/" />
+    <mapping url="file://$DEBOUNCED_PATH$/house-mix/" local-file="$PROJECT_DIR$/" />
+    <method v="2" />
+  </configuration>
+</component>

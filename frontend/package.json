@@ -8,7 +8,7 @@
         "build:common": "tsc -p ../common/tsconfig.json",
         "build": "npm run build:common && ng build --configuration production --base-href /house-mix/",
         "watch": "ng build --watch --configuration development",
-        "test": "ng test",
+        "test": "ng test"
     },
     "private": true,
     "dependencies": {

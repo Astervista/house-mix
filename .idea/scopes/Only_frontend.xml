@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Only frontend" pattern="file[house-mix]:frontend//*&amp;&amp;!file[house-mix]:node_modules//*&amp;&amp;!file[house-mix]:backend/node_modules//*&amp;&amp;!file[house-mix]:.idea//*&amp;&amp;!file[house-mix]:frontend/node_modules//*&amp;&amp;!file[house-mix]:common/node_modules//*&amp;&amp;!file[house-mix]:common/dist-fe/*&amp;&amp;!file[house-mix]:common/dist-fe//*" />
+</component>
