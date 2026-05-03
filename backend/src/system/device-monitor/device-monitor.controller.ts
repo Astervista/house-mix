@@ -4,15 +4,16 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post} from "@nestjs/common";
-import MixService from "../../mixing/mix/mix.service";
+import type {ConflictException, NotFoundException } from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post} from "@nestjs/common";
+import {MixService} from "../../mixing/mix/mix.service";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 import {SystemOrigin} from "@common/system/constants";
 import {DeviceMonitorService} from "./device-monitor.service";
 import {DeviceMonitorDevice, DeviceMonitorDeviceJSON} from "@common/system/device-monitor/device-monitor-device";
 
 // noinspection ES6UnusedImports
-import {Mix} from "@common/mixing/mix/mix";
+import type {Mix} from "@common/mixing/mix/mix";
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-device-monitor">`/system/device-monitor`</a>,
@@ -72,7 +73,7 @@ export class DeviceMonitorController {
      *
      * @param {string} name - The HTTP request's path parameter with the {@link DeviceMonitorDevice#name|`name`} of the device to remove.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the device is used in a mix.
-     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} with the specified name exists.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
      * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-delete">`DELETE /system/device-monitor/{name}`</a>.
      * @group API Endpoints
      */
@@ -91,7 +92,7 @@ export class DeviceMonitorController {
      * @param {string} name - The HTTP request's path parameter with the {@link DeviceMonitorDevice#name|`name`} of the device to edit.
      * @param {DeviceMonitorDeviceJSON} data - The HTTP request's body containing the properties to be updated.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if there is an attempt to change the {@link DeviceMonitorDevice#name|`name`}.
-     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} with the specified name exists.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
      * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-patch">`PATCH /system/device-monitor/{name}`</a>.
      * @group API Endpoints
      */
@@ -116,7 +117,7 @@ export class DeviceMonitorController {
      * @returns {Promise<MixPositionInfo[]>}  A list of {@link MixPositionInfo|positions} of all the {@link Mix|`Mix`es} that
      *                                       reference the {@link DeviceMonitorDevice|`DeviceMonitorDevice`} and prevent it from being deleted. If empty,
      *                                       it means that the {@link DeviceMonitorDevice|`DeviceMonitorDevice`} can be deleted.
-     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} with the specified name exists.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
      * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-delete-locks-get">`GET /system/device-monitor/{name}/delete-locks`</a>.
      * @group API Endpoints
      */

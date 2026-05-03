@@ -6,7 +6,7 @@
 import {Allow} from "rest-decorators";
 
 // noinspection ES6UnusedImports
-import {SystemParameter} from "./system-parameter";
+import type {SystemParameter} from "./system-parameter";
 
 /**
  * The body for the REST PATCH call to change a value to a parameter.

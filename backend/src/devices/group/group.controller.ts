@@ -4,19 +4,20 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
+import type {ConflictException} from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post, Query, NotFoundException, BadRequestException} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {GroupService} from "./group.service";
 import {ChangeParentChange, DeleteGroupChildFate, DeleteGroupOptions, GetGroupsOptions, GroupCreateOptions, GroupEditChanges} from "@common/devices/group/rest-classes";
 import {EntityType} from "@common/devices/constants";
 import {UNIQUE_NAME_PATTERN} from "@common/utils/constants";
 import {UnavailableParents} from "@common/devices/rest-classes";
-import MixService from "../../mixing/mix/mix.service";
+import {MixService} from "../../mixing/mix/mix.service";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 import {ApiOkResponse} from "@nestjs/swagger";
 
 // noinspection ES6UnusedImports
-import {Mix} from "@common/mixing/mix/mix";
+import type {Mix} from "@common/mixing/mix/mix";
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-groups">`/groups`</a>, regarding operations on {@link Group|`Group`s}.

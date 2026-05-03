@@ -27,11 +27,22 @@
             "Record": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type",
             "ObjectConstructor.keys": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys"
         },
+        "@types/node": {
+            "__global.NodeJS.Timeout": "https://nodejs.org/api/timers.html#class-timeout",
+            "NodeJS.ErrnoException": "https://nodejs.org/api/errors.html"
+        },
         "@nestjs/common": {
             "ConflictException": "https://api-references-nestjs.netlify.app/api/common/ConflictException",
             "NotFoundException": "https://api-references-nestjs.netlify.app/api/common/NotFoundException",
             "BadRequestException": "https://api-references-nestjs.netlify.app/api/common/BadRequestException",
             "InternalServerErrorException": "https://api-references-nestjs.netlify.app/api/common/InternalServerErrorException"
+        },
+        "rxjs": {
+            "Observable": "https://rxjs.dev/api/index/class/Observable",
+            "Subject": "https://rxjs.dev/api/index/class/Subject"
+        },
+        "@types/node-schedule": {
+            "Job": "https://github.com/node-schedule/node-schedule#jobs-and-scheduling"
         }
     },
     "validation": {

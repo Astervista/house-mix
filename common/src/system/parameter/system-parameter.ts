@@ -8,7 +8,7 @@ import {Datum, DatumJSON} from "../../mixing/mix/datum";
 import {Allow, IsNotEmpty, Type, ValidateNested} from "rest-decorators";
 
 // noinspection ES6UnusedImports
-import {Mix} from "../../mixing/mix/mix";
+import type {Mix} from "../../mixing/mix/mix";
 
 /**
  * A parameter in the system. Parameters are values that are available as {@link Mix#inputs|`inputs`} for

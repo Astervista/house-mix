@@ -4,22 +4,22 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
-import {ActuatorService} from "./actuator.service";
-import {Actuator, ActuatorJSON} from "@common/devices/actuator/actuator";
-import {ApiOkResponse} from "@nestjs/swagger";
-import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest-classes";
-import {GroupService} from "../group/group.service";
-import {EntityType} from "@common/devices/constants";
-import {ActuatorEditChanges} from "@common/devices/actuator/rest-classes";
-import {GetDevicesOptions, UnavailableParents} from "@common/devices/rest-classes";
-import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
-import MixService from "../../mixing/mix/mix.service";
-
+import type { BadRequestException, ConflictException } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, NotFoundException } from '@nestjs/common';
+import { ActuatorService } from './actuator.service';
+import { Actuator, ActuatorJSON } from '@common/devices/actuator/actuator';
+import { ApiOkResponse } from '@nestjs/swagger';
+import { ChangeParentChange, GroupCreateOptions } from '@common/devices/group/rest-classes';
+import { GroupService } from '../group/group.service';
+import { EntityType } from '@common/devices/constants';
+import { ActuatorEditChanges } from '@common/devices/actuator/rest-classes';
+import { GetDevicesOptions, UnavailableParents } from '@common/devices/rest-classes';
+import { MixPositionInfo } from '@common/mixing/mix/rest-classes';
+import {MixService} from '../../mixing/mix/mix.service';
 // noinspection ES6UnusedImports
-import {Mix} from "@common/mixing/mix/mix";
+import type { Mix } from '@common/mixing/mix/mix';
 // noinspection ES6UnusedImports
-import {Group} from "@common/devices/group/group";
+import type { Group } from '@common/devices/group/group';
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-actuators">`/device/actuators`</a>, regarding operations on {@link Actuator|`Actuator`s}.

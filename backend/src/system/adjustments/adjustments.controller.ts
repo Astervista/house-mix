@@ -4,7 +4,8 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, Controller, Delete, Get, NotFoundException, Param, ParseIntPipe, Patch, Put} from "@nestjs/common";
+import type {NotFoundException} from "@nestjs/common";
+import {BadRequestException, Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Put} from "@nestjs/common";
 import {AdjustmentsService} from "./adjustments.service";
 import {Adjustment, AdjustmentJSON} from "@common/system/adjustment/adjustment";
 

@@ -1,3 +1,8 @@
+/**
+ * This module contains the main application module class.
+ *
+ * @module
+ */
 import {Module} from "@nestjs/common";
 import {ZigbeeService} from "./zigbee/zigbee.service";
 import {ActuatorService} from "./devices/actuator/actuator.service";
@@ -6,7 +11,7 @@ import {FileService} from "./helpers/file/file.service";
 import {GroupService} from "./devices/group/group.service";
 import {GroupController} from "./devices/group/group.controller";
 import {MixController} from "./mixing/mix/mix.controller";
-import MixService from "./mixing/mix/mix.service";
+import {MixService} from "./mixing/mix/mix.service";
 import {SensorService} from "./devices/sensor/sensor.service";
 import {SensorController} from "./devices/sensor/sensor.controller";
 import {ParametersController} from "./system/parameters/parameters.controller";
@@ -21,6 +26,9 @@ import {AdjustmentsService} from "./system/adjustments/adjustments.service";
 import {SettingsService} from "./system/settings/settings.service";
 import {SettingsController} from "./system/settings/settings.controller";
 
+/**
+ * The main NestJS module class, running the application.
+ */
 @Module({
             imports:     [],
             controllers: [
@@ -35,6 +43,9 @@ import {SettingsController} from "./system/settings/settings.controller";
         })
 export class AppModule {
     
-    private _CopyRight_2026_Astervista?: never;
+    /**
+     * For more information, visit <a href="https://astervista.com/house-mix">.
+     */
+    private _Copyright_2026_Astervista?: never;
 
 }

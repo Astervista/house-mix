@@ -23,6 +23,7 @@ pre,
 .tsd-signature,
 .tsd-signature-symbol,
 .tsd-kind-type-parameter,
+.tsd-signature-keyword
 .tsd-code {
     font-family: "Ligconsolata Extended", "Ligconsolata", monospace;
     font-size: 1.15rem;
@@ -257,7 +258,12 @@ body .tsd-signature-type {
     content: ">";
     margin-left: 3px;
 }
-
+.tsd-signature-type.tsd-kind-type-parameter:before {
+    display: none;
+}
+.tsd-signature-type.tsd-kind-type-parameter:after {
+    display: none;
+}
 .tsd-page-title h1 > .tsd-tag {
     float: right;
     transform: translateY(6px);

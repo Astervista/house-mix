@@ -9,3 +9,4 @@
     check for correctness in tsdoc
         regex to check for lowercase parameter def: @param (\{[^{}]*\}\s+)?[^ {}]*(\s+-)?\s+[a-z]
         regex to check for lowercase returns def: @returns?\s+(\{[^{}]*\}\s+)?\s*[a-z]
+// TODO: Add to the readmes information on how to setup zigbee

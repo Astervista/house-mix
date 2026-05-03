@@ -10,9 +10,9 @@ import {UNIQUE_NAME_PATTERN} from "../utils/constants";
 import {MixPositionInfo} from "../mixing/mix/rest-classes";
 
 // noinspection ES6UnusedImports
-import {Device} from "./device";
+import type {Device} from "./device";
 // noinspection ES6UnusedImports
-import {Mix} from "../mixing/mix/mix";
+import type {Mix} from "../mixing/mix/mix";
 
 /**
  * Data transfer class that represents an edit to a {@link Device|`Device`}, used for communication with the REST API.

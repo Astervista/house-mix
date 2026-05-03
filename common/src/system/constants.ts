@@ -6,13 +6,13 @@
 import {DatumOrigin, DatumType, ExportedDatum} from "../mixing/mix/datum";
 
 // noinspection ES6UnusedImports
-import {SystemParameter} from "./parameter/system-parameter";
+import type {SystemParameter} from "./parameter/system-parameter";
 // noinspection ES6UnusedImports
-import {SystemTimer} from "./timer/system-timer";
+import type {SystemTimer} from "./timer/system-timer";
 // noinspection ES6UnusedImports
-import {DeviceMonitorDevice} from "./device-monitor/device-monitor-device";
+import type {DeviceMonitorDevice} from "./device-monitor/device-monitor-device";
 // noinspection ES6UnusedImports
-import {Mix} from "../mixing/mix/mix";
+import type {Mix} from "../mixing/mix/mix";
 
 
 /**

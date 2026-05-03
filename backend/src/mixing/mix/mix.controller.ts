@@ -4,24 +4,25 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, NotFoundException, Param, ParseIntPipe, Patch, Put, Query} from "@nestjs/common";
-import MixService from "./mix.service";
+import type {ConflictException, InternalServerErrorException} from "@nestjs/common";
+import {Body,BadRequestException, NotFoundException,Controller, Delete, Get, Param, ParseIntPipe, Patch, Put, Query} from "@nestjs/common";
+import {MixService} from "./mix.service";
 import {Mix, MixJSON} from "@common/mixing/mix/mix";
 import {createMixInfo, mixInfoFromJSON, MixPositionInfoJSON, PutMixBodyJSON} from "@common/mixing/mix/rest-classes";
 // noinspection ES6UnusedImports
-import {ExportedDatum, ExportedDatumJSON} from "@common/mixing/mix/datum";
+import type {ExportedDatum, ExportedDatumJSON} from "@common/mixing/mix/datum";
 // noinspection ES6UnusedImports
-import {MixingGraph, MixingGraphJSON} from "@common/mixing/mixing-graph";
+import type {MixingGraph, MixingGraphJSON} from "@common/mixing/mixing-graph";
 import {MixLayout, Point} from "@common/mixing/mix/mix-layout";
 
 // noinspection ES6UnusedImports
-import {Group} from "@common/devices/group/group";
+import type {Group} from "@common/devices/group/group";
 // noinspection ES6UnusedImports
-import {Sensor} from "@common/devices/sensor/sensor";
+import type {Sensor} from "@common/devices/sensor/sensor";
 // noinspection ES6UnusedImports
-import {Actuator} from "@common/devices/actuator/actuator";
+import type {Actuator} from "@common/devices/actuator/actuator";
 // noinspection ES6UnusedImports
-import {Device} from "@common/devices/device";
+import type {Device} from "@common/devices/device";
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-mixing">`/mixing`</a>, regarding operations on {@link Mix|`Mix`es}
@@ -238,7 +239,7 @@ export class MixController {
     }
     
     /**
-     * Retrieves the global mixing graph representing all connections between mixes assigned to various location of the system.
+     * Retrieves the global mixing graph representing all connections between mixes assigned to various locations of the system.
      *
      * @returns {Promise<MixingGraphJSON>} - The {@link MixingGraph|`MixingGraph`}'s {@link MixingGraphJSON|serialization}.
      * @see REST API endpoint <a href="../../rest/#operation-graph-get">`GET /mixing/graph`</a>.

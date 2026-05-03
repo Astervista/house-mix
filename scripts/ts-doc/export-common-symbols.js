@@ -19,15 +19,17 @@ const data = JSON.parse(fs.readFileSync(input, "utf-8"));
 const KIND = {
     Enum:                 8,
     EnumMember:           16,
+    Variable:             32,
     Class:                128,
     Interface:            256,
     Function:             2048,
     Property:             1024,
     Method:               2048,
     CallSignature:        4096,
-    Constructor:          16384, // This matches your logs
+    Constructor:          16384,
     ConstructorSignature: 32768,
-    Variable:             32,
+    Getter:               262144,
+    Setter:               524288,
     TypeAlias:            2097152
 };
 
@@ -80,7 +82,15 @@ function walk(node, ctx, out) {
     }
     
     // NEW: Handle Members (Properties, Methods, Enum Members)
-    if (isMember && (node.kind === KIND.Property || node.kind === KIND.Method || node.kind === KIND.EnumMember)) {
+    const MEMBER_KINDS = [
+        KIND.Property,
+        KIND.Method,
+        KIND.EnumMember,
+        KIND.Getter,
+        KIND.Setter
+    ];
+    
+    if (isMember && MEMBER_KINDS.includes(node.kind)) {
         out.variables.push({
                                // This creates the "Cat#name" key TypeDoc looks for
                                name:       `${ctx.name}.${node.name}`,

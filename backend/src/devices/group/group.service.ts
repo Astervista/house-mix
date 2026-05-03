@@ -1,3 +1,8 @@
+/**
+ * This module contains the {@link GroupService|`GroupService`} class, handling the business logic about {@link Group|`Group`s}.
+ *
+ * @module
+ */
 import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException} from "@nestjs/common";
 import {Group, GroupJSON} from "@common/devices/group/group";
 import {FileService} from "../../helpers/file/file.service";
@@ -8,16 +13,35 @@ import {Device} from "@common/devices/device";
 import {SensorService} from "../sensor/sensor.service";
 import {PersistentDataService} from "../../helpers/file/persistent-data-service";
 import {MixPhase} from "@common/mixing/mix/rest-classes";
-import MixService from "../../mixing/mix/mix.service";
+import {MixService} from "../../mixing/mix/mix.service";
 import {UnavailableParents} from "@common/devices/rest-classes";
 import {Mix} from "@common/mixing/mix/mix";
 
+// noinspection ES6UnusedImports
+import type {Actuator} from '@common/devices/actuator/actuator';
+// noinspection ES6UnusedImports
+import type {Sensor} from '@common/devices/sensor/sensor';
 
+
+/**
+ * The path of the file where to save the data about {@link Group|`Group`s}.
+ */
 const SAVE_FILE = "devices/group.json";
 
+/**
+ * This service handles the business logic about {@link Group|`Group`s}.
+ */
 @Injectable()
 export class GroupService extends PersistentDataService<GroupData, GroupDataJSON> {
     
+    /**
+     * Creates an instance of the class. Do not call this constructor directly, it's handled by dependency injection.
+     *
+     * @param {FileService} fileService - The service handling persistent storage. Instantiated by dependency injection.
+     * @param {ActuatorService} actuatorService - The service handling {@link Actuator|`Actuator`} business logic. Instantiated by dependency injection.
+     * @param {SensorService} sensorService - The service handling {@link Sensor|`Sensor`} business logic. Instantiated by dependency injection.
+     * @param {MixService} mixService - The service handling {@link Mix|`Mix`} business logic. Instantiated by dependency injection.
+     */
     constructor(
         fileService: FileService,
         @Inject(forwardRef(() => ActuatorService))
@@ -30,6 +54,13 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         super(fileService, SAVE_FILE, GroupData);
     }
     
+    /**
+     * Get all {@link Group|`Group`s} in the system, optionally filtered by {@link Mix|`Mix`}.
+     *
+     * @param {GetGroupsOptions} options - The options to filter the results.
+     * @returns {Promise<Group[]>} An array containing the resulting {@link Group|`Group`s}.
+     * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if one of {@link GetGroupsOptions#actuatorMix|`actuatorMix`} and {@link GetGroupsOptions#sensorMix|`sensorMix`} is specified at the same time as {@link GetGroupsOptions#anyMixed|`anyMixed`}.
+     */
     public async getAllGroups(options: GetGroupsOptions = {}): Promise<Group[]> {
         if (options.anyMixed != undefined && options.anyMixed) {
             if ((options.sensorMix !== undefined) || (options.actuatorMix !== undefined)) {
@@ -57,10 +88,25 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
             });
     }
     
+    /**
+     * Get a {@link Group|`Group`} with a specific {@link Group#name|`name`}.
+     *
+     * @param {string} name - The {@link Group#name|`name`} of the group to retrieve.
+     * @returns {Promise<Group | null>} - The {@link Group|`Group`} or null if not found.
+     */
     public async getGroupByName(name: string): Promise<Group | null> {
         return (await this.data).groups.find(a => a.name === name) ?? null;
     }
     
+    /**
+     * Creates a new {@link Group|`Group`} in the system.
+     *
+     * @param {Group} group - The {@link Group|`Group`} to be created.
+     * @param {string | null} parentName - The name of the {@link Group|`Group`} where the new group will be placed, or null.
+     * @throws {BadRequestException} - If the group has children.
+     * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if there already exist a {@link Group|group} with the same {@link Group#name|name}.
+     * @throws {NotFoundException} - If parent does not exist.
+     */
     public async createGroup(group: Group, parentName: string | null): Promise<void> {
         if ((group.groups.length > 0) || (group.actuators.length > 0) || (group.sensors.length > 0)) {
             throw new BadRequestException(undefined, "A new group cannot be created already with children");
@@ -85,6 +131,14 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
+    /**
+     * Edit a {@link Group|`Group`}'s properties, given its {@link Group#name|`name`}.
+     *
+     * @param {string} oldName - The {@link Group#name|`name`} of the group to edit.
+     * @param {GroupEditChanges} edit - The {@link GroupEditChanges|properties} to be updated.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
+     * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a new {@link Group#name|`name`} was specified, but a {@link Group|group} with that name already exists.
+     */
     public async editGroup(oldName: string, edit: GroupEditChanges): Promise<void> {
         const data        = await this.data;
         const newName     = edit.name;
@@ -119,6 +173,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
+    /**
+     * Removes a {@link Group|`Group`} from the system by its name, if possible.
+     *
+     * @param {string} name - The {@link Group#name|`name`} of the {@link Group|group} to remove.
+     * @param {DeleteGroupOptions} options - The options for handling children of the deleted group.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
+     * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Group|`Group`} cannot be deleted because it is linked to a {@link Mix|mix} that is
+     *     referenced by another {@link Mix|mix}.
+     */
     public async deleteGroup(
         name: string,
         options: DeleteGroupOptions
@@ -193,6 +256,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Move an entity inside a different {@link Group|`Group`}, or take it out of any {@link Group|`Group`}.
+     *
+     * @param {string} entityToMove - The name of the entity to move.
+     * @param {string | null} newParentName - The name of the new parent {@link Group|`Group`} or null to remove the parent.
+     * @param {EntityType} entityType - The type of the entity.
+     * @throws {NotFoundException} - If the entity or new parent does not exist.
+     * @throws {ConflictException} - If the move would break dependencies.
+     */
     public async changeParent(entityToMove: string, newParentName: string | null, entityType: EntityType): Promise<void> {
         const data                  = await this.data;
         let elementToMove: Group | Device | null;
@@ -277,6 +349,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Returns information about all the {@link Group|`Group`s} that cannot be parents for this entity, because they would break
+     * dependencies inside the {@link Mix|mixes}. For example, if a {@link Group|group}'s {@link Mix|`Mix`} is referenced by a parent {@link Group|group}'s
+     * {@link Mix|`Mix`}, this parent must remain in the hierarchy, otherwise the {@link Group|group}'s {@link Mix|mix} will not be able to reach it.
+     *
+     * @param {string} name - The name of the entity.
+     * @param {EntityType} entityType - The type of the entity.
+     * @returns {Promise<UnavailableParents>} The information about the unavailable groups.
+     */
     public async getUnavailableParents(name: string, entityType: EntityType): Promise<UnavailableParents> {
         const data = await this.data;
         const result: UnavailableParents = {
@@ -354,7 +435,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         return result;
     }
     
-    
+    /**
+     * This method checks whether an {@link Actuator|`Actuator`} can be moved to a specific group, without
+     * breaking dependencies betweeen {@link Mix|`Mix`es}. In case it can't be moved, this function throws a {@link ConflictException}.
+     *
+     * @param {string} actuatorToMoveName - The name of the actuator to move.
+     * @param {string | null} newParentName - The name of the new parent {@link Group|`Group`} or null to check the move to the root of the system.
+     * @returns {Promise<void>}
+     * @throws {ConflictException} - If the move would break dependencies.
+     */
     private async testActuatorMoveTo(actuatorToMoveName: string, newParentName: string | null): Promise<void> {
         const availableGroups = await this.mixService.actuatorMixAvailableGroups(EntityType.ACTUATOR, actuatorToMoveName);
         if (!availableGroups.available.some(availableGroup => availableGroup?.name == newParentName)) {
@@ -368,6 +457,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
+    /**
+     * This method checks whether a {@link Sensor|`Sensor`} can be moved to a specific group, without
+     * breaking dependencies between {@link Mix|`Mix`es}. In case it can't be moved, this function throws a {@link ConflictException}.
+     *
+     * @param {string} sensorToMove - The name of the sensor to move.
+     * @param {string | null} newParentName - The name of the new parent {@link Group|`Group`} or null to check the move to the root of the system.
+     * @returns {Promise<void>}
+     * @throws {ConflictException} - If the move would break dependencies.
+     */
     private async testSensorMoveTo(sensorToMove: string, newParentName: string | null): Promise<void> {
         const availableGroups = await this.mixService.sensorMixAvailableGroups(EntityType.SENSOR, sensorToMove);
         if (!availableGroups.available.some(availableGroup => availableGroup?.name == newParentName)) {
@@ -381,6 +479,16 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
+    /**
+     * This method checks whether a {@link Group|`Group`} can be moved to a specific group, without
+     * breaking dependencies between {@link Mix|`Mix`es} on both sensor and actuator sides.
+     * In case it can't be moved, this function throws a {@link ConflictException}.
+     *
+     * @param {string} groupToMoveName - The name of the group to move.
+     * @param {string | null} newParentName - The name of the new parent {@link Group|`Group`} or null to check the move to the root of the system.
+     * @returns {Promise<void>}
+     * @throws {ConflictException} - If the move would break dependencies.
+     */
     private async testGroupMoveTo(groupToMoveName: string, newParentName: string | null): Promise<void> {
         const availableGroupsSensorSide = await this.mixService.sensorMixAvailableGroups(EntityType.GROUP, groupToMoveName);
         if (!availableGroupsSensorSide.available.some(availableGroup => availableGroup?.name == newParentName)) {
@@ -404,6 +512,21 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
+    /**
+     * Add a device to a group, keeping a consistent status of the system. If the device is not assigned to a group, it gets added to its
+     * child devices. If it is not, it either moves it if `move` is true, or errors out. It optionally checks for the existence of the
+     * device.
+     *
+     * @param {string} groupName - The name of the group to which the device will be added.
+     * @param {string} deviceName - The name of the device to add.
+     * @param {EntityType} entityType - The type of the device. Cannot be {@link EntityType.GROUP|`GROUP`}.
+     * @param {boolean} move - Whether to move the device if it is already in another group.
+     * @param {boolean} mustExist - Whether check the existence of the device.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the target group does not exist, or if the device does not exist in the case `mustExist` is `true`.
+     * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the device is already in another group.
+     * @throws {InternalServerErrorException} - {@link InternalServerErrorException|`InternalServerErrorException`} if the entity type is {@link EntityType.GROUP|`GROUP`}.
+     */
     public async addDevice(groupName: string, deviceName: string, entityType: EntityType, move: boolean, mustExist: boolean = true): Promise<void> {
         if (entityType == EntityType.GROUP) {
             throw new InternalServerErrorException();
@@ -450,6 +573,16 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Removes a device from the system, removing the reference in the containing group (if it exists).
+     * This function already handles the removal from the system calling the appropriate function in the correct service.
+     *
+     * @param {string} name - The name of the device to delete.
+     * @param {EntityType.ACTUATOR | EntityType.SENSOR} entityType - The type of the device.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the device does not exist.
+     * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the device is linked to a mix that is references and cannot be deleted.
+     */
     public async removeDevice(name: string, entityType: EntityType.ACTUATOR | EntityType.SENSOR): Promise<void> {
         const data                         = await this.data;
         let elementToRemove: Device | null = null;
@@ -486,18 +619,44 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Realign the references of an {@link Actuator|`Actuator`} after its unique name has been changed,
+     * by finding its parent and renaming it into the parent's {@link Group#actuators|`actuators`} array.
+     *
+     * @param {string} oldName - The old name of the actuator, used in the groups, to find and substitute.
+     * @param {string} newName - The new name of the actuator, to substitute into the matching group.
+     * @returns {Promise<void>}
+     */
     public async actuatorRenamed(oldName: string, newName: string): Promise<void> {
         const data = await this.data;
         data.groups.forEach(group => { group.actuatorRenamed(oldName, newName); });
         this.saveData();
     }
     
+    /**
+     * Realign the references of a {@link Sensor|`Sensor`} after its unique name has been changed,
+     * by finding its parent and renaming it into the parent's {@link Group#sensors|`sensors`} array.
+     *
+     * @param {string} oldName - The old name of the sensor, used in the groups, to find and substitute.
+     * @param {string} newName - The new name of the sensor, to substitute into the matching group.
+     * @returns {Promise<void>}
+     */
     public async sensorRenamed(oldName: string, newName: string): Promise<void> {
         const data = await this.data;
         data.groups.forEach(group => { group.sensorRenamed(oldName, newName); });
         this.saveData();
     }
     
+    /**
+     * Assign a mix to a group in the correct phase.
+     *
+     * @param {string} groupName - The name of the group to assign the mix to.
+     * @param {number | "NEW"} mixId - The id of the mix to assign. Throws an error if `"NEW"`.
+     * @param {MixPhase.ACTUATORS | MixPhase.SENSORS} phase - Whether the mix will be put into {@link Group#sensorMix|`Group.sensorMix`} or {@link Group#actuatorMix|`Group.actuatorMix`}.
+     * @returns {Promise<void>}
+     * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the mix id is `"NEW"`.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the group does not exist.
+     */
     public async setMixForGroup(groupName: string, mixId: number | "NEW", phase: MixPhase.ACTUATORS | MixPhase.SENSORS): Promise<void> {
         
         if (mixId == "NEW") {
@@ -519,6 +678,13 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Returns all the descending groups of any depth, not only the direct children.
+     *
+     * @param {string} groupName - The name of the group to get all the descendants of.
+     * @returns {Promise<Group[]>} - All the matching groups.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the group does not exist.
+     */
     public async getDescendingGroups(groupName: string): Promise<Group[]> {
         const data  = await this.data;
         const group = data.groups.find(otherGroup => otherGroup.name === groupName);
@@ -541,6 +707,15 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         return descendants;
     }
     
+    /**
+     * Get all the group that have a group as a descendant, not only the direct container.
+     *
+     * @param {string} groupName - The name of the group to get the ancestors of.
+     * @returns {Promise<Group[]>} - All the matching groups.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the group does not exist.
+     * @throws {InternalServerErrorException} - {@link InternalServerErrorException|`InternalServerErrorException`} if the search fails because the
+     *                                          group hierarchy contains cycles.
+     */
     public async getAncestorGroups(groupName: string): Promise<Group[]> {
         const data  = await this.data;
         const group = data.groups.find(otherGroup => otherGroup.name === groupName);
@@ -559,16 +734,36 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         return ancestors;
     }
     
+    /**
+     * Find the group an {@link Actuator|`Actuator`} is assigned to.
+     *
+     * @param {string} name - The name of the actuator of which to find the parent group.
+     * @returns {Promise<Group | null>} - The group, or `null` if the actuator is assigned to the root.
+     */
     public async getActuatorGroup(name: string): Promise<Group | null> {
         const data = await this.data;
         return data.groups.find(otherGroup => otherGroup.containsActuator(name)) ?? null;
     }
     
+    /**
+     * Find the group a {@link Sensor|`Sensor`} is assigned to.
+     *
+     * @param {string} name - The name of the sensor of which to find the parent group.
+     * @returns {Promise<Group | null>} - The group, or `null` if the sensor is assigned to the root.
+     */
     public async getSensorGroup(name: string): Promise<Group | null> {
         const data = await this.data;
         return data.groups.find(otherGroup => otherGroup.containsSensor(name)) ?? null;
     }
     
+    /**
+     * Retrieves the entire chain of ancestor {@link Group|`Group`s} for a given entity. For groups, this is the same as
+     * {@link GroupService#getAncestorGroups|`GroupService.getAncestorGroups()`}. For devices, it's that function applied to the parent group.
+     *
+     * @param {EntityType} entityType - The type of the entity (Group, Sensor, or Actuator).
+     * @param {string} name - The unique name of the entity.
+     * @returns {Promise<Group[]>} - An array of {@link Group|`Group`s} that are the ancestors of the entity.
+     */
     public async getParentChain(entityType: EntityType, name: string): Promise<Group[]> {
         switch (entityType) {
             case EntityType.GROUP:
@@ -590,7 +785,14 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         }
     }
     
-    
+    /**
+     * Removes a reference from a {@link Group|`Group`} to a {@link Mix|`Mix`} through {@link Group#sensorMix|`Group.sensorMix`},
+     * setting the reference to `null`.
+     *
+     * @param {string} name - The name of the group for which to remove the reference.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the group does not exist.
+     */
     public async removeSensorMixFromGroup(name: string): Promise<void> {
         const group = await this.getGroupByName(name);
         if (group == null) {
@@ -600,6 +802,14 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         this.saveData();
     }
     
+    /**
+     * Removes a reference from a {@link Group|`Group`} to a {@link Mix|`Mix`} through {@link Group#actuatorMix|`Group.actuatorMix`},
+     * setting the reference to `null`.
+     *
+     * @param {string} name - The name of the group for which to remove the reference.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the group does not exist.
+     */
     public async removeActuatorMixFromGroup(name: string): Promise<void> {
         const group = await this.getGroupByName(name);
         if (group == null) {
@@ -608,13 +818,24 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
         group.actuatorMix = null;
         this.saveData();
     }
-    
 }
 
+/**
+ * The persistent data structure used by {@link GroupService|`GroupService`}
+ * for persisting data about {@link Group|`Group`s}.
+ */
 export class GroupData {
     
+    /**
+     * All the groups in the system.
+     */
     public groups: Group[];
     
+    /**
+     * Creates an instance of the class from the saved serialized {@link GroupDataJSON|`GroupDataJSON`}.
+     *
+     * @param {GroupDataJSON} groupDataJSON - The saved serialized {@link GroupDataJSON|`GroupDataJSON`} to use for populating the new instance.
+     */
     constructor(groupDataJSON?: GroupDataJSON) {
         if (groupDataJSON) {
             this.groups = groupDataJSON.groups.map((groupJSON: GroupJSON) => Group.fromJSON(groupJSON));
@@ -623,6 +844,11 @@ export class GroupData {
         }
     }
     
+    /**
+     * Converts the group data instance into its JSON representation.
+     *
+     * @returns {GroupDataJSON} The JSON representation of `this`.
+     */
     public toJSON(): GroupDataJSON {
         return {
             groups: this.groups.map((group: Group) => group.toJSON())
@@ -631,7 +857,14 @@ export class GroupData {
     
 }
 
+/**
+ * The serialization of the class {@link GroupData|`GroupData`}.
+ */
 export interface GroupDataJSON {
+    
+    /**
+     * Serialization of the property {@link GroupData#groups|`groups`}.
+     */
     groups: GroupJSON[];
+    
 }
-

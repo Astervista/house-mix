@@ -7,7 +7,7 @@
 import {IsBoolean, IsIP, IsNotEmpty, IsOptional, IsString} from "rest-decorators";
 
 // noinspection ES6UnusedImports
-import {Device} from "../../devices/device";
+import type {Device} from "../../devices/device";
 
 /**
  * This class defines a device on the network that is monitored for its connection status.

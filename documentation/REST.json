@@ -2224,7 +2224,7 @@
                         }
                     },
                     "404": {
-                        "description": "No device with the specified name exists."
+                        "description": "No device was found with the specific name."
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalServerError"
@@ -2256,7 +2256,7 @@
                         "$ref": "#/components/responses/BadRequestError"
                     },
                     "404": {
-                        "description": "No device with the specified name exists."
+                        "description": "No device was found with the specific name."
                     },
                     "409": {
                         "description": "The device is used in a mix."
@@ -2303,7 +2303,489 @@
                         "$ref": "#/components/responses/BadRequestError"
                     },
                     "404": {
-                        "description": "No device with the specified name exists."
+                        "description": "No device was found with the specific name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/settings": {
+            "get": {
+                "summary": "Get system settings",
+                "description": "Get the current system settings.<br><a class='tsdoc-link' href='../backend/classes/system_settings_settings.controller.SettingsController.html#getsettings'>`SettingsController.getSettings()`</a>",
+                "tags": [
+                    "Settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the current system settings.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SystemSettings"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Update system settings",
+                "description": "Updates the system settings.<br><a class='tsdoc-link' href='../backend/classes/system_settings_settings.controller.SettingsController.html#updatesettings'>`SettingsController.updateSettings()`</a>",
+                "tags": [
+                    "Settings"
+                ],
+                "requestBody": {
+                    "description": "The settings to update.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SystemSettings"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Update succeeded. Returns the updated settings.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SystemSettings"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/parameters": {
+            "get": {
+                "summary": "Get all system parameters",
+                "description": "Get all parameters in the system.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#getall'>`ParametersController.getAll()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the system parameters.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SystemParameter"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create a new system parameter",
+                "description": "Adds a new parameter to the system.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#create'>`ParametersController.create()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "requestBody": {
+                    "description": "The new system parameter's data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SystemParameter"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "409": {
+                        "description": "A system parameter with the same name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/parameters/{name}": {
+            "delete": {
+                "summary": "Delete a system parameter",
+                "description": "Removes a parameter from the system by its name.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#delete'>`ParametersController.delete()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the system parameter to remove.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No system parameter was found with the specific name."
+                    },
+                    "409": {
+                        "description": "The system parameter cannot be deleted because it is used in a mix."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/parameters/{name}/value": {
+            "get": {
+                "summary": "Get system parameter value",
+                "description": "Gets the current value of a system parameter.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#getvalue'>`ParametersController.getValue()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the system parameter for which to retrieve the value.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns the current value for the system parameter.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "value": {
+                                            "nullable": true
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No parameter was found with the specific name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "patch": {
+                "summary": "Set system parameter value",
+                "description": "Sets the value of a system parameter.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#set'>`ParametersController.set()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the system parameter to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The new value for the system parameter.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SetParameterBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Value updated successfully."
+                    },
+                    "400": {
+                        "description": "The provided value is not valid for the chosen parameter.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No parameter was found with the specific name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/parameters/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks for system parameter",
+                "description": "Gets all the conflicts that prevent a system parameter from being deleted.<br><a class='tsdoc-link' href='../backend/classes/system_parameters_parameters.controller.ParametersController.html#candelete'>`ParametersController.canDelete()`</a>",
+                "tags": [
+                    "System Parameters"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the system parameter to check.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the system parameter.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequestError"
+                    },
+                    "404": {
+                        "description": "No system parameter was found with the specific name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/timers": {
+            "get": {
+                "summary": "Get all timers",
+                "description": "Get all timers in the system.<br><a class='tsdoc-link' href='../backend/classes/system_timers_timers.controller.TimersController.html#getall'>`TimersController.getAll()`</a>",
+                "tags": [
+                    "Timers"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns an array containing the timers.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SystemTimer"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "post": {
+                "summary": "Add a new timer",
+                "description": "Adds a new timer to the system.<br><a class='tsdoc-link' href='../backend/classes/system_timers_timers.controller.TimersController.html#create'>`TimersController.create()`</a>",
+                "tags": [
+                    "Timers"
+                ],
+                "requestBody": {
+                    "description": "The new timer's data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SystemTimer"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Creation succeeded."
+                    },
+                    "400": {
+                        "description": "The input parameters or body are not in the correct format, or the timer's occurrence is out of range for the chosen type.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "A timer with the same name already exists."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/timers/{name}": {
+            "patch": {
+                "summary": "Edit a timer",
+                "description": "Updates an existing timer.<br><a class='tsdoc-link' href='../backend/classes/system_timers_timers.controller.TimersController.html#edit'>`TimersController.edit()`</a>",
+                "tags": [
+                    "Timers"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the timer to update.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "The updated timer data.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SystemTimer"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Edit succeeded."
+                    },
+                    "400": {
+                        "description": "The occurrence is invalid or the name in the body doesn't match the path.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/BadRequestErrorContent"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No timer was found with the specific name."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Delete a timer",
+                "description": "Removes a timer from the system by its name.<br><a class='tsdoc-link' href='../backend/classes/system_timers_timers.controller.TimersController.html#delete'>`TimersController.delete()`</a>",
+                "tags": [
+                    "Timers"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the timer to remove.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Deletion succeeded."
+                    },
+                    "404": {
+                        "description": "No timer was found with the specific name."
+                    },
+                    "409": {
+                        "description": "The timer cannot be deleted because it is used in a mix."
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalServerError"
+                    }
+                }
+            }
+        },
+        "/system/timers/{name}/delete-locks": {
+            "get": {
+                "summary": "Get delete locks for timer",
+                "description": "Gets all the conflicts that prevent a timer from being deleted.<br><a class='tsdoc-link' href='../backend/classes/system_timers_timers.controller.TimersController.html#candelete'>`TimersController.canDelete()`</a>",
+                "tags": [
+                    "Timers"
+                ],
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "The name of the timer to check.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. Returns a list of positions of all the mixes that reference the timer.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MixPositionInfo"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No timer was found with the specific name."
                     },
                     "500": {
                         "$ref": "#/components/responses/InternalServerError"
@@ -3770,6 +4252,122 @@
                 "required": [
                     "name"
                 ]
+            },
+            "SystemParameter": {
+                "type": "object",
+                "description": "A system-wide parameter that can be used in mixes.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_parameter_system-parameter.SystemParameterJSON.html'>`SystemParameterJSON`</a>",
+                "properties": {
+                    "displayName": {
+                        "type": "string",
+                        "description": "The display name of the parameter."
+                    },
+                    "datum": {
+                        "$ref": "#/components/schemas/Datum",
+                        "description": "The type and identification of the parameter."
+                    },
+                    "value": {
+                        "description": "The value given to the parameter, passed to the mixes when imported.",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "displayName",
+                    "datum"
+                ]
+            },
+            "SystemTimer": {
+                "type": "object",
+                "description": "A timer that triggers recalculation of the system at a specific interval.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_timer_system-timer.SystemTimerJSON.html'>`SystemTimerJSON`</a>",
+                "properties": {
+                    "name": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/unique-string-id"
+                            }
+                        ],
+                        "description": "The unique name to identify the timer."
+                    },
+                    "displayName": {
+                        "type": "string",
+                        "description": "The name that is used to display the timer in the UI."
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of timer, that defines how the next trigger is calculated.",
+                        "enum": [
+                            "DAILY",
+                            "HOURLY",
+                            "MINUTE_INTERVAL"
+                        ]
+                    },
+                    "occurrence": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "A number to customize the timer, according to its type. For DAILY, minutes after midnight; for HOURLY, minutes after the start of the hour; for MINUTE_INTERVAL, the interval in minutes.",
+                        "example": 8
+                    }
+                },
+                "required": [
+                    "name",
+                    "displayName",
+                    "type",
+                    "occurrence"
+                ]
+            },
+            "SystemSettings": {
+                "type": "object",
+                "description": "A representation of all the settings and customization regarding the whole system.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_settings_system-settings.SystemSettingsJSON.html'>`SystemSettingsJSON`</a>",
+                "properties": {
+                    "homeName": {
+                        "type": "string",
+                        "description": "The name of the home the system is attached to.",
+                        "example": "Home"
+                    },
+                    "offlineCheck": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 3600,
+                        "description": "The interval (seconds) at which devices already online are checked for disconnection.",
+                        "example": 180
+                    },
+                    "onlineCheck": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 3600,
+                        "description": "The interval (seconds) at which devices that are offline are checked for reconnection.",
+                        "example": 60
+                    },
+                    "unavailableTimeout": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 86399,
+                        "description": "How much time (seconds) after a device is first detected offline needs to pass for it to be considered not available.",
+                        "example": 300
+                    },
+                    "throttleTiming": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000,
+                        "description": "The minimum gap between zigbee messages on mqtt, in milliseconds.",
+                        "example": 30
+                    }
+                },
+                "required": [
+                    "homeName",
+                    "offlineCheck",
+                    "onlineCheck",
+                    "unavailableTimeout",
+                    "throttleTiming"
+                ]
+            },
+            "SetParameterBody": {
+                "type": "object",
+                "description": "The body of a request to update a system parameter's value.<br><a class='tsdoc-link tsdoc-link-model' href='../common/classes/system_parameter_rest-classes.SetParameterBody.html'>`SetParameterBody`</a>",
+                "properties": {
+                    "value": {
+                        "nullable": true
+                    }
+                }
             },
             "BadRequestErrorContent": {
                 "type": "object",

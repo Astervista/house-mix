@@ -4,7 +4,8 @@
  * @module
  */
 // noinspection ES6UnusedImports
-import {BadRequestException, Body, ConflictException, Controller, Delete, Get, NotFoundException, Param, Patch, Post, Query} from "@nestjs/common";
+import type {BadRequestException, ConflictException } from "@nestjs/common";
+import {Body, Controller, Delete, Get, Param, Patch, Post, Query,NotFoundException} from "@nestjs/common";
 import {SensorService} from "./sensor.service";
 import {Sensor, SensorJSON} from "@common/devices/sensor/sensor";
 import {ApiOkResponse} from "@nestjs/swagger";
@@ -14,12 +15,12 @@ import {EntityType} from "@common/devices/constants";
 import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
 import {GetDevicesOptions, LockedExposes, UnavailableParents} from "@common/devices/rest-classes";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
-import MixService from "../../mixing/mix/mix.service";
+import {MixService} from "../../mixing/mix/mix.service";
 
 // noinspection ES6UnusedImports
-import {Mix} from "@common/mixing/mix/mix";
+import type {Mix} from "@common/mixing/mix/mix";
 // noinspection ES6UnusedImports
-import {Group} from "@common/devices/group/group";
+import type {Group} from "@common/devices/group/group";
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-sensors">`/device/sensors`</a>, regarding operations on {@link Sensor|`Sensor`s}.

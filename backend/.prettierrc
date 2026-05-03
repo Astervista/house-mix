@@ -1,4 +1,18 @@
 {
+  "tabWidth": 4,
+  "useTabs": false,
   "singleQuote": true,
-  "trailingComma": "all"
+  "htmlWhitespaceSensitivity": "ignore",
+  "printWidth": 190,
+  "plugins": ["prettier-plugin-organize-attributes"],
+  "attributeGroups": [
+    "$DEFAULT",
+    "$ANGULAR_STRUCTURAL_DIRECTIVE",
+    "$ANGULAR_INPUT",
+    "$ANGULAR_OUTPUT",
+    "$ANGULAR_TWO_WAY_BINDING",
+    "^data-"
+  ],
+  "singleAttributePerLine": true,
+  "bracketSameLine": true
 }

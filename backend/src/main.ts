@@ -1,8 +1,16 @@
+/**
+ * This file is the entry point for the NestJS application.
+ *
+ * @module
+ */
 import {NestFactory} from "@nestjs/core";
 import {AppModule} from "./app.module";
 import {ConsoleLogger, ValidationPipe} from "@nestjs/common";
 import {DocumentBuilder, SwaggerModule} from "@nestjs/swagger";
 
+/**
+ * The function bootstrapping the application.
+ */
 async function bootstrap(): Promise<void> {
     const app = await NestFactory.create(AppModule, {
         logger: new ConsoleLogger()

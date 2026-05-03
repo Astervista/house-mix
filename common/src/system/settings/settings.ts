@@ -7,7 +7,7 @@
 import {IsInt, IsNotEmpty, IsOptional, IsString, Max, Min} from "rest-decorators";
 
 // noinspection ES6UnusedImports
-import {DeviceMonitorDevice} from "../device-monitor/device-monitor-device";
+import type {DeviceMonitorDevice} from "../device-monitor/device-monitor-device";
 
 /**
  * This is a representation of all the settings and customization regarding the whole system. These are the settings
@@ -19,8 +19,8 @@ export class SystemSettings {
     /** The name of the home the system is attached to. It's the name seen in the header of any frontend page. */
     public homeName: string           = "Home";
     /**
-     * The interval (seconds) at which {@link DeviceMonitorDevice|`device monitored in the network`} are checked for disconnection.
-     * This applies only to devices already online..
+     * The interval (seconds) at which {@link DeviceMonitorDevice|`devices monitored in the network`} are checked for disconnection.
+     * This applies only to devices already online.
      */
     public offlineCheck: number       = 180;
     /**

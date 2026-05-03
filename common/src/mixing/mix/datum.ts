@@ -525,7 +525,11 @@ export enum DatumType {
     NUMBER     = "NUMBER",
     /** Any string. */
     STRING     = "STRING",
-    /** A color for a light, expressed in RGB, XY or HSB. */
+    /**
+     * A color for a light, expressed in RGB, XY or HSB.
+     *
+     * @see {@link DatumTypeColor|`DatumTypeColor`}.
+     */
     COLOR      = "COLOR",
     /** The temperature of a light, expressed in K or mired. */
     COLOR_TEMP = "COLOR_TEMP",

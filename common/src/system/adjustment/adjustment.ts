@@ -22,7 +22,7 @@ import {Allow, IsEnum, IsNotEmpty, IsNumber, Matches, Min, ValidateIf} from "res
 import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 // noinspection ES6UnusedImports
-import {Actuator} from "../../devices/actuator/actuator";
+import type {Actuator} from "../../devices/actuator/actuator";
 
 /**
  * The type of {@link Adjustment|`Adjustment`}, defining its purpose.

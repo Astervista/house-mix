@@ -1,3 +1,8 @@
+/**
+ * This module contains the {@link MixService|`MixService`} class, handling the business logic about {@link Mix|`Mix`es}.
+ *
+ * @module
+ */
 import {BadRequestException, ConflictException, forwardRef, Inject, Injectable, InternalServerErrorException, NotFoundException} from "@nestjs/common";
 import {Connection, Mix, MixJSON} from "@common/mixing/mix/mix";
 import {FileService} from "../../helpers/file/file.service";
@@ -18,15 +23,43 @@ import {EngineService} from "../../engine/engine.service";
 import {DeviceMonitorService} from "../../system/device-monitor/device-monitor.service";
 import {MixLayout} from "@common/mixing/mix/mix-layout";
 
+// noinspection ES6UnusedImports
+import type {Device} from '@common/devices/device';
+// noinspection ES6UnusedImports
+import type {Sensor} from '@common/devices/sensor/sensor';
+// noinspection ES6UnusedImports
+import type {SystemTimer} from '@common/system/timer/system-timer';
+// noinspection ES6UnusedImports
+import type {SystemParameter } from '@common/system/parameter/system-parameter';
+
+/**
+ * The path of the file where to save the data about {@link Sensor|`Sensor`s}.
+ */
 const SAVE_FILE = "mixing/mix.json";
 
+/**
+ * The {@link MixService|`MixService`} class, handling the business logic about {@link Mix|`Mix`es}.
+ */
 @Injectable()
-class MixService extends PersistentDataService<MixData, MixDataJSON> {
+export class MixService extends PersistentDataService<MixData, MixDataJSON> {
     
+
+    /**
+     * Creates an instance of {@link MixService|`MixService`}. Do not call this constructor directly, it's handled by dependency injection.
+     *
+     * @param {FileService} fileService - The service used for file operations and persistence. Instantiated by dependency injection.
+     * @param {ParametersService} parametersService - The service handling {@link SystemParameter|`SystemParameter`}. Instantiated by dependency injection.
+     * @param {TimersService} timersService - The service handling {@link SystemTimer|`SystemTimer`}. Instantiated by dependency injection.
+     * @param {DeviceMonitorService} deviceMonitorService - The service monitoring device connectivity. Instantiated by dependency injection.
+     * @param {SensorService} sensorService - The service handling business logic for {@link Sensor|`Sensor`s}. Instantiated by dependency injection.
+     * @param {ActuatorService} actuatorService - The service handling business logic for {@link Actuator|`Actuator`s}. Instantiated by dependency injection.
+     * @param {GroupService} groupService - The service handling business logic for {@link Group|`Group`s}. Instantiated by dependency injection.
+     * @param {EngineService} engineService - The service responsible for the mixing engine execution. Instantiated by dependency injection.
+     */
     constructor(
         fileService: FileService,
         @Inject(forwardRef(() => ParametersService))
-        private parameterService: ParametersService,
+        private parametersService: ParametersService,
         @Inject(forwardRef(() => TimersService))
         private timersService: TimersService,
         @Inject(forwardRef(() => DeviceMonitorService))
@@ -43,30 +76,41 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         super(fileService, SAVE_FILE, MixData);
     }
     
+    
+    /**
+     * Retrieves all the {@link Mix|`Mix`es} in the system.
+     *
+     * @returns {Promise<Mix[]>} An array containing the resulting {@link Mix|`Mix`es}.
+     */
     public async getAllMixes(): Promise<Mix[]> {
         return (await this.data).mixes.slice();
     }
     
+    /**
+     * Retrieves a specific {@link Mix|`Mix`} by its unique id number.
+     *
+     * @param {number} id - The unique identifier of the {@link Mix|`Mix`} to retrieve.
+     * @returns {Promise<Mix | null>} - The requested {@link Mix|`Mix`} or null if not found.
+     */
     public async getMixById(id: number): Promise<Mix | null> {
         return (await this.data).mixes.find(a => a.id === id) ?? null;
     }
     
-    
     /**
      * Creates or updates a mix at a specific position.
      *
-     * @param mix The mix to save.
-     * @param position The position (phase and target) where the mix is located.
-     * @returns The id of the saved mix.
+     * @param {Mix} mix - The mix to save.
+     * @param {MixPositionInfo} position - The position (phase and target) where the mix is located.
+     * @returns {Promise<number>} The id assigned to the mix.
      * @throws {BadRequestException} {@link BadRequestException|`BadRequestException`} if:
      * - the request is an update and the mix position is changed
      * - the request is an update and the mix id does not exist yet
-     * - the request is an update and the position pointed to doesn't have the mix assigned to it already
+     * - the request is an update and the mix position pointed to doesn't have the mix assigned to it already
      * - if inputs/imports/outputs are duplicated
      * - if inputs lack corresponding imports
      * - the mix is linked to an actuator and the outputs of the mix contain outputs that are not defined in the actuator's exports, or that are defined differently.
      * - if the mix contains cycles or connections are invalid.
-     * @throws {NotFoundException} If the target sensor, actuator, or group cannot be found.
+     * @throws {NotFoundException} If the target sensor, actuator or group cannot be found.
      * @throws {ConflictException} If an update removes or changes outputs that are currently in use by other mixes downstream,
      *                             or if the inputs are not reachable by a mix in the specified position.
      * @throws {InternalServerErrorException} If an unexpected state occurs during ID assignment or phase handling.
@@ -402,10 +446,18 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return newId;
     }
     
+    /**
+     * Retrieves the list of available {@link ExportedDatum|`ExportedDatum`} that can be imported by a {@link Mix|`Mix`} at a given position.
+     *
+     * @param {MixPositionInfo} position - The position of the mix.
+     * @returns {Promise<ExportedDatum[]>} - A list of available {@link ExportedDatum|`ExportedDatum`} for using as imports.
+     * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the position filters are invalid.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the provided position does not resolve to a known position.
+     */
     public async getAvailableImports(position: MixPositionInfo): Promise<ExportedDatum[]> {
         
         const parameterData =
-                  (await this.parameterService.getAllParameters())
+                  (await this.parametersService.getAllParameters())
                       .map((systemParameter): ExportedDatum => {
                           return new ExportedDatum(
                               systemParameter.name,
@@ -549,6 +601,13 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
+    /**
+     * Extract all the available imports for a {@link Mix|`Mix`} linked to a {@link Group|`Group`} in the sensor phase.
+     *
+     * @param {Group | null} restrictToGroup - The group for which to get the available imports.
+     *                                          If `null` returns all the available inputs in the sensor phase.
+     * @returns {Promise<ExportedDatum[]>} - A list of available {@link ExportedDatum|`ExportedDatum`} for using as imports.
+     */
     private async getGroupImportsInSensorPhase(restrictToGroup: Group | null): Promise<ExportedDatum[]> {
         const data = await this.data;
         let descendants: Group[];
@@ -631,11 +690,20 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return results;
     }
     
-    private async getGroupImportsInActuatorPhase(group: Group, includeGroup: boolean = false): Promise<ExportedDatum[]> {
+    /**
+     * Extract all the available imports for a {@link Mix|`Mix`} linked to a {@link Group|`Group`} in the actuator phase
+     * or to an {@link Actuator|`Actuator`}.
+     *
+     * @param {Group | null} restrictToGroup - The group for which to get the available imports.
+     *                                          If `null` returns all the available inputs in the actuator phase.
+     * @param {boolean} includeGroup - Whether to include the outputs of a group in the result.
+     * @returns {Promise<ExportedDatum[]>} - A list of available {@link ExportedDatum|`ExportedDatum`} for using as imports.
+     */
+    private async getGroupImportsInActuatorPhase(restrictToGroup: Group, includeGroup: boolean = false): Promise<ExportedDatum[]> {
         const data      = await this.data;
-        const ancestors = await this.groupService.getAncestorGroups(group.name);
+        const ancestors = await this.groupService.getAncestorGroups(restrictToGroup.name);
         if (includeGroup) {
-            ancestors.push(group);
+            ancestors.push(restrictToGroup);
         }
         const results: ExportedDatum[] = [];
         for (const ancestor of ancestors) {
@@ -660,6 +728,13 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return results;
     }
     
+    /**
+     * Retrieves the {@link MixPositionInfo|position information} (context) for a specific {@link Mix|`Mix`}.
+     *
+     * @param {number} id - The unique identifier of the {@link Mix|`Mix`}.
+     * @returns {Promise<MixPositionInfo>} - The {@link MixPositionInfo|position information}.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
+     */
     public async getMixPosition(id: number): Promise<MixPositionInfo> {
         const data = await this.data;
         if (data.mixes.every(mix => mix.id != id)) {
@@ -713,6 +788,11 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         throw new NotFoundException("Mix not found");
     }
     
+    /**
+     * Retrieves the global mixing graph representing all connections between mixes assigned to various locations of the system.
+     *
+     * @returns {Promise<MixingGraph>} - The {@link MixingGraph|`MixingGraph`}.
+     */
     public async getGraph(): Promise<MixingGraph> {
         const data  = await this.data;
         const graph = new MixingGraph();
@@ -795,6 +875,16 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return graph;
     }
     
+    /**
+     * Populate the dependencies of a mix in the {@link MixingGraph|`MixingGraph`}.
+     *
+     * @param {Mix} mix - The mix from which to extract the dependencies.
+     * @param {MixingGraph} graph - The {@link MixingGraph|`MixingGraph`} that is being built.
+     *                              The found {@link DatumOrigin|`DatumOrigin`s} will be added to it.
+     * @param {{dependingOn: MixingGraphDependency[]}} dependencyObject - The object where the found dependencies will be put.
+     * @param {MixingGraphDependency[]} dependencyObject.dependingOn - The array where the found dependencies will be put.
+     * @private
+     */
     private extractMixingDependencies(mix: Mix, graph: MixingGraph, dependencyObject: { dependingOn: MixingGraphDependency[] }): void {
         for (const imp of mix.imports) {
             switch (imp.origin) {
@@ -814,17 +904,24 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
+    /**
+     * Retrieves the names of all {@link Mix|`Mix`es} not associated to any {@link Device|`Device`} or {@link Group|`Group`}, but positioned
+     * in the central part of the elaboration, after all the elaboration regarding data from the {@link Sensor|`Sensor`s} has been done
+     * and before the elaboration regarding data to be sent to the {@link Actuator|`Actuator`s} gets started.
+     *
+     * @returns {Promise<{ name: string, mixId: number }[]>} - An array of names to identify the {@link Mix|`Mix`es} positioned in the center.
+     */
     public async getCenterMixes(): Promise<{ name: string, mixId: number }[]> {
         return (await this.data).centerMixes;
     }
     
     /**
-     * Checks if a mix has an import depending on a specific external datum
+     * Checks if there is a {@link Mix|`Mix`} that has an import depending on a specific {@link ExportedDatum|`ExportedDatum`}.
      *
-     * @param {DatumOrigin} origin - The origin type of the dependency to check.
-     * @param {string} originName - The name of the origin associated with the dependency.
-     * @param {string} name - The single input name to check.
-     * @return {Promise<boolean>} Whether the dependency exists.
+     * @param {DatumOrigin} origin - The origin type of the {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string} originName - The name of the origin associated with the {@link ExportedDatum|`ExportedDatum`}.
+     * @param {string} name - The input name to check.
+     * @returns {Promise<boolean>} Whether there exists a dependency on that {@link ExportedDatum|`ExportedDatum`}.
      */
     public async dependencyExists(origin: DatumOrigin, originName: string, name: string): Promise<boolean> {
         const data = await this.data;
@@ -839,12 +936,12 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     }
     
     /**
-     * Returns all the mixes that have an import depending on a specific external datum
+     * Returns all the mixes that have an import depending on a specific external {@link ExportedDatum|`ExportedDatum`}.
      *
-     * @param {DatumOrigin} origins - The origin type of the dependency to check.
-     * @param {string} originName - The name of the origin associated with the dependency.
+     * @param {DatumOrigin} origins - The origin type of the {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string} originName - The name of the origin associated with the {@link ExportedDatum|`ExportedDatum`}.
      * @param {string} name - The single input name to check.
-     * @return {Promise<Mix[]>} The depending mixes.
+     * @returns {Promise<Mix[]>} The depending mixes.
      */
     public async getDependingMixes(origins: DatumOrigin[], originName: string, name: string): Promise<Mix[]> {
         const data = await this.data;
@@ -853,6 +950,14 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         );
     }
     
+    /**
+     * Remove an {@link Mix#outputs|`output`} from a mix.
+     *
+     * @param {number} mixId - The unique identifier of the {@link Mix|`Mix`} from which the datum is removed.
+     * @param {string} outputName - The name of the output to remove.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} was found with the specified ID.
+     */
     public async removeOutputFromMix(mixId: number, outputName: string): Promise<void> {
         const data = await this.data;
         const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
@@ -867,7 +972,14 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         this.saveData();
     }
     
-    
+    /**
+     * Add a datum to a mix's {@link Mix#outputs|`outputs`}.
+     *
+     * @param {number} mixId - The unique identifier of the {@link Mix|`Mix`} to which the datum is added.
+     * @param {Datum} outputInfo - The {@link Datum|`Datum`} to add.
+     * @returns {Promise<void>}
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} was found with the specified ID.
+     */
     public async addOutputToMix(mixId: number, outputInfo: Datum): Promise<void> {
         const data = await this.data;
         const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
@@ -882,6 +994,16 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         this.saveData();
     }
     
+    /**
+     * Realign the references to a {@link Sensor|`Sensor`} after its unique name or display name changes,
+     * If the name corresponds to a {@link Sensor|`Sensor`} referenced by any {@link Mix#imports|`import`}
+     * in a {@link Mix|`Mix`}, the import gets updated with the new `name` and `displayName`.
+     *
+     * @param {string} oldName - The old name of the {@link Sensor|`Sensor`}, to search in the {@link Mix#imports|`imports`}.
+     * @param {string} newName - The new name of the {@link Sensor|`Sensor`}.
+     * @param {string} newDisplayName - The new display name of the {@link Sensor|`Sensor`}.
+     * @returns {Promise<void>}
+     */
     public async sensorRenamed(oldName: string, newName: string, newDisplayName: string): Promise<void> {
         const data = await this.data;
         for (const mix of data.mixes) {
@@ -892,6 +1014,16 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         this.saveData();
     }
     
+    /**
+     * Realign the references to a {@link Group|`Group`} after its unique name or display name changes,
+     * If the name corresponds to a {@link Group|`Group`} referenced by any {@link Mix#imports|`import`}
+     * in a {@link Mix|`Mix`}, the import gets updated with the new `name` and `displayName`.
+     *
+     * @param {string} oldName - The old name of the {@link Group|`Group`}, to search in the {@link Mix#imports|`imports`}.
+     * @param {string} newName - The new name of the {@link Group|`Group`}.
+     * @param {string} newDisplayName - The new display name of the {@link Group|`Group`}.
+     * @returns {Promise<void>}
+     */
     public async groupRenamed(oldName: string, newName: string, newDisplayName: string): Promise<void> {
         const data = await this.data;
         for (const mix of data.mixes) {
@@ -901,18 +1033,19 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     }
     
     /**
-     * Determines the groups available for a given group/sensor to be moved in, taking into account dependencies
-     * and restrictions from the parent chain of the group, and from the descending group and sensors. This only returns the groups
-     * restricted by the status of mixes on the sensor side
+     * Determines the groups available for a given {@link Sensor|`Sensor`} or {@link Group|`Group`} to be moved in, taking into account dependencies
+     * and restrictions from its parent chain, and from the descending {@link Sensor|`Sensor`} and {@link Group|`Group`}. This only returns the groups
+     * restricted by the status of mixes on the sensor side.
      *
-     * @param {string} entityType - Whether the entity is a sensor or a group.
-     * @param {string} entityName - The name of the group for which to fetch available groups.
-     * @return {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
-     * - `available`: An array of groups that the sensor/group can be a part of. If no restrictions are found, all groups are returned.
-     *                `null` means it can be put in the system's root
-     * - `blocking`: The group that is currently blocking further participation, if any. Otherwise, it's null.
-     * - `unreachableMix`: The mix on the blocking group that would become unreachable, if any.
-     * - `dependingMix`: The mix within the moving entity (or its descendants) that depends on the blocking group, if any.
+     * @param {string} entityType - Whether the entity is a {@link Sensor|`Sensor`} or a gro {@link Group|`Group`}up.
+     * @param {string} entityName - The name of the  {@link Group|`Group`} for which to fetch available  {@link Group|`Group`s}.
+     * @returns {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
+     *                              - `available`: An array of {@link Group|`Group`} that the {@link Sensor|`Sensor`} or {@link Group|`Group`} can be a part of.
+     *                                              If no restrictions are found, all {@link Group|`Group`s} are returned.
+     *                                             `null` means it can be put in the system's root
+     *                              - `blocking`: The {@link Group|`Group`} that is currently blocking further participation, if any. Otherwise, it's `null`.
+     *                              - `unreachableMix`: The {@link Mix|`Mix`} on the blocking group that would become unreachable, if any.
+     *                              - `dependingMix`: The  {@link Mix|`Mix`} within the moving entity (or its descendants) that depends on the blocking  {@link Group|`Group`s}, if any.
      */
     public async sensorMixAvailableGroups(
         entityType: EntityType.SENSOR | EntityType.GROUP, entityName: string
@@ -973,7 +1106,37 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
+    private importDependsOn(imp: ExportedDatum, sensorNames: string[], groupNames: string[]): boolean;
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s,
+     * considering the datum depending only if its name is in a specific list of outputs to check.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
+    private importDependsOn(imp: ExportedDatum, sensorNames: string[], groupNames: string[], outputsToCheck?: string[]): boolean;
     
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s,
+     * possibly restricting the conflict check to a subgroup of input names.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to, or `undefined` to consider all outputs.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
     private importDependsOn(imp: ExportedDatum, sensorNames: string[], groupNames: string[], outputsToCheck?: string[]): boolean {
         if (outputsToCheck == null) {
             return (
@@ -1003,7 +1166,35 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
                    );
         }
     }
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing a specific central mix.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string} centerName - The name of the central mix to check.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
+    private importDependsOnCenter(imp: ExportedDatum, centerName: string): boolean;
     
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing a specific central mix,
+     * considering the datum depending only if its name is in a specific list of outputs to check.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string} centerName - The name of the central mix to check.
+     * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
+    private importDependsOnCenter(imp: ExportedDatum, centerName: string, outputsToCheck?: string[]): boolean;
+    
+    /**
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing a specific central mix,
+     * possibly restricting the conflict check to a subgroup of input names.
+     *
+     * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
+     * @param {string} centerName - The name of the central mix to check.
+     * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to, or `undefined` to consider all outputs.
+     * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
+     */
     private importDependsOnCenter(imp: ExportedDatum, centerName: string, outputsToCheck?: string[]): boolean {
         if (outputsToCheck == null) {
             return (
@@ -1020,18 +1211,18 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     }
     
     /**
-     * Determines the groups available for a given group/actuator to be moved in, taking into account dependencies
-     * and restrictions from the parent chain of the group, and from the descending group and actuators. This only returns the groups
-     * restricted by the status of mixes on the actuator side
+     * Determines the {@link Group|`Group`s} available for a given {@link Group|`Group`} or {@link Actuator|`Actuator`} to be moved in, taking into account dependencies
+     * and restrictions from its parent chain, and from the ancestor {@link Group|`Group`s} and {@link Actuator|`Actuator`s}. This only returns the {@link Group|`Group`s}
+     * restricted by the status of {@link Mix|`Mix`es} on the actuator side.
      *
-     * @param {string} entityType - Whether the entity is an actuator or a group.
-     * @param {string} entityName - The name of the actuator or group for which to fetch available groups.
-     * @return {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
-     * - `available`: An array of groups that the actuator/group can be a part of. If no restrictions are found, all groups are returned.
+     * @param {string} entityType - Whether the entity is an {@link Actuator|`Actuator`} or a {@link Group|`Group`}.
+     * @param {string} entityName - The name of the {@link Actuator|`Actuator`} or {@link Group|`Group`} for which to fetch available {@link Group|`Group`s}.
+     * @returns {Promise<{available: (Group | null)[], blocking: Group | null, unreachableMix: Mix | null, dependingMix: Mix | null}>} A promise that resolves to an object containing:
+     * - `available`: An array of {@link Group|`Group`s} that the {@link Actuator|`Actuator`}/{@link Group|`Group`} can be a part of. If no restrictions are found, all {@link Group|`Group`s} are returned.
      *                `null` means it can be put in the system's root
-     * - `blocking`: The group that is currently blocking further participation, if any. Otherwise, it's null.
-     * - `unreachableMix`: The mix on the blocking group that would become unreachable, if any.
-     * - `dependingMix`: The mix within the moving entity (or its descendants) that depends on the blocking group, if any.
+     * - `blocking`: The {@link Group|`Group`} that is currently blocking further participation, if any. Otherwise, it's `null`.
+     * - `unreachableMix`: The {@link Mix|`Mix`} on the blocking {@link Group|`Group`} that would become unreachable, if any.
+     * - `dependingMix`: The {@link Mix|`Mix`} within the moving entity (or its descendants) that depends on the blocking {@link Group|`Group`}, if any.
      */
     public async actuatorMixAvailableGroups(
         entityType: EntityType.ACTUATOR | EntityType.GROUP,
@@ -1128,6 +1319,15 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
+    /**
+     * Checks whether among all the system's {@link Mix|`Mix`es} (except the specified ones to exclude) there
+     * are some that depend on an entity, and therefore whether the entity can be deleted or not.
+     *
+     * @param {EntityType} entityType - The type of the entity to check for deletion.
+     * @param {string} name - The name of the entity to check for deletion.
+     * @param {(number | "NEW")[]} excludeMixes - The @{@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
+     * @returns {Promise<boolean>} Whether the entity can be deleted (`true` if there are no {@link Mix|`Mix`es} depending on it.
+     */
     public async canDelete(entityType: EntityType, name: string, excludeMixes: (number | "NEW")[] = []): Promise<boolean> {
         const data = await this.data;
         switch (entityType) {
@@ -1152,6 +1352,14 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         }
     }
     
+    /**
+     * Get all the {@link MixPositionInfo|`mix positions`} that prevents an entity in the system from being deleted.
+     *
+     * @param {EntityType | Exclude<SystemOrigin, SystemOrigin.ENVIRONMENT>} entityType - The type of the entity to check for deletion.
+     * @param {string} name - The name of the entity to check for deletion.
+     * @param {(number | "NEW")[]} excludeMixes - The @{@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
+     * @returns {Promise<MixPositionInfo[]>} The {@link MixPositionInfo|`mix positions`} that prevent the entity from being deleted.
+     */
     public async getDeleteLocks(entityType: EntityType | Exclude<SystemOrigin, SystemOrigin.ENVIRONMENT>, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {
         const data = await this.data;
         let mixes: Mix[];
@@ -1259,7 +1467,15 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return result;
     }
     
-    public async deleteMix(mixId: number, avoidCorrectnessCheck: boolean = false): Promise<void> {
+     /**
+      * Deletes a {@link Mix|`Mix`} from the system.
+      *
+      * @param {number} mixId - The unique identifier of the {@link Mix|`Mix`} to delete.
+      * @param {boolean} avoidCorrectnessCheck - Whether to skip correctness checks before deletion. Defaults to false.
+      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no mix with the specified ID exists.
+      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the mix cannot be deleted because it is currently being used or referenced by other mixes or entities downstream.
+      */
+     public async deleteMix(mixId: number, avoidCorrectnessCheck: boolean = false): Promise<void> {
         const data  = await this.data;
         const index = data.mixes.findIndex(otherMix => otherMix.id == mixId);
         if (index == -1) {
@@ -1353,6 +1569,13 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         this.saveData();
     }
     
+    /**
+     * Retrieves the UI {@link MixLayout|layout} for a specific {@link Mix|`Mix`}.
+     *
+     * @param {number} mixId - The unique identifier of the {@link Mix|`Mix`}.
+     * @returns {Promise<MixLayout>} - The {@link MixLayout|layout} including node positions.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
+     */
     public async getMixLayout(mixId: number): Promise<MixLayout> {
         const data = await this.data;
         const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
@@ -1362,6 +1585,14 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
         return data.layouts.find(layout => layout.mixId == mixId)?.layout ?? new MixLayout({}, []);
     }
     
+    /**
+     * Saves the UI {@link MixLayout|layout} for a specific {@link Mix|`Mix`}.
+     *
+     * @param {number} mixId - The unique identifier of the {@link Mix|`Mix`}.
+     * @param {MixLayout} layout - The {@link MixLayout|layout} to save.
+     * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the layout data is malformed or contains invalid coordinates.
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
+     */
     public async saveMixLayout(mixId: number, layout: MixLayout): Promise<void> {
         const data = await this.data;
         const mix  = data.mixes.find(otherMix => otherMix.id == mixId);
@@ -1381,19 +1612,69 @@ class MixService extends PersistentDataService<MixData, MixDataJSON> {
     }
 }
 
-export default MixService;
+/**
+ * Information about a mix in the center of the system.
+ */
+export interface CenterMix {
+    /**
+     * The unique identifier of the central mix.
+     */
+    name: string;
+    /**
+     * The name of the central mix displayed in the UI.
+     */
+    displayName: string;
+    /**
+     * The unique ID of the linked mix.
+     */
+    mixId: number
+}
 
+/**
+ * Data about the layout of a {@link Mix|`Mix`} in the system.
+ */
+export interface MixDataLayout {
+    /**
+     * The unique ID of the mix this layout is for.
+     */
+    mixId: number;
+    /**
+     * The layout data.
+     */
+    layout: MixLayout
+}
 
+/**
+ * The persistent data structure used by {@link MixService|`MixService`}
+ * for persisting data about {@link Mix|`Mix`es}.
+ */
 export class MixData {
     
+    /**
+     * All the mixes in the system.
+     */
     public mixes: Mix[];
     
+    /**
+     * The next unique identifier to assign to a new mix.
+     */
     public nextId: number = 0;
     
-    public centerMixes: { name: string, displayName: string, mixId: number }[] = [];
+    /**
+     * The list of mixes positioned in the central phase of the system.
+     */
+    public centerMixes: CenterMix[] = [];
     
-    public layouts: { mixId: number, layout: MixLayout }[] = [];
+    /**
+     * The UI layouts for the mixes.
+     */
+    public layouts: MixDataLayout[] = [];
     
+    /**
+     * Creates an instance of the class from the saved serialized {@link MixDataJSON|`MixDataJSON`}.
+     *
+     * @param {MixDataJSON} mixDataJSON - The saved serialized {@link MixDataJSON|`MixDataJSON`} to use for populating the new instance.
+     */
     constructor(mixDataJSON?: MixDataJSON) {
         if (mixDataJSON) {
             this.mixes  = mixDataJSON.mixes.map((mixJSON: MixJSON) => Mix.fromJSON(mixJSON));
@@ -1406,6 +1687,11 @@ export class MixData {
         this.layouts = mixDataJSON?.layouts ?? [];
     }
     
+    /**
+     * Converts the mix data instance into its JSON representation.
+     *
+     * @returns {MixDataJSON} The JSON representation of `this`.
+     */
     public toJSON(): MixDataJSON {
         return {
             mixes:       this.mixes.map((mix: Mix) => mix.toJSON()),
@@ -1417,9 +1703,24 @@ export class MixData {
     
 }
 
+/**
+ * The serialization of the class {@link MixData|`MixData`}.
+ */
 export interface MixDataJSON {
+    /**
+     * Serialization of the property {@link MixData#mixes|`mixes`}.
+     */
     mixes: MixJSON[];
+    /**
+     * Serialization of the property {@link MixData#nextId|`nextId`}.
+     */
     nextId: number;
-    centerMixes?: { name: string, displayName: string, mixId: number }[];
-    layouts?: { mixId: number, layout: MixLayout }[];
+    /**
+     * Serialization of the property {@link MixData#centerMixes|`centerMixes`}.
+     */
+    centerMixes?: CenterMix[];
+    /**
+     * Serialization of the property {@link MixData#layouts|`layouts`}.
+     */
+    layouts?: MixDataLayout[];
 }
