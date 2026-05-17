@@ -1187,8 +1187,266 @@ div[data-section=Body] > div > div > div.prose {
 }
 
 
+.version-selector {
+    margin: 0 10px;
+    padding: 5px;
+    font-size: 1.1rem;
+    outline: solid 2px transparent;
+    transition: outline-color 0.3s;
+    cursor: pointer;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    position: relative;
+    user-select: none;
+}
+
+.version-selector:before {
+    content: "Version";
+}
+.version-selector:after {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: auto;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjRweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyNHB4IiBmaWxsPSIjZjQ2MDIzIj48cGF0aCBkPSJNNDgwLTM2MCAyODAtNTYwaDQwMEw0ODAtMzYwWiIvPjwvc3ZnPg==");
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.version-selector:hover {
+    outline-color: var(--color-link);
+}
+
+.version-selector:focus {
+    outline-color: var(--color-accent);
+}
+
+
+.version-selector:focus:after,
+.version-selector:hover:after {
+    opacity: 1;
+}
+
+
+.version-tag {
+    margin-left: auto;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 0.3rem;
+    padding: 0.2rem 0.3rem;
+}
+
+.version-tag-margin {
+    margin-left: 5px;
+}
+
+.version-tag-beta {
+    background-color: coral;
+}
+.version-tag-main {
+    background-color: #0081ce;
+}
+
+.version-dropdown {
+    position: absolute;
+    left: 50%;
+    top: 120%;
+    transform: translateX(-50%);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s;
+    display: flex;
+    flex-direction: column;
+    background: var(--nav-bar-color);
+    outline: solid 2px var(--color-accent);
+    border-radius: 5px;
+    padding: 7px 0;
+}
+
+.version-dropdown.right {
+    left: 100%;
+    transform: translateX(-100%);
+}
+
+.version-dropdown.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.version-dropdown-element {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 8px;
+    transition: background-color 0.2s;
+}
+
+.version-dropdown-element:before {
+    content: "";
+    display: block;
+    width: 24px;
+    height: 24px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: auto;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGhlaWdodD0iMjRweCIgdmlld0JveD0iMCAtOTYwIDk2MCA5NjAiIHdpZHRoPSIyNHB4IiBmaWxsPSIjZjQ2MDIzIj48cGF0aCBkPSJNNDAwLTMwNCAyNDAtNDY0bDU2LTU2IDEwNCAxMDQgMjY0LTI2NCA1NiA1Ni0zMjAgMzIwWiIvPjwvc3ZnPg==");
+    opacity: 0;
+}
+
+.version-dropdown-element.selected:before {
+    opacity: 1;
+}
+
+.version-dropdown-element:focus {
+    outline: none;
+    background: color-mix(in srgb, var(--text-aside-color), #0000 92%)
+}
+
+.version-dropdown-element:hover {
+    background: color-mix(in srgb, var(--text-aside-color), #0000 92%)
+}
+
+.version-dropdown-element:hover:focus {
+    background: color-mix(in srgb, var(--text-aside-color), #0000 82%)
+}
+
+.version-dropdown-element:active {
+    background: color-mix(in srgb, var(--text-aside-color), #0000 82%)
+}
+
+.version-dropdown-element:active:focus {
+    background: color-mix(in srgb, var(--text-aside-color), #0000 72%)
+}
+
+
+
 /*
 //</style><script>
+
+
+    let projectName = "rest";
+    let isHomePage = false;
+    let promise =
+        fetch("/contents.json")
+            .then(res => res.json());
+    document.addEventListener("DOMContentLoaded", () => {
+        const newNode = document.createElement("div");
+            promise.then(allInfo => {
+                const project = allInfo.projects.find(proj => proj.name === "house-mix");
+                if (project != null) {
+                    let version = /(?<=^\/archive\/house-mix\/)\d+_\d+_\d+/.exec(window.location.pathname);
+                    if (version != null) {
+                        version = version[0].replace(/_/g, ".");
+                    } else {
+                        version = project.mainVersion
+                    }
+                    newNode.innerText = version
+                    if (project.betaVersions.includes(version)) {
+                        const betaTag = document.createElement("span");
+                        betaTag.classList.add("version-tag");
+                        betaTag.classList.add("version-tag-beta");
+                        betaTag.classList.add("version-tag-margin");
+                        betaTag.innerText = "BETA";
+                        newNode.append(betaTag);
+                    }
+                    const dropDown = document.createElement("div");
+                    dropDown.classList.add("version-dropdown");
+                    if (isHomePage) {
+                        dropDown.classList.add("right");
+                    }
+                    newNode.append(dropDown);
+                    const versionElements = [];
+                    for (const otherVersion of project.versions) {
+                        const versionElement = document.createElement("div");
+                        versionElement.classList.add("version-dropdown-element");
+                        versionElement.innerText = otherVersion;
+
+                        if (project.betaVersions.includes(otherVersion)) {
+                            const betaTag = document.createElement("span");
+                            betaTag.classList.add("version-tag");
+                            betaTag.classList.add("version-tag-beta");
+                            betaTag.innerText = "BETA";
+                            versionElement.append(betaTag);
+                        }
+                        if (project.mainVersion === otherVersion) {
+                            const mainTag = document.createElement("span");
+                            mainTag.classList.add("version-tag");
+                            mainTag.classList.add("version-tag-main");
+                            mainTag.innerText = "CURRENT";
+                            versionElement.append(mainTag);
+                        }
+                        versionElement.tabIndex = 0;
+                        dropDown.append(versionElement);
+                        if (otherVersion === version) {
+                            versionElement.classList.add("selected");
+                        }
+                        versionElement.addEventListener("click", () => {
+                            if (otherVersion === project.mainVersion) {
+
+                                window.location.pathname = `/${project.name}/${(isHomePage ? "" : projectName)}`;
+                            } else {
+                                window.location.pathname = `/archive/${project.name}/${otherVersion.replace(/\./g, "_")}/${(isHomePage ? "" : projectName)}`;
+                            }
+                        })
+                        versionElement.dataset["version"] = otherVersion
+                        versionElements.push(versionElement);
+                    }
+                    dropDown.addEventListener("keydown", (e) => {
+                        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                            e.preventDefault();
+                            let index = versionElements.findIndex(el => el.dataset["selected"] === "true");
+                            if (index === -1) {
+                                index = 0;
+                            }
+                            versionElements[index].dataset["selected"] = "false";
+                            if (e.key === "ArrowDown") {
+                                index++;
+                            } else {
+                                index--;
+                            }
+                            if (index >= versionElements.length) {
+                                index = 0;
+                            }
+                            if (index < 0) {
+                                index = versionElements.length - 1;
+                            }
+                            versionElements[index].dataset["selected"] = "true";
+                            versionElements[index].focus();
+
+                        } else if (e.key === "Enter") {
+                            let index = versionElements.findIndex(el => el.dataset["selected"] === "true");
+                            if (index !== -1) {
+                                versionElements[index].click();
+                            }
+
+                        }
+                    })
+                    newNode.addEventListener("click", () => {
+                        dropDown.classList.toggle("visible");
+                        let index = versionElements.findIndex(el => el.dataset["selected"] === "true");
+                        if (index === -1) {
+                            index = versionElements.findIndex(el => el.dataset["version"] === version);
+                        }
+                        if (index !== -1) {
+                            versionElements[index].focus();
+                        }
+                    })
+                }
+            })
+        newNode.innerText = "Loading version..."
+        newNode.classList.add("version-selector");
+        newNode.tabIndex = 0;
+        document.querySelector("#content-area > article > header > div > span").before(newNode)
+        document.querySelector("#content-area > article > header > div > span").remove()
+    })
+
+    document.title = `REST API | HouseMix docs`;
 
     document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";
 
@@ -1220,6 +1478,11 @@ div[data-section=Body] > div > div > div.prose {
                     }
                 }
             }
+            try {
+                if (m.target.getAttribute("href") == "api/index.html") {
+                    m.target.setAttribute("href", "../");
+                }
+            } catch (e) {console.log(e)}
         })
         document.querySelectorAll('.nav-link>span.items-center').forEach(span => {
             const text = span.textContent.trim();

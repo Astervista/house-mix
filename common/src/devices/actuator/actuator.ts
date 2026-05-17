@@ -22,10 +22,10 @@ export class Actuator extends Device {
     /**
      * Creates an instance of the class.
      *
-     * @param {string} name - Same as in {@link Device|`new Device()`}.
-     * @param {string} displayName - Same as in {@link Device|`new Device()`}.
+     * @param {string} name - Same as in {@link Device| `new Device()`}.
+     * @param {string} displayName - Same as in {@link Device| `new Device()`}.
      * @param {ActuatorType} type - The {@link ActuatorType|type} of the actuator.
-     * @param {string} zigbeeAddress - Same as in {@link Device|`new Device()`}.
+     * @param {string} zigbeeAddress - Same as in {@link Device| `new Device()`}.
      */
     constructor(
         name: string,

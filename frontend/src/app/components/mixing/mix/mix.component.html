@@ -132,7 +132,7 @@
                             }
                         }
 
-                        @let connectionPosition = uiManager.draggingConnector;
+                        @let connectionPosition = uiManager.draggingConnection;
                         @if (connectionPosition != null) {
                             @let width = connectionPosition.to.x - connectionPosition.from.x;
                             @let height = Math.abs(connectionPosition.to.y - connectionPosition.from.y);
@@ -265,7 +265,7 @@
                                         @let leftDisplacement = uiManager.getConnectionsDisplacement(group, true);
                                         @let rightDisplacement = uiManager.getConnectionsDisplacement(group, false);
                                         @for (input of group.inputs; track input; let inputIndex = $index) {
-                                            @let connectionTop = uiManager.getConnectionTop(inputIndex) + leftDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
+                                            @let connectionTop = uiManager.getConnectorTop(inputIndex) + leftDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
                                             <rect
                                                 class="input-area"
                                                 [attr.width]="MEASURES.NODE_WIDTH / 2"
@@ -363,7 +363,7 @@
                                             }
                                         }
                                         @for (output of group.outputs; track output; let outputIndex = $index) {
-                                            @let connectionTop = uiManager.getConnectionTop(outputIndex) + rightDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
+                                            @let connectionTop = uiManager.getConnectorTop(outputIndex) + rightDisplacement + MEASURES.NODE_HEADING_HEIGHT * 0.5;
                                             <rect
                                                 class="input-area"
                                                 [attr.width]="MEASURES.NODE_WIDTH / 2"
@@ -967,7 +967,7 @@
                                     </text>
                                     @for (inputInfo of getAllNodeInputs(node); track $index; let inputIndex = $index) {
                                         @let input = inputInfo.datum;
-                                        @let connectionTop = uiManager.getConnectionTop(inputIndex) + leftDisplacement;
+                                        @let connectionTop = uiManager.getConnectorTop(inputIndex) + leftDisplacement;
                                         @let disabled = inputsDisabled
                                                         || ((temporaryConnectorDatumInfo != null) && (input.type != temporaryConnectorDatumInfo.type))
                                                         || ((temporaryConnectorDatumInfo != null) && (!input.nullable && temporaryConnectorDatumInfo.nullable))
@@ -1192,7 +1192,7 @@
                                         }
                                     }
                                     @for (output of node.outputs; track output; let outputIndex = $index) {
-                                        @let connectionTop = uiManager.getConnectionTop(outputIndex) + rightDisplacement;
+                                        @let connectionTop = uiManager.getConnectorTop(outputIndex) + rightDisplacement;
                                         @let disabled = outputsDisabled
                                                         || ((temporaryConnectorDatumInfo != null) && (output.type != temporaryConnectorDatumInfo.type))
                                                         || ((temporaryConnectorDatumInfo != null) && (output.nullable && !temporaryConnectorDatumInfo.nullable));

@@ -21,7 +21,7 @@ import type {Sensor} from "../sensor/sensor";
  */
 export class Group {
     
-    /** The unique {@link Group#name|`name`}s of the first-level subgroups of this group. */
+    /** The unique {@link Group#name|`name`s} of the first-level subgroups of this group. */
     private readonly _groups: string[] = [];
     
     /** The unique {@link Actuator#name|`name`s} of the {@link Actuator|`Actuator`} children this group. */
@@ -55,7 +55,7 @@ export class Group {
     }
     
     /**
-     * Returns the unique {@link Group#name|`name`}s of the first-level actuators of this group as a
+     * Returns the unique {@link Group#name|`name`s} of the first-level actuators of this group as a
      * copy of the internal array.
      *
      * @returns {readonly string[]} An immutable array containing the actuators.
@@ -65,7 +65,7 @@ export class Group {
     }
     
     /**
-     * Returns the unique {@link Group#name|`name`}s of the first-level sensors of this group as a
+     * Returns the unique {@link Group#name|`name`s} of the first-level sensors of this group as a
      * copy of the internal array.
      *
      * @returns {readonly string[]} An immutable array containing the sensors.
@@ -75,7 +75,7 @@ export class Group {
     }
     
     /**
-     * Returns the unique {@link Group#name|`name`}s of the first-level subgroups of this
+     * Returns the unique {@link Group#name|`name`s} of the first-level subgroups of this
      * group as a copy of the internal.
      *
      * @returns {readonly string[]} An immutable array containing the subgroups.

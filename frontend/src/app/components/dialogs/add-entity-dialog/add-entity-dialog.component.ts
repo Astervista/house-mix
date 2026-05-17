@@ -1,3 +1,8 @@
+/**
+ *  This module contains the {@link AddEntityDialogComponent|`AddEntityDialogComponent`} and related classes.
+ *
+ *  @module
+ */
 import {AfterViewInit, Component, Inject, ViewChild} from '@angular/core';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
 import {MatButton, MatIconButton} from '@angular/material/button';
@@ -39,6 +44,46 @@ import {InputReturnBehaviorDirective} from '../../../directives/input-return-beh
 import {MatTooltip} from '@angular/material/tooltip';
 import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
 
+// noinspection ES6UnusedImports
+import type {MatDialog} from '@angular/material/dialog';
+// noinspection ES6UnusedImports
+import type {Device} from '@common/devices/device';
+// noinspection ES6UnusedImports
+import type {Mix} from '@common/mixing/mix/mix';
+
+/**
+ * Values emitted from the {@link FormGroup#valueChanges|`FormGroup.valueChanges`} of
+ * {@link AddEntityDialogComponent#formGroup|`formGroup`}.
+ *
+ * @notExported
+ */
+interface GroupValueChanges {
+    /** A unique name. */
+    name: string | null;
+    /** A display name to identify an entity in the UI. */
+    displayName: string | null;
+    /** An actuator type of an entity, if applicable. */
+    actuatorType: ActuatorType | null;
+    /** A sensor type of an entity, if applicable. */
+    sensorType: SensorType | null;
+    /** An address on the zigbee network. */
+    zigbeeAddress: string | null;
+}
+
+/**
+ * A dialog for creating and editing a {@link Sensor|`Sensor`},
+ * {@link Actuator|`Actuator`} or {@link Group|`Group`}.
+ *
+ * The dialog provides an input for each property of the entity, and an additional
+ * {@link EntityLocationInputComponent|`<house-mix-entity-location-input>`} during
+ * creation for choosing the location of the entity.
+ *
+ * @see {@link AddEntityDialogData|`AddEntityDialogData`} - The input data.
+ * @see {@link AddEntityDialogResult|`AddEntityDialogResult`} - The result data.
+ *
+ * @component
+ * @componentSelector `<house-mix-add-entity-dialog>`
+ */
 @Component({
                selector:    'house-mix-add-entity-dialog',
                imports: [
@@ -73,18 +118,34 @@ import {TOOLTIP_TIMEOUT} from '../../../utils/constants';
            })
 export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialogData, AddEntityDialogResult> implements AfterViewInit {
 
+    /** Variable to hold the current state of the result, if the {@link EntityType|`EntityType`} is {@link EntityType.GROUP|`EntityType.GROUP`}. */
     protected groupResult: GroupInfo | null       = null;
+    /** Variable to hold the current state of the result, if the {@link EntityType|`EntityType`} is {@link EntityType.ACTUATOR|`EntityType.ACTUATOR`}. */
     protected actuatorResult: ActuatorInfo | null = null;
+    /** Variable to hold the current state of the result, if the {@link EntityType|`EntityType`} is {@link EntityType.SENSOR|`EntityType.SENSOR`}. */
     protected sensorResult: SensorInfo | null     = null;
 
+    /**
+     * The component handling the `name` and `displayName` of the entity.
+     *
+     * @viewChild {@link EntityNamesInputsComponent|`EntityNamesInputsComponent`}
+     */
     @ViewChild(EntityNamesInputsComponent)
     private nameInputsComponent!: EntityNamesInputsComponent;
 
+    /**
+     * The component handling the location where the entity will be put.
+     *
+     * @viewChild {@link EntityLocationInputComponent|`EntityLocationInputComponent`}
+     */
     @ViewChild(EntityLocationInputComponent)
     private entityLocationInputComponent?: EntityLocationInputComponent;
 
+    /** The {@link FormControl|`FormControl`} handling the {@link Actuator#type|`Actuator type`} input field. */
     protected actuatorTypeFormControl: FormControl<ActuatorType | null> = new FormControl<ActuatorType | null>(null, Validators.required);
+    /** The {@link FormControl|`FormControl`} handling the {@link Sensor#type|`Sensor type`} input field. */
     protected sensorTypeFormControl: FormControl<SensorType | null>     = new FormControl<SensorType | null>(null, Validators.required);
+    /** The {@link FormControl|`FormControl`} handling the zigbee address input field. Validates it for 16 hex digits. */
     protected zigbeeAddressFormControl: FormControl<string | null>      = new FormControl<string | null>(
         null,
         [
@@ -95,24 +156,47 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         ]
     );
 
+    /** The {@link FormGroup|`FormGroup`} handling all the controls in this dialog. */
     protected formGroup: FormGroup | null = null;
 
+    /** The groups to show in the parent selection. */
     protected groups: GroupInfo[] = [];
 
+    /**
+     * The list of {@link Device#exposes|`exposes`} chosen for this entity, if the {@link EntityType|`EntityType`}
+     * is {@link EntityType.ACTUATOR|`EntityType.ACTUATOR`} or {@link EntityType.SENSOR|`EntityType.SENSOR`}.
+     */
     protected deviceExposes: Datum[] = [];
 
+    /**
+     * Whether the {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`} has been changed from
+     * the initial value passed to the dialog.
+     */
     private _exposesDirty: boolean = false;
 
-    protected lockedExposedLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
-    protected lockedExposed: LockedExposes[]            = [];
+    /** The {@link LoadingStatus|`LoadingStatus`} of the request loading {@link AddEntityDialogComponent#lockedExposes|`lockedExposes`}. */
+    protected lockedExposesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
+    /** The {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`} that can't be removed because used in some {@link Mix|`Mix`}. */
+    protected lockedExposes: LockedExposes[]            = [];
+    /** The {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`} that was attempted to be removed but failed because it's {@link AddEntityDialogComponent#lockedExposes|locked}. */
     protected errorDatum: Datum | null                  = null;
+    /** The dependencies that prevent {@link AddEntityDialogComponent#errorDatum|`errorDatum`} from being removed. */
     protected errorDatumDependencies: MixPositionInfo[] = [];
 
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {AddEntityDialogData} data - The initial configuration of the dialog.
+     * @param {MatDialogRef<AddEntityDialogComponent, AddEntityDialogResult>} matDialogRef - The dialog reference.
+     * @param {BetterMatDialog} matDialog - The dialog service. Instantiated by dependency injection.
+     * @param {DeviceService} deviceService - The {@link Device|`Device`} service. Instantiated by dependency injection.
+     */
     constructor(
         @Inject(MAT_DIALOG_DATA) data: AddEntityDialogData,
         matDialogRef: MatDialogRef<AddEntityDialogComponent, AddEntityDialogResult>,
         private matDialog: BetterMatDialog,
-        private deviceService: DeviceService
+        deviceService: DeviceService
     ) {
         super(data, matDialogRef);
         this.groups = groupsToDialogSelect(data.groupNames, data.groupDisplays);
@@ -126,19 +210,22 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             this.sensorTypeFormControl.setValue(this.data.edit.sensorType);
             this.deviceExposes = this.data.edit.exposes;
         }
-        if (data.edit != null && data.entityType == EntityType.SENSOR && this.lockedExposedLoadingStatus != LoadingStatus.LOADED) {
+        if (data.edit != null && data.entityType == EntityType.SENSOR && this.lockedExposesLoadingStatus != LoadingStatus.LOADED) {
             deviceService
                 .getLockedSensorExposes({name: data.edit.name})
                 .then((result) => {
-                    this.lockedExposed              = result;
-                    this.lockedExposedLoadingStatus = LoadingStatus.LOADED;
+                    this.lockedExposes              = result;
+                    this.lockedExposesLoadingStatus = LoadingStatus.LOADED;
                 })
                 .catch(() => {
-                    this.lockedExposedLoadingStatus = LoadingStatus.ERROR;
+                    this.lockedExposesLoadingStatus = LoadingStatus.ERROR;
                 });
         }
     }
 
+    /**
+     * Implementation of {@link AfterViewInit#ngAfterViewInit| `AfterViewInit.ngAfterViewInit()`}.
+     */
     public ngAfterViewInit(): void {
         if ((this.data.edit == null) && (this.entityLocationInputComponent != null)) {
             switch (this.data.entityType) {
@@ -226,14 +313,17 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             });
     }
 
+    /**
+     * This function gets called every on {@link FormGroup#valueChanges|`FormGroup.valueChanges`} of
+     * {@link AddEntityDialogComponent#formGroup|`formGroup`}.
+     * It will align {@link AddEntityDialogComponent#groupResult|`groupResult`},
+     * {@link AddEntityDialogComponent#actuatorResult|`actuatorResult`} or {@link AddEntityDialogComponent#sensorResult|`sensorResult`}
+     * according to the new values stored in the {@link FormGroup|`FormGroup`}.
+     *
+     * @param {GroupValueChanges} values - The values from the {@link FormGroup|`FormGroup`}.
+     */
     private groupValueChanges(
-        values: {
-            name: string | null;
-            displayName: string | null;
-            actuatorType: ActuatorType | null;
-            sensorType: SensorType | null;
-            zigbeeAddress: string | null
-        }
+        values: GroupValueChanges
     ): void {
         if (this.formGroup == null) {
             return;
@@ -309,24 +399,34 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    /**
+     * Whether the {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`} has been changed from
+     * the initial value passed to the dialog.
+     */
     private get exposesDirty(): boolean {
         return this._exposesDirty;
     }
 
+    /**
+     * Change the {@link AddEntityDialogComponent#exposesDirty|`dirty status`} of
+     * {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`}, updating
+     * the result {@link AddEntityDialogComponent#formGroup|`formGroup`} if
+     * necessary.
+     */
     private set exposesDirty(value: boolean) {
         this._exposesDirty = value;
         if (this.formGroup != null) {
             this.groupValueChanges(
-                this.formGroup.value as {
-                    name: string | null;
-                    displayName: string | null;
-                    actuatorType: ActuatorType | null;
-                    sensorType: SensorType | null;
-                    zigbeeAddress: string | null
-                });
+                this.formGroup.value as GroupValueChanges);
         }
     }
 
+    /**
+     * Get the correct dialog title based on the {@link AddEntityDialogComponent#data|`data`}
+     * passed to it.
+     *
+     * @returns {string} - The appropriate title for this dialog.
+     */
     protected get title(): string {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
@@ -341,6 +441,13 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+
+    /**
+     * Get the correct name input hint based on the {@link AddEntityDialogComponent#data|`data`}
+     * passed to it.
+     *
+     * @returns {string} - The appropriate hint for the name input.
+     */
     protected get nameInputHint(): string {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
@@ -355,6 +462,12 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    /**
+     * Get the correct display name input hint based on the {@link AddEntityDialogComponent#data|`data`}
+     * passed to it.
+     *
+     * @returns {string} - The appropriate hint for the display name input.
+     */
     protected get displayNameInputHint(): string {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
@@ -369,13 +482,12 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    /**
+     * An instance of {@link AddEntityDialogResult|`AddEntityDialogResult`} given
+     * the current status of the dialog, or `null` if the dialog status is invalid.
+     */
     protected get result():
-        AddEntityDialogResultGroup
-        | AddEntityDialogResultActuator
-        | AddEntityDialogResultSensor
-        | EditEntityDialogResultGroup
-        | EditEntityDialogResultActuator
-        | EditEntityDialogResultSensor
+        AddEntityDialogResult
         | null {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
@@ -470,6 +582,9 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    /**
+     * Whether the dialog is invalid and thus the dialog confirm button should be disabled.
+     */
     protected get confirmDisabled(): boolean {
         switch (this.data.entityType) {
             case EntityType.GROUP: {
@@ -484,6 +599,16 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         }
     }
 
+    /**
+     * Sorts a given list of possible {@link DeviceLibraryProperty|`DeviceLibraryProperty`} in order
+     * of most suitable to least suitable for a specific {@link ActuatorType|`ActuatorType`} or
+     * {@link SensorType|`SensorType`}.
+     *
+     * @param {DeviceLibraryProperty[]} library - The available properties to be sorted.
+     * @param {ActuatorType | SensorType | null} type - The type of the entity to sort the result by. If `null`, no sorting gets done.
+     * @returns {DeviceLibraryProperty[]} - `library`, but sorted in the order of most suitable to least suitable.
+     * @protected
+     */
     protected getSuggestedExposes(library: DeviceLibraryProperty[], type: ActuatorType | SensorType | null): DeviceLibraryProperty[] {
         return library.slice().sort((a, b) => {
             let aLevel = 0;
@@ -512,6 +637,14 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         });
     }
 
+    /**
+     * Adds a list of {@link Datum|`Datum`} to {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`},
+     * presumably from a {@link DeviceLibraryProperty|`DeviceLibraryProperty`}, joining it to the already inserted
+     * exposes, ignoring duplicates (same datum name, if the {@link Datum|`Datum`} is otherwise different,
+     * the value that's already inserted is kept).
+     *
+     * @param {Datum[]} data - The {@link Datum|`Datum`s} to add.
+     */
     protected set deviceExposesFromLibrary(data: Datum[]) {
         this.deviceExposes.push(
             ...data
@@ -523,8 +656,17 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         this.exposesDirty = true;
     }
 
+    /**
+     * Remove a {@link Datum|`Datum`} from {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`},
+     * if not locked according to {@link AddEntityDialogComponent#lockedExposes|`lockedExposes`}. In the
+     * latter case, shows the relevant error in {@link AddEntityDialogComponent#errorDatum|`errorDatum`} and
+     * {@link AddEntityDialogComponent#errorDatumDependencies|`errorDatumDependencies`}.
+     *
+     * @param {Datum} datum - The {@link Datum|`Datum`} to remove.
+     * @protected
+     */
     protected removeDeviceExposes(datum: Datum): void {
-        const errorDatum = this.lockedExposed.find(lockedDatum => lockedDatum.name == datum.name);
+        const errorDatum = this.lockedExposes.find(lockedDatum => lockedDatum.name == datum.name);
         if (errorDatum) {
             this.errorDatum             = datum;
             this.errorDatumDependencies = errorDatum.dependencies;
@@ -534,10 +676,29 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
         this.exposesDirty  = true;
     }
 
+    /**
+     * Checks whether a {@link Datum|`Datum`} in {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`}
+     * is locked according to {@link AddEntityDialogComponent#lockedExposes|`lockedExposes`}.
+     *
+     * @param {Datum} datum - The {@link Datum|`Datum`} to check.
+     * @returns {boolean} - `true` if the {@link Datum|`Datum`} is locked, `false` otherwise. For {@link Datum|`Datum`s}
+     *                      that are not in {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`} always return
+     *                      `false`.
+     * @protected
+     */
     protected exposeHasError(datum: Datum): boolean {
-        return this.lockedExposed.some(lockedDatum => lockedDatum.name == datum.name);
+        if (!this.deviceExposes.some(d => d.name == datum.name)) {
+            return false;
+        }
+        return this.lockedExposes.some(lockedDatum => lockedDatum.name == datum.name);
     }
 
+    /**
+     * Opens a dialog containing {@link DatumDefineDialogComponent|`DatumDefineDialogComponent`}
+     * to ask the user for information about a new {@link Datum|`Datum`} to add to
+     * {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`}. If the dialog result
+     * is positive, adds the resulting {@link Datum|`Datum`} to {@link AddEntityDialogComponent#deviceExposes|`deviceExposes`}.
+     */
     protected addExposes(): void {
 
         const dialogRef =
@@ -564,69 +725,125 @@ export class AddEntityDialogComponent extends MatDialogComponent<AddEntityDialog
             });
     }
 
+    /**
+     * If the data entered in the dialog is valid, closes the dialog with the currently inserted data
+     * as a return value.
+     */
     protected confirm(): void {
         if (!this.confirmDisabled) {
             this.closeDialog(this.result);
         }
     }
 
+    /** @ignore */
     protected readonly ActuatorType                = ActuatorType;
+    /** @ignore */
     protected readonly Object                      = Object;
+    /** @ignore */
     protected readonly EntityType                  = EntityType;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_DISPLAY       = ACTUATOR_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_ICON          = ACTUATOR_TYPE_ICON;
+    /** @ignore */
     protected readonly Datum                       = Datum;
+    /** @ignore */
     protected readonly ACTUATOR_PROPERTIES_LIBRARY = ACTUATOR_PROPERTIES_LIBRARY;
+    /** @ignore */
     protected readonly DATUM_TIME_DISPLAY          = DATUM_TYPE_DISPLAY;
 
+    /** @ignore */
     protected readonly SensorType                = SensorType;
+    /** @ignore */
     protected readonly SENSOR_TYPE_ICON          = SENSOR_TYPE_ICON;
+    /** @ignore */
     protected readonly SENSOR_TYPE_DISPLAY       = SENSOR_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly SENSOR_PROPERTIES_LIBRARY = SENSOR_PROPERTIES_LIBRARY;
+    /** @ignore */
     protected readonly LoadingStatus             = LoadingStatus;
+    /** @ignore */
     protected readonly MixPhase                  = MixPhase;
+    /** @ignore */
     protected readonly MixTarget       = MixTarget;
+    /** @ignore */
     protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
 }
 
+/**
+ * Input data to a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`}.
+ */
 export type AddEntityDialogData = {
+    /** The entity is of type {@link EntityType.GROUP|`EntityType.GROUP`}. */
     entityType: EntityType.GROUP
+    /** The {@link Group#name|`name`s} of the {@link Group|`Group`s} that are available as parents for the group being edited or created. */
     groupNames: string[]
+    /** The {@link Group#displayName|`displayName`s} of the {@link Group|`Group`s} that are available as parents for the group being edited or created. */
     groupDisplays: string[]
+    /** Strings that can't be used as {@link Group#name|`name`s} for the {@link Group|`Group`}. */
     forbiddenNames: string[]
+    /** The name of the group that should be pre-filled as the parent of the {@link Group|`Group`} being edited or created. `null` for the root. */
     sonOfGroup: string | null
+    /** Optional initial values for editing an existing {@link Group|`Group`}. If not defined, the dialog operates in creation mode. */
     edit?: {
+        /** The {@link Group#name|`name`} to edit. */
         name: string;
+        /** The {@link Group#displayName|`displayName`} to edit. */
         displayName: string;
     };
 } | {
+    /** The entity is of type {@link EntityType.ACTUATOR|`EntityType.ACTUATOR`}. */
     entityType: EntityType.ACTUATOR;
+    /** The {@link Group#name|`name`s} of the {@link Group|`Group`s} that are available as parents for the actuator being edited or created. */
     groupNames: string[];
+    /** The {@link Group#displayName|`displayName`s} of the {@link Group|`Group`s} that are available as parents for the actuator being edited or created. */
     groupDisplays: string[];
+    /** Strings that can't be used as {@link Actuator#name|`name`s} for the {@link Actuator|`Actuator`}. */
     forbiddenNames: string[];
+    /** The name of the group that should be pre-filled as the parent of the actuator being edited or created. `null` for the root. */
     sonOfGroup: string | null;
+    /** Optional initial values for editing an existing actuator. If not defined, the dialog operates in creation mode. */
     edit?: {
+        /** The {@link Actuator#name|`name`} to edit. */
         name: string;
+        /** The {@link Actuator#displayName|`displayName`} to edit. */
         displayName: string;
+        /** The {@link Actuator#zigbeeAddress|`zigbeeAddress`} to edit. */
         zigbeeAddress: string;
+        /** The {@link Actuator#type|`actuatorType`} to edit. */
         actuatorType: ActuatorType;
+        /** The {@link Actuator#exposes|`exposes`} to edit. */
         exposes: Datum[];
     };
 } | {
+    /** The entity is of type {@link EntityType.SENSOR|`EntityType.SENSOR`}. */
     entityType: EntityType.SENSOR;
+    /** The {@link Group#name|`name`s} of the {@link Group|`Group`s} that are available as parents for the sensor being edited or created. */
     groupNames: string[];
+    /** The {@link Group#displayName|`displayName`s} of the {@link Group|`Group`s} that are available as parents for the sensor being edited or created. */
     groupDisplays: string[];
+    /** Strings that can't be used as {@link Sensor#name|`name`s} for the {@link Sensor|`Sensor`}. */
     forbiddenNames: string[];
+    /** The name of the group that should be pre-filled as the parent of the sensor being edited or created. `null` for the root. */
     sonOfGroup: string | null;
+    /** Optional initial values for editing an existing sensor. If not defined, the dialog operates in creation mode. */
     edit?: {
+        /** The {@link Sensor#name|`name`} to edit. */
         name: string;
+        /** The {@link Sensor#displayName|`displayName`} to edit. */
         displayName: string;
+        /** The {@link Sensor#zigbeeAddress|`zigbeeAddress`} to edit. */
         zigbeeAddress: string;
+        /** The {@link Sensor#type|`sensorType`} to edit. */
         sensorType: SensorType;
+        /** The {@link Sensor#exposes|`exposes`} to edit. */
         exposes: Datum[];
     };
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`}.
+ */
 export type AddEntityDialogResult =
     AddEntityDialogResultGroup
     | AddEntityDialogResultActuator
@@ -635,58 +852,120 @@ export type AddEntityDialogResult =
     | EditEntityDialogResultActuator
     | EditEntityDialogResultSensor;
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in creation mode, resulting in a {@link Group|`Group`}.
+ */
 export interface AddEntityDialogResultGroup {
+    /** The entity is of type {@link EntityType.GROUP|`EntityType.GROUP`}. */
     type: EntityType.GROUP;
+    /** The dialog was operating in creation mode. */
     edit: false;
+    /** The created {@link Group|`Group`}. */
     group: Group;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in creation mode, resulting in an {@link Actuator|`Actuator`}.
+ */
 export interface AddEntityDialogResultActuator {
+    /** The entity is of type {@link EntityType.ACTUATOR|`EntityType.ACTUATOR`}. */
     type: EntityType.ACTUATOR;
+    /** The dialog was operating in creation mode. */
     edit: false;
+    /** The created {@link Actuator|`Actuator`}. */
     actuator: Actuator;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in creation mode, resulting in a {@link Sensor|`Sensor`}.
+ */
 export interface AddEntityDialogResultSensor {
+    /** The entity is of type {@link EntityType.SENSOR|`EntityType.SENSOR`}. */
     type: EntityType.SENSOR;
+    /** The dialog was operating in creation mode. */
     edit: false;
+    /** The created {@link Sensor|`Sensor`}. */
     sensor: Sensor;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in edit mode, resulting in an edit to a {@link Group|`Group`}.
+ */
 export interface EditEntityDialogResultGroup {
+    /** The entity is of type {@link EntityType.GROUP|`EntityType.GROUP`}. */
     type: EntityType.GROUP;
+    /** The dialog was operating in edit mode. */
     edit: true;
+    /** The changes to apply to the {@link Group|`Group`}. */
     group: GroupEditChanges;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in edit mode, resulting in an edit to an {@link Actuator|`Actuator`}.
+ */
 export interface EditEntityDialogResultActuator {
+    /** The entity is of type {@link EntityType.ACTUATOR|`EntityType.ACTUATOR`}. */
     type: EntityType.ACTUATOR;
+    /** The dialog was operating in edit mode. */
     edit: true;
+    /** The changes to apply to the {@link Actuator|`Actuator`}. */
     actuator: ActuatorEditChanges;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * The result of a {@link MatDialog|`MatDialog`} using {@link AddEntityDialogComponent|`AddEntityDialogComponent`},
+ * operating in edit mode, resulting in an edit to a {@link Sensor|`Sensor`}.
+ */
 export interface EditEntityDialogResultSensor {
+    /** The entity is of type {@link EntityType.SENSOR|`EntityType.SENSOR`}. */
     type: EntityType.SENSOR;
+    /** The dialog was operating in edit mode. */
     edit: true;
+    /** The changes to apply to the {@link Sensor|`Sensor`}. */
     sensor: SensorEditChanges;
+    /** The {@link Group#name|`name`} of the {@link Group|`Group`} chosen as the parent. */
     parent: string | null;
 }
 
+/**
+ * Information about an {@link Actuator|`Actuator`} used in {@link AddEntityDialogComponent|`AddEntityDialogComponent`}.
+ */
 export interface ActuatorInfo {
-    name: string,
-    displayName: string,
-    actuatorType: ActuatorType,
-    zigbeeAddress: string,
+    /** {@link Actuator#name|`Actuator.name`}. */
+    name: string;
+    /** {@link Actuator#displayName|`Actuator.displayName`}. */
+    displayName: string;
+    /** {@link Actuator#type|`Actuator.type`}. */
+    actuatorType: ActuatorType;
+    /** {@link Actuator#zigbeeAddress|`Actuator.zigbeeAddress`}. */
+    zigbeeAddress: string;
 }
 
+/**
+ * Information about a {@link Sensor|`Sensor`} used in {@link AddEntityDialogComponent|`AddEntityDialogComponent`}.
+ */
 export interface SensorInfo {
-    name: string,
-    displayName: string,
-    sensorType: SensorType,
-    zigbeeAddress: string,
+    /** {@link Sensor#name|`Sensor.name`}. */
+    name: string;
+    /** {@link Sensor#displayName|`Sensor.displayName`}. */
+    displayName: string;
+    /** {@link Sensor#type|`Sensor.type`}. */
+    sensorType: SensorType;
+    /** {@link Sensor#zigbeeAddress|`Sensor.zigbeeAddress`}. */
+    zigbeeAddress: string;
 }

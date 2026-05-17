@@ -1,8 +1,27 @@
+/**
+ * This module contains all the constants regarding {@link Device|`Device`s} useful for UI, display and frontend uses.
+ *
+ * @module
+ */
 import {ActuatorType} from '@common/devices/actuator/actuator';
 import {SensorType} from '@common/devices/sensor/sensor';
 import {Datum, DatumType} from '@common/mixing/mix/datum';
 
-export const ACTUATOR_TYPE_DISPLAY: Record<ActuatorType, string> = {
+// noinspection ES6UnusedImports
+import type {Device} from '@common/devices/device';
+// noinspection ES6UnusedImports
+import type {Actuator} from '@common/devices/actuator/actuator';
+// noinspection ES6UnusedImports
+import type {Sensor} from '@common/devices/sensor/sensor';
+
+/**
+ * The displayable string version of each {@link ActuatorType|`ActuatorType`}.
+ */
+export
+/**
+ * The displayable string version of each {@link ActuatorType|`ActuatorType`}.
+ */
+const ACTUATOR_TYPE_DISPLAY: Record<ActuatorType, string> = {
     [ActuatorType.BULB]:    'Lightbulb',
     [ActuatorType.STRIP]:   'Light strip',
     [ActuatorType.BELL]:    'Doorbell',
@@ -14,7 +33,14 @@ export const ACTUATOR_TYPE_DISPLAY: Record<ActuatorType, string> = {
     [ActuatorType.UNKNOWN]: 'Unknown'
 };
 
-export const ACTUATOR_TYPE_ICON: Record<ActuatorType, string> = {
+/**
+ * The icon file to use for each {@link ActuatorType|`ActuatorType`}.
+ */
+export
+/**
+ * The icon file to use for each {@link ActuatorType|`ActuatorType`}.
+ */
+const ACTUATOR_TYPE_ICON: Record<ActuatorType, string> = {
     [ActuatorType.BULB]:    'bulb.svg',
     [ActuatorType.STRIP]:   'strip.svg',
     [ActuatorType.BELL]:    'bell.svg',
@@ -26,7 +52,14 @@ export const ACTUATOR_TYPE_ICON: Record<ActuatorType, string> = {
     [ActuatorType.UNKNOWN]: 'unknown.svg'
 };
 
-export const SENSOR_TYPE_DISPLAY: Record<SensorType, string> = {
+/**
+ * The displayable string version of each {@link SensorType|`SensorType`}.
+ */
+export
+/**
+ * The displayable string version of each {@link SensorType|`SensorType`}.
+ */
+const SENSOR_TYPE_DISPLAY: Record<SensorType, string> = {
     [SensorType.BUTTON]:               'Button',
     [SensorType.LIGHT]:                'Light sensor',
     [SensorType.MOVEMENT]:             'Movement sensor',
@@ -40,7 +73,14 @@ export const SENSOR_TYPE_DISPLAY: Record<SensorType, string> = {
     [SensorType.UNKNOWN]:              'Unknown'
 };
 
-export const SENSOR_TYPE_ICON: Record<SensorType, string> = {
+/**
+ * The icon file to use for each {@link SensorType|`SensorType`}.
+ */
+export
+/**
+ * The icon file to use for each {@link SensorType|`SensorType`}.
+ */
+const SENSOR_TYPE_ICON: Record<SensorType, string> = {
     [SensorType.BUTTON]:               'button.svg',
     [SensorType.LIGHT]:                'light_sensor.svg',
     [SensorType.MOVEMENT]:             'movement.svg',
@@ -54,13 +94,44 @@ export const SENSOR_TYPE_ICON: Record<SensorType, string> = {
     [SensorType.UNKNOWN]:              'unknown.svg'
 };
 
+/**
+ * A list of {@link Datum|`Datum`s} that are suitable for use as
+ * {@link Device#exposes|`exposes`} on {@link Device|`Device`s}
+ * with specific {@link SensorType|`SensorType`s} or
+ * {@link ActuatorType|`ActuatorType`s}.
+ */
 export interface DeviceLibraryProperty {
+    /** A description for this collection of {@link Datum|`Datum`s}. */
     display: string,
+    /**
+     * The {@link SensorType|`SensorType`s} or {@link ActuatorType|`ActuatorType`s}
+     *  this collection is suitable for.
+     */
     for: (SensorType | ActuatorType)[],
+    /** The collection of {@link Datum|`Datum`s} that can be used as {@link Device#exposes|`exposes`}. */
     data: Datum[]
 }
 
-export const ACTUATOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
+/**
+ * A collection of some presets {@link DeviceLibraryProperty|`DeviceLibraryProperty`}
+ * to show as examples or presets when creating a new {@link Actuator|`Actuator`}.
+ *
+ * This list contains:
+ *  - **Basic light**: a simple lightbulb with brightness;
+ *  - **Temperature lightbulb**: a lightbulb with brightness and color temperature;
+ *  - **Color lightbulb**: a lightbulb with brightness and color.
+ */
+export
+/**
+ * A collection of some presets {@link DeviceLibraryProperty|`DeviceLibraryProperty`}
+ * to show as examples or presets when creating a new {@link Actuator|`Actuator`}.
+ *
+ * This list contains:
+ *  - **Basic light**: a simple lightbulb with brightness;
+ *  - **Temperature lightbulb**: a lightbulb with brightness and color temperature;
+ *  - **Color lightbulb**: a lightbulb with brightness and color.
+ */
+const ACTUATOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
     {
         display: 'Basic light',
         for:     [],
@@ -106,7 +177,36 @@ export const ACTUATOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
     }
 ];
 
-export const SENSOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
+/**
+ * A collection of some presets {@link DeviceLibraryProperty|`DeviceLibraryProperty`}
+ * to show as examples or presets when creating a new {@link Sensor|`Sensor`}.
+ *
+ * This list contains:
+ *  - **Button**: a switch, switchboard, button, contact;
+ *  - **Temperature**;
+ *  - **Humidity**;
+ *  - **Temperature and humidity**: a combined sensor;
+ *  - **Light sensor**;
+ *  - **Occupancy**: a movement or presence sensor;
+ *  - **Contact**: a sensor monitoring if a door, window, cabinet, drawer is open or closed.
+ *  - **Smoke**: a smoke, air quality, CO sensor.
+ */
+export
+/**
+ * A collection of some presets {@link DeviceLibraryProperty|`DeviceLibraryProperty`}
+ * to show as examples or presets when creating a new {@link Sensor|`Sensor`}.
+ *
+ * This list contains:
+ *  - **Button**: a switch, switchboard, button, contact;
+ *  - **Temperature**;
+ *  - **Humidity**;
+ *  - **Temperature and humidity**: a combined sensor;
+ *  - **Light sensor**;
+ *  - **Occupancy**: a movement or presence sensor;
+ *  - **Contact**: a sensor monitoring if a door, window, cabinet, drawer is open or closed.
+ *  - **Smoke**: a smoke, air quality, CO sensor.
+ */
+const SENSOR_PROPERTIES_LIBRARY: DeviceLibraryProperty[] = [
     {
         display: 'Button',
         for:     [SensorType.BUTTON],

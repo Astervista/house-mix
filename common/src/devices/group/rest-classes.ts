@@ -9,6 +9,11 @@ import {UNIQUE_NAME_PATTERN} from "../../utils/constants";
 
 // noinspection ES6UnusedImports
 import type {Group} from "./group";
+// noinspection ES6UnusedImports
+import type {Actuator} from "../actuator/actuator";
+// noinspection ES6UnusedImports
+import type {Sensor} from "../sensor/sensor";
+
 
 /**
  * Data transfer class that describes a complex query to retrieve a {@link Group|`Group`} from the REST API.
@@ -70,7 +75,7 @@ export class GetGroupsOptions {
 }
 
 /**
- * Query parameters that represents the options during the request of the creation of a {@link Group|`Group`},  {@link Sensor|`Sensor`} or{@link Actuator|`Actuator`} in the REST API.
+ * Query parameters that represents the options during the request of the creation of a {@link Group|`Group`}, {@link Sensor|`Sensor`} or{@link Actuator|`Actuator`} in the REST API.
  */
 export class GroupCreateOptions {
     

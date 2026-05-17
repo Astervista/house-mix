@@ -1,3 +1,8 @@
+/**
+ * This module contains the {@link SystemComponent|system view} component and related classes.
+ *
+ * @module
+ */
 import {Component, HostListener} from '@angular/core';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {Router} from '@angular/router';
@@ -29,7 +34,15 @@ import {AdjustmentComponent} from '../entities/system/adjustment/adjustment.comp
 import {Subject} from 'rxjs';
 import {SystemEntity} from './constants';
 
+// noinspection ES6UnusedImports
+import type {ToolbarButton} from '../auxiliary/toolbar/toolbar.component';
 
+/**
+ * The component for the "system" view, showing the customization and marginal setup of the system.
+ *
+ * @component
+ * @componentSelector `<house-mix-system>`
+ */
 @Component({
                selector:    'house-mix-system',
                imports: [
@@ -48,20 +61,38 @@ import {SystemEntity} from './constants';
            })
 export class SystemComponent {
 
+    /** All the {@link SystemParameter|`SystemParameter`s} defined in the system. */
     protected parameters: SystemParameter[]          = [];
+    /** The status of the request for loading {@link SystemComponent#parameters|`parameters`}. */
     protected parametersLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the {@link SystemTimer|`SystemTimer`s} defined in the system. */
     protected timers: SystemTimer[]              = [];
+    /** The status of the request for loading {@link SystemComponent#timers|`timers`}. */
     protected timersLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the {@link DeviceMonitorDevice|`DeviceMonitorDevice`s} monitored by the system. */
     protected devices: DeviceMonitorDevice[]      = [];
+    /** The status of the request for loading {@link SystemComponent#devices|`devices`}. */
     protected devicesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the {@link Adjustment|`Adjustment`s} applied to the system. */
     protected adjustments: Adjustment<unknown, unknown>[] = [];
+    /** The status of the request for loading {@link SystemComponent#adjustments|`adjustments`}. */
     protected adjustmentsLoadingStatus: LoadingStatus     = LoadingStatus.LOADING;
 
+    /** The item currently being selected by the user, `null` means no element is selected. Can be set to change the selected element. */
     protected selected: SystemParameter | SystemTimer | DeviceMonitorDevice | Adjustment<unknown, unknown> | null = null;
 
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {Router} router - The Angular router. Instantiated by dependency injection.
+     * @param {SystemService} systemService - The system service. Instantiated by dependency injection.
+     * @param {BetterMatDialog} matDialog - The dialog service. Instantiated by dependency injection.
+     * @param {MatSnackBar} snackBar - The snackbar service. Instantiated by dependency injection.
+     */
     constructor(
         private router: Router,
         private systemService: SystemService,
@@ -74,13 +105,23 @@ export class SystemComponent {
         this.loadAdjustments();
     }
 
+    /**
+     * The subject publishing {@link KeyboardEvent|`KeyboardEvent`s} in the component
+     * to pass to {@link ToolbarComponent#keyObservable|`ToolbarComponent.keyObservable`}.
+     */
     protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
 
+    /**
+     * Key up event listener on the component.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
     @HostListener('keydown', ['$event'])
     public onKeyDown(event: KeyboardEvent): void {
         this.keySubject.next(event);
     }
 
+    /** Fetches the {@link SystemComponent#parameters|`parameters`} from the server. Handles the {@link SystemComponent#parametersLoadingStatus|`parametersLoadingStatus`}. */
     protected loadParameters(): void {
         this.systemService
             .getParameters()
@@ -93,6 +134,7 @@ export class SystemComponent {
             });
     }
 
+    /** Fetches the {@link SystemComponent#timers|`timers`} from the server. Handles the {@link SystemComponent#timersLoadingStatus|`timersLoadingStatus`}. */
     protected loadTimers(): void {
         this.systemService
             .getTimers()
@@ -105,6 +147,7 @@ export class SystemComponent {
             });
     }
 
+    /** Fetches the {@link SystemComponent#devices|`devices`} from the server. Handles the {@link SystemComponent#devicesLoadingStatus|`devicesLoadingStatus`}. */
     protected loadDeviceMonitors(): void {
         this.systemService
             .getDeviceMonitorDevices()
@@ -117,6 +160,7 @@ export class SystemComponent {
             });
     }
 
+    /** Fetches the {@link SystemComponent#adjustments|`adjustments`} from the server. Handles the {@link SystemComponent#adjustmentsLoadingStatus|`adjustmentsLoadingStatus`}. */
     protected loadAdjustments(): void {
         this.systemService
             .getAdjustments()
@@ -129,10 +173,18 @@ export class SystemComponent {
             });
     }
 
+    /** The elements to show in the toolbar. */
     protected get toolbarElements(): ToolbarElement[] {
         return this.filterToolbar();
     }
 
+    /**
+     * Filters a list of {@link ToolbarElement|`ToolbarElement`s} returning only the elements that
+     * should be shown given the current state of the component.
+     *
+     * @param {ToolbarElement[]} toFilter - The list of {@link ToolbarElement|`ToolbarElement`s} to filter. Defaults to {@link ALL_TOOLBAR_ELEMENTS|`ALL_TOOLBAR_ELEMENTS`}.
+     * @returns {ToolbarElement[]} The filtered list of {@link ToolbarElement|`ToolbarElement`s}.
+     */
     private filterToolbar(toFilter: ToolbarElement[] = ALL_TOOLBAR_ELEMENTS): ToolbarElement[] {
         return toFilter
             .filter(toolbarElement => this.isToolbarElementVisible(toolbarElement))
@@ -148,6 +200,12 @@ export class SystemComponent {
             });
     }
 
+    /**
+     * Checks whether a {@link ToolbarElement|`ToolbarElement`s} should be shown given the current state of the component.
+     *
+     * @param {ToolbarElement} toolbarElement - The {@link ToolbarElement|`ToolbarElement`} to check.
+     * @returns {boolean} Whether the element should be shown.
+     */
     private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
         if (!Object.values<string>(ToolbarAction).includes(toolbarElement.id)) {
             return true;
@@ -167,10 +225,11 @@ export class SystemComponent {
         }
     }
 
-    protected goTo(section: string): void {
-        void this.router.navigate([section]);
-    }
-
+    /**
+     * Performs the action linked to a {@link ToolbarButton|`ToolbarButton`}'s click.
+     *
+     * @param {ToolbarAction} id - The {@link ToolbarButton#id|`id`} of the {@link ToolbarButton|`ToolbarButton`} that was clicked.
+     */
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.DEVICES: {
@@ -189,288 +248,320 @@ export class SystemComponent {
                 break;
             }
             case ToolbarAction.EDIT: {
-                const selected = this.selected;
-                if (selected != null && (selected instanceof SystemTimer)) {
-
-                    this.matDialog
-                        .open(
-                            SystemTimerDialogComponent,
-                            {
-                                data: {
-                                    edit:           selected,
-                                    forbiddenNames: this.timers.map(param => param.name).filter(name => name != selected.name)
-                                }
-                            }
-                        )
-                        .afterClosed()
-                        .subscribe((result: SystemTimer | undefined) => {
-                            if (result != null) {
-                                this.systemService
-                                    .editTimer(result, {name: selected.name})
-                                    .then(() => {
-                                        const position = this.timers.indexOf(selected);
-                                        if (position != -1) {
-                                            this.timers.splice(position, 1, result);
-                                        }
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while editing the timer',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                        });
-                } else if (selected != null && (selected instanceof DeviceMonitorDevice)) {
-                    this.matDialog
-                        .open(
-                            SystemDeviceMonitorDeviceDialogComponent,
-                            {
-                                data: {
-                                    forbiddenNames: this.devices.map(param => param.name),
-                                    edit:           selected
-                                }
-                            }
-                        )
-                        .afterClosed()
-                        .subscribe((result: DeviceMonitorDevice | undefined) => {
-                            if (result != null) {
-                                this.systemService
-                                    .editDeviceMonitorDevice(result, {name: selected.name})
-                                    .then(() => {
-                                        selected.ip = result.ip;
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while editing the device monitoring info',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                        });
-                } else if (selected != null && (selected instanceof Adjustment)) {
-                    this.matDialog
-                        .open(
-                            SystemAdjustmentDialogComponent,
-                            {
-                                data: {
-                                    edit: selected
-                                }
-                            }
-                        )
-                        .afterClosed()
-                        .subscribe((result: Adjustment<unknown, unknown> | undefined) => {
-                            if (result != null) {
-                                this.systemService
-                                    .editAdjustment(result, {id: selected.id as number})
-                                    .then(() => {
-                                        selected.data = result.data;
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while editing the adjustment',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                        });
-                }
+                this.edit();
                 break;
             }
             case ToolbarAction.CHANGE_PARAMETER_VALUE: {
-                const selected = this.selected;
-                if (selected != null && selected instanceof SystemParameter) {
-                    this.matDialog.open(
-                        ConstantEditDialogComponent,
-                        {
-                            data: {
-                                type:      selected.datum.type,
-                                value:     selected.value ?? Datum.getDefaultForType(selected.datum.type),
-                                datumName: selected.displayName,
-                                canClear:  selected.datum.nullable
-                            }
+                this.changeParameterValue();
+                break;
+            }
+            case ToolbarAction.DELETE: {
+                this.delete();
+            }
+        }
+    }
+
+    /**
+     * Open a dialog to edit the {@link SystemComponent#selected|`selected`} element, and edit it if successful.
+     */
+    private edit(): void {
+        const selected = this.selected;
+        if (selected != null && (selected instanceof SystemTimer)) {
+
+            this.matDialog
+                .open(
+                    SystemTimerDialogComponent,
+                    {
+                        data: {
+                            edit:           selected,
+                            forbiddenNames: this.timers.map(param => param.name).filter(name => name != selected.name)
                         }
-                    )
-                        .afterClosed()
-                        .subscribe(
-                            value => {
-                                if (value?.successful == true) {
-                                    this.systemService.setParameterValue(
-                                        {
-                                            value: Datum.valueToJSON(value.value, selected.datum.type)
-                                        },
-                                        {name: selected.name}
-                                    )
-                                        .then(() => {
-                                            selected.value = value.value;
-                                        })
-                                        .catch((e: unknown) => {
-                                            if (e instanceof HttpErrorResponse) {
-                                                if (e.status as HttpStatusCode == HttpStatusCode.NotFound) {
-                                                    this.snackBar.open(
-                                                        'The parameter cannot be set because it doesn\'t exist',
-                                                        undefined,
-                                                        {
-                                                            duration: SNACKBAR_TIMEOUT
-                                                        }
-                                                    );
-                                                    return;
-                                                }
-                                            }
+                    }
+                )
+                .afterClosed()
+                .subscribe((result: SystemTimer | undefined) => {
+                    if (result != null) {
+                        this.systemService
+                            .editTimer(result, {name: selected.name})
+                            .then(() => {
+                                const position = this.timers.indexOf(selected);
+                                if (position != -1) {
+                                    this.timers.splice(position, 1, result);
+                                }
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while editing the timer',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                });
+        } else if (selected != null && (selected instanceof DeviceMonitorDevice)) {
+            this.matDialog
+                .open(
+                    SystemDeviceMonitorDeviceDialogComponent,
+                    {
+                        data: {
+                            forbiddenNames: this.devices.map(param => param.name),
+                            edit:           selected
+                        }
+                    }
+                )
+                .afterClosed()
+                .subscribe((result: DeviceMonitorDevice | undefined) => {
+                    if (result != null) {
+                        this.systemService
+                            .editDeviceMonitorDevice(result, {name: selected.name})
+                            .then(() => {
+                                selected.ip = result.ip;
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while editing the device monitoring info',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                });
+        } else if (selected != null && (selected instanceof Adjustment)) {
+            this.matDialog
+                .open(
+                    SystemAdjustmentDialogComponent,
+                    {
+                        data: {
+                            edit: selected
+                        }
+                    }
+                )
+                .afterClosed()
+                .subscribe((result: Adjustment<unknown, unknown> | undefined) => {
+                    if (result != null) {
+                        this.systemService
+                            .editAdjustment(result, {id: selected.id as number})
+                            .then(() => {
+                                selected.data = result.data;
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while editing the adjustment',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                });
+        }
+    }
+
+    /**
+     * Open a dialog to select a new value for the {@link SystemComponent#selected|`selected`} element,
+     * if it's a {@link SystemParameter|`SystemParameter`}, and edit it if successful.
+     */
+    private changeParameterValue(): void {
+        const selected = this.selected;
+        if (selected != null && selected instanceof SystemParameter) {
+            this.matDialog.open(
+                ConstantEditDialogComponent,
+                {
+                    data: {
+                        type:      selected.datum.type,
+                        value:     selected.value ?? Datum.getDefaultForType(selected.datum.type),
+                        datumName: selected.displayName,
+                        canClear:  selected.datum.nullable
+                    }
+                }
+            )
+                .afterClosed()
+                .subscribe(
+                    value => {
+                        if (value?.successful == true) {
+                            this.systemService.setParameterValue(
+                                {
+                                    value: Datum.valueToJSON(value.value, selected.datum.type)
+                                },
+                                {name: selected.name}
+                            )
+                                .then(() => {
+                                    selected.value = value.value;
+                                })
+                                .catch((e: unknown) => {
+                                    if (e instanceof HttpErrorResponse) {
+                                        if (e.status as HttpStatusCode == HttpStatusCode.NotFound) {
                                             this.snackBar.open(
-                                                'There has been an error while setting this parameter\'s value',
+                                                'The parameter cannot be set because it doesn\'t exist',
                                                 undefined,
                                                 {
                                                     duration: SNACKBAR_TIMEOUT
                                                 }
                                             );
-                                        });
-                                }
-                            }
-                        );
-                }
-                break;
-            }
-            case ToolbarAction.DELETE: {
-                let data: DeleteEntityDialogData | null = null;
-                const selected                          = this.selected;
-                if (selected instanceof SystemParameter) {
-                    data = {
-                        entityType: SystemEntity.PARAMETER,
-                        parameterToDelete: selected
-                    };
-                }
-                if (selected instanceof SystemTimer) {
-                    data = {
-                        entityType: SystemEntity.TIMER,
-                        timerToDelete: selected
-                    };
-                }
-                if (selected instanceof DeviceMonitorDevice) {
-                    data = {
-                        entityType:     SystemEntity.DEVICE_STATUS,
-                        deviceToDelete: selected
-                    };
-                }
-                if (selected instanceof Adjustment) {
-                    data = {
-                        entityType: SystemEntity.ADJUSTMENT,
-                        deviceToDelete: selected
-                    };
-                }
-                if (data == null) {
-                    return;
-                }
-
-                this.matDialog.open(
-                    DeleteEntityDialogComponent,
-                    {
-                        data
-                    }
-                )
-                    .afterClosed()
-                    .subscribe(result => {
-                        if (result == true) {
-                            this.selected = null;
-                            if (selected instanceof SystemParameter) {
-                                this.systemService
-                                    .deleteParameter({
-                                                         name: selected.name
-                                                     })
-                                    .then(() => {
-                                        const index = this.parameters.indexOf(selected);
-                                        if (index != -1) {
-                                            this.parameters.splice(index, 1);
+                                            return;
                                         }
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while deleting the parameter',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                            if (selected instanceof SystemTimer) {
-                                this.systemService
-                                    .deleteTimer({
-                                                     name: selected.name
-                                                 })
-                                    .then(() => {
-                                        const index = this.timers.indexOf(selected);
-                                        if (index != -1) {
-                                            this.timers.splice(index, 1);
+                                    }
+                                    this.snackBar.open(
+                                        'There has been an error while setting this parameter\'s value',
+                                        undefined,
+                                        {
+                                            duration: SNACKBAR_TIMEOUT
                                         }
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while deleting the timer',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                            if (selected instanceof DeviceMonitorDevice) {
-                                this.systemService
-                                    .deleteDeviceMonitorDevice({
-                                                                   name: selected.name
-                                                               })
-                                    .then(() => {
-                                        const index = this.devices.indexOf(selected);
-                                        if (index != -1) {
-                                            this.devices.splice(index, 1);
-                                        }
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while deleting the device from monitoring',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
-                            if (selected instanceof Adjustment) {
-                                this.systemService
-                                    .deleteAdjustment({
-                                                          id: selected.id as number
-                                                      })
-                                    .then(() => {
-                                        const index = this.adjustments.indexOf(selected);
-                                        if (index != -1) {
-                                            this.adjustments.splice(index, 1);
-                                        }
-                                    })
-                                    .catch(() => {
-                                        this.snackBar.open(
-                                            'There has been an error while deleting the adjustment',
-                                            undefined,
-                                            {
-                                                duration: SNACKBAR_TIMEOUT
-                                            }
-                                        );
-                                    });
-                            }
+                                    );
+                                });
                         }
-                    });
-            }
+                    }
+                );
         }
     }
 
+    /**
+     * Open a dialog to confirm the deletion of the {@link SystemComponent#selected|`selected`} element, and delete it if successful.
+     */
+    private delete(): void {
+        let data: DeleteEntityDialogData | null = null;
+        const selected                          = this.selected;
+        if (selected instanceof SystemParameter) {
+            data = {
+                entityType:        SystemEntity.PARAMETER,
+                parameterToDelete: selected
+            };
+        }
+        if (selected instanceof SystemTimer) {
+            data = {
+                entityType:    SystemEntity.TIMER,
+                timerToDelete: selected
+            };
+        }
+        if (selected instanceof DeviceMonitorDevice) {
+            data = {
+                entityType:     SystemEntity.DEVICE_STATUS,
+                deviceToDelete: selected
+            };
+        }
+        if (selected instanceof Adjustment) {
+            data = {
+                entityType:     SystemEntity.ADJUSTMENT,
+                deviceToDelete: selected
+            };
+        }
+        if (data == null) {
+            return;
+        }
+
+        this.matDialog.open(
+            DeleteEntityDialogComponent,
+            {
+                data
+            }
+        )
+            .afterClosed()
+            .subscribe(result => {
+                if (result == true) {
+                    this.selected = null;
+                    if (selected instanceof SystemParameter) {
+                        this.systemService
+                            .deleteParameter({
+                                                 name: selected.name
+                                             })
+                            .then(() => {
+                                const index = this.parameters.indexOf(selected);
+                                if (index != -1) {
+                                    this.parameters.splice(index, 1);
+                                }
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while deleting the parameter',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                    if (selected instanceof SystemTimer) {
+                        this.systemService
+                            .deleteTimer({
+                                             name: selected.name
+                                         })
+                            .then(() => {
+                                const index = this.timers.indexOf(selected);
+                                if (index != -1) {
+                                    this.timers.splice(index, 1);
+                                }
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while deleting the timer',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                    if (selected instanceof DeviceMonitorDevice) {
+                        this.systemService
+                            .deleteDeviceMonitorDevice({
+                                                           name: selected.name
+                                                       })
+                            .then(() => {
+                                const index = this.devices.indexOf(selected);
+                                if (index != -1) {
+                                    this.devices.splice(index, 1);
+                                }
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while deleting the device from monitoring',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                    if (selected instanceof Adjustment) {
+                        this.systemService
+                            .deleteAdjustment({
+                                                  id: selected.id as number
+                                              })
+                            .then(() => {
+                                const index = this.adjustments.indexOf(selected);
+                                if (index != -1) {
+                                    this.adjustments.splice(index, 1);
+                                }
+                            })
+                            .catch(() => {
+                                this.snackBar.open(
+                                    'There has been an error while deleting the adjustment',
+                                    undefined,
+                                    {
+                                        duration: SNACKBAR_TIMEOUT
+                                    }
+                                );
+                            });
+                    }
+                }
+            });
+    }
+
+    /**
+     * Navigate to another section of the app.
+     *
+     * @param {string} section - The section to navigate to.
+     */
+    protected goTo(section: string): void {
+        void this.router.navigate([section]);
+    }
+
+    /** Open a dialog to create a new {@link SystemParameter|`SystemParameter`}, and add it to the system if successful. */
     protected addParameter(): void {
         this.matDialog
             .open(
@@ -503,6 +594,7 @@ export class SystemComponent {
 
     }
 
+    /** Open a dialog to create a new {@link SystemTimer|`SystemTimer`}, and add it to the system if successful. */
     protected addTimer(): void {
         this.matDialog
             .open(
@@ -534,6 +626,7 @@ export class SystemComponent {
             });
     }
 
+    /** Open a dialog to create a new {@link DeviceMonitorDevice|`DeviceMonitorDevice`}, and add it to the system if successful. */
     protected addDevice(): void {
         this.matDialog
             .open(
@@ -565,6 +658,7 @@ export class SystemComponent {
             });
     }
 
+    /** Open a dialog to create a new {@link Adjustment|`Adjustment`}, and add it to the system if successful. */
     protected addAdjustment(): void {
         this.matDialog
             .open(
@@ -596,23 +690,48 @@ export class SystemComponent {
             });
     }
 
+    /**
+     * Casts a `string` to a {@link ToolbarAction|`ToolbarAction`}.
+     * Does not check for the real existence of an action with such name.
+     *
+     * @param {string} val - The string representation of a {@link ToolbarAction|`ToolbarAction`}.
+     * @returns {ToolbarAction} `val` cast as {@link ToolbarAction|`ToolbarAction`}.
+     */
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
+    /** @ignore */
     protected readonly LoadingStatus   = LoadingStatus;
+    /** @ignore */
     protected readonly TOOLTIP_TIMEOUT = TOOLTIP_TIMEOUT;
+    /** @ignore */
     protected readonly ToolbarAction = ToolbarAction;
 }
 
+/**
+ * @notExported
+ */
 enum ToolbarAction {
+    /** Button to move to the "Home" (device) view. */
     DEVICES                = 'devices',
+    /** Button to move to the "Mixing" view. */
     MIXING                 = 'mixing',
+    /** Button to move to the "System" view. */
     SYSTEM                 = 'system',
+    /** Button to delete the selected element. */
     DELETE                 = 'delete',
+    /** Button to set the selected {@link SystemParameter|`SystemParameter`} element. */
     CHANGE_PARAMETER_VALUE = 'change-parameter-value',
+    /** Button to edit the selected element. */
     EDIT                   = 'edit',
+    /** Button to open the system settings. */
     SETTINGS = 'settings'
 }
 
+/**
+ * All the {@link ToolbarElement|`ToolbarElement`s} in {@link SystemComponent|`SystemComponent`}'s {@link ToolbarComponent|`ToolbarComponent`}.
+ *
+ * @notExported
+ */
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,

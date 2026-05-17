@@ -12,7 +12,7 @@ import { ApiOkResponse } from '@nestjs/swagger';
 import { ChangeParentChange, GroupCreateOptions } from '@common/devices/group/rest-classes';
 import { GroupService } from '../group/group.service';
 import { EntityType } from '@common/devices/constants';
-import { ActuatorEditChanges } from '@common/devices/actuator/rest-classes';
+import {ActuatorEditChanges, ActuatorCreateOptions} from "@common/devices/actuator/rest-classes";
 import { GetDevicesOptions, UnavailableParents } from '@common/devices/rest-classes';
 import { MixPositionInfo } from '@common/mixing/mix/rest-classes';
 import {MixService} from '../../mixing/mix/mix.service';
@@ -47,8 +47,9 @@ export class ActuatorController {
      * @returns {Promise<ActuatorJSON[]>} An array containing the resulting {@link Actuator|`Actuator`s}' {@link ActuatorJSON|serializations}.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if both {@link GetDevicesOptions#mix|`mix`} and {@link GetDevicesOptions#anyMixed|`anyMixed`} are
      *     specified at the same time.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-get">`GET /device/actuators`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-get">`/device/actuators`</a>
      * @group API Endpoints
+     * @get
      */
     @Get("")
     @ApiOkResponse({type: [Array<ActuatorJSON>]})
@@ -64,20 +65,21 @@ export class ActuatorController {
      * Creates a new device of type {@link Actuator|`Actuator`} in the system.
      *
      * @param {ActuatorJSON} data - The HTTP request's body containing all the information about the {@link Actuator|`Actuator`} to be created.
-     * @param {GroupCreateOptions} query - The HTTP request's query parameters with additional optional info for the creation, namely the name of the {@link Group|`Group`} where the
+     * @param {ActuatorCreateOptions} query - The HTTP request's query parameters with additional optional info for the creation, namely the name of the {@link Group|`Group`} where the
      *                                     actuator will be placed.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if there already exist an {@link Actuator|actuator} with the same {@link Actuator#name|name}.
-     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link GroupCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link ActuatorCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
      *     the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-post">`POST /device/actuators`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-post">`/device/actuators`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("")
     public async create(
         @Body()
         data: ActuatorJSON,
         @Query()
-        query: GroupCreateOptions
+        query: ActuatorCreateOptions
     ): Promise<void> {
         await this.actuatorService.createActuator(Actuator.fromJSON(data), query.parent ?? null);
     }
@@ -88,8 +90,9 @@ export class ActuatorController {
      * @param {string} name - The HTTP request's path parameter with the {@link Actuator#name|`name`} of the actuator to retrieve.
      * @returns {Promise<ActuatorJSON>} - The {@link Actuator|`Actuator`}'s {@link ActuatorJSON|serialization}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Actuator|`Actuator`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-get">`GET /device/actuators/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-get">`/device/actuators/{name}`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get(":name")
     public async getByName(
@@ -113,8 +116,9 @@ export class ActuatorController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a new {@link Actuator#name|`name`} was specified, but an {@link Actuator|actuator} with that name
      *     already exists.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-patch">`PATCH /device/actuators/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-patch">`/device/actuators/{name}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch(":name")
     public async edit(
@@ -134,8 +138,9 @@ export class ActuatorController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Actuator|`Actuator`} cannot be deleted because it is linked to a {@link Mix|mix} that is
      *     referenced in a {@link Mix|mix} downstream.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-delete">`DELETE /device/actuators/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-delete">`/device/actuators/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete(":name")
     public async delete(
@@ -153,8 +158,9 @@ export class ActuatorController {
      *                                       reference the {@link Actuator|`Actuator`} and prevent it from being deleted. If empty, it means that
      *                                       the {@link Actuator|`Actuator`} can be deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Actuator|`Actuator`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-delete-locks-get">`GET /device/actuators/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-delete-locks-get">`/device/actuators/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(
@@ -175,8 +181,9 @@ export class ActuatorController {
      *                               names.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Actuator|`Actuator`} cannot be moved to the requested {@link Group|`Group`}, because it
      *     would break dependencies inside the {@link Mix|mixes}.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-parent-patch">`PATCH /device/actuators/{name}/parent`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-parent-patch">`/device/actuators/{name}/parent`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name/parent")
     public async changeParent(
@@ -196,8 +203,9 @@ export class ActuatorController {
      * @param {string} name - The HTTP request's path parameter with the {@link Actuator#name|`name`} of the {@link Actuator|`Actuator`}.
      * @returns {Promise<UnavailableParents>} The information about the {@link UnavailableParents|unavailable groups}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Actuator|`Actuator`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-actuators-name-unavailable-parents-get">`GET /device/actuators/{name}/unavailable-parents`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-actuators-name-unavailable-parents-get">`/device/actuators/{name}/unavailable-parents`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/unavailable-parents")
     public async getUnavailableParents(

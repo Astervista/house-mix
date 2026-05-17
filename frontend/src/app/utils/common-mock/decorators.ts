@@ -1,7 +1,4 @@
-
-export function IsNotEmpty(): PropertyDecorator {
-    return () => {
-        /* intentionally empty */
-    };
-}
-
+ /**
+  * @ignore
+  * @module
+  */

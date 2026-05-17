@@ -1,3 +1,8 @@
+/**
+ * This module contains useful constants about {@link Mix|`Mix`es}.
+ *
+ * @module
+ */
 import {DatumOrigin, DatumType, ExportedDatum} from '@common/mixing/mix/datum';
 import {
     ArbitraryInputsElaborationNodeImplementationConstructor,
@@ -60,7 +65,23 @@ import {SYSTEM_ORIGIN_DISPLAY} from '../system/constants';
 import {SystemOrigin} from '@common/system/constants';
 import {Point} from '@angular/cdk/drag-drop';
 
-export const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
+// noinspection ES6UnusedImports
+import type {Mix} from '@common/mixing/mix/mix';
+// noinspection ES6UnusedImports
+import type {MixComponent} from './mix/mix.component';
+// noinspection ES6UnusedImports
+import type {Datum} from '@common/mixing/mix/datum';
+// noinspection ES6UnusedImports
+import type {ArbitraryInputsElaborationNode, ElaborationNode, TypedElaborationNode, TypedNullMarkedElaborationNode} from '@common/mixing/mix/elaboration-node';
+
+/**
+ * The displayable string version of each {@link DatumType|`DatumType`}.
+ */
+export
+/**
+ * The displayable string version of each {@link DatumType|`DatumType`}.
+ */
+const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
     [DatumType.BOOLEAN]:    'Boolean',
     [DatumType.NUMBER]:     'Number',
     [DatumType.STRING]:     'Text',
@@ -71,104 +92,165 @@ export const DATUM_TYPE_DISPLAY: Record<DatumType, string> = {
     [DatumType.DATE_TIME]:  'Date and Time'
 };
 
+/**
+ * Get the CSS variable containing the color specific to a connector of a {@link Datum|`Datum`}
+ * of {@link Datum#type|`type`} {@link DatumType|`DatumType`}.
+ *
+ * @param {DatumType} type - The {@link DatumType|`DatumType`}.
+ * @returns {string} The name of the CSS variable.
+ */
 export function getColorVarNameForType(type: DatumType): string {
     return `var(--connector-type-${type.toLowerCase().replace('_', '-')}-color)`;
 }
 
+/**
+ * Information about an {@link ElaborationNode|`ElaborationNode`} implementation.
+ */
 export type ElaborationNodeLibraryItem = {
+    /** The constructor of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     constructor: ElaborationNodeImplementationConstructor;
+    /** A description for this implementation of {@link ElaborationNode|`ElaborationNode`}, to be shown in the UI. */
     description: string;
+    /** The {@link ElaborationNodeCode|`ElaborationNodeCode`} of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     code: ElaborationNodeCode;
+    /** This is a simple {@link ElaborationNode|`ElaborationNode`}. */
     special: false;
 } | {
+    /** The constructor of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     constructor: ElaborationNodeTimeoutImplementationConstructor;
+    /** A description for this implementation of {@link ElaborationNode|`ElaborationNode`}, to be shown in the UI. */
     description: string;
+    /** The {@link ElaborationNodeCode|`ElaborationNodeCode`} of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     code: ElaborationNodeCode;
+    /** This implementation extends a generic subclass of {@link ElaborationNode|`ElaborationNode`}. */
     special: true;
+    /** This is a {@link ElaborationNodeTimeout|`ElaborationNodeTimeout`}. */
     isTimeout: true;
+    /** This is not a {@link TypedElaborationNode|`TypedElaborationNode`}. */
     isTyped: false,
+    /** This is not a {@link TypedNullMarkedElaborationNode|`TypedNullMarkedElaborationNode}. */
     nullMarked: false,
 } | {
-    special: true,
-    isTyped: true,
-    nullMarked: false,
-    forceDatumType?: boolean,
+    /** The constructor of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     constructor: TypedElaborationNodeImplementationConstructor;
+    /** A description for this implementation of {@link ElaborationNode|`ElaborationNode`}, to be shown in the UI. */
     description: string;
+    /** The {@link ElaborationNodeCode|`ElaborationNodeCode`} of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     code: ElaborationNodeCode;
+    /** This implementation extends a generic subclass of {@link ElaborationNode|`ElaborationNode`}. */
+    special: true,
+    /** This is a {@link TypedElaborationNode|`TypedElaborationNode`}. */
+    isTyped: true,
+    /** This is not a {@link TypedNullMarkedElaborationNode|`TypedNullMarkedElaborationNode}. */
+    nullMarked: false,
+    /** If `true`, `dataType` cannot be chosen by the user, but it's fixed to the default. */
+    forceDatumType?: boolean,
+    /** The default value for `dataType`. */
     datumType: DatumType;
+    /** This is a {@link ElaborationNodeTimeout|`ElaborationNodeTimeout`}. */
     isTimeout: false;
 } | {
-    special: true,
-    isTyped: true,
-    nullMarked: true,
-    arbitraryNumber: false,
-    forceDatumType?: boolean,
-    forceNullable?: boolean,
+    /** The constructor of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     constructor: TypedNullMarkedElaborationNodeImplementationConstructor;
+    /** A description for this implementation of {@link ElaborationNode|`ElaborationNode`}, to be shown in the UI. */
     description: string;
+    /** The {@link ElaborationNodeCode|`ElaborationNodeCode`} of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     code: ElaborationNodeCode;
+    /** This implementation extends a generic subclass of {@link ElaborationNode|`ElaborationNode`}. */
+    special: true,
+    /** This is a {@link TypedElaborationNode|`TypedElaborationNode`}. */
+    isTyped: true,
+    /** This is a {@link TypedNullMarkedElaborationNode|`TypedNullMarkedElaborationNode}. */
+    nullMarked: true,
+    /** This is not a {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode}. */
+    arbitraryNumber: false,
+    /** If `true`, `dataType` cannot be chosen by the user, but it's fixed to the default. */
+    forceDatumType?: boolean,
+    /** If `true`, `nullable` cannot be chosen by the user, but it's fixed to the default. */
+    forceNullable?: boolean,
+    /** The default value for `dataType`. */
     datumType: DatumType;
+    /** The default value for `nullable`. */
     nullableMark: boolean
+    /** This is a {@link ElaborationNodeTimeout|`ElaborationNodeTimeout`}. */
     isTimeout: false;
 } | {
-    special: true,
-    isTyped: true,
-    nullMarked: true,
-    arbitraryNumber: true,
-    forceDatumType?: boolean,
-    forceNullable?: boolean,
+    /** The constructor of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     constructor: ArbitraryInputsElaborationNodeImplementationConstructor;
+    /** A description for this implementation of {@link ElaborationNode|`ElaborationNode`}, to be shown in the UI. */
     description: string;
+    /** The {@link ElaborationNodeCode|`ElaborationNodeCode`} of this implementation of {@link ElaborationNode|`ElaborationNode`}. */
     code: ElaborationNodeCode;
+    /** This implementation extends a generic subclass of {@link ElaborationNode|`ElaborationNode`}. */
+    special: true,
+    /** This is a {@link TypedElaborationNode|`TypedElaborationNode`}. */
+    isTyped: true,
+    /** This is a {@link TypedNullMarkedElaborationNode|`TypedNullMarkedElaborationNode}. */
+    nullMarked: true,
+    /** This is a {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode}. */
+    arbitraryNumber: true,
+    /** If `true`, `dataType` cannot be chosen by the user, but it's fixed to the default. */
+    forceDatumType?: boolean,
+    /** If `true`, `nullable` cannot be chosen by the user, but it's fixed to the default. */
+    forceNullable?: boolean,
+    /** The default value for `dataType`. */
     datumType: DatumType;
+    /** The default value for `nullable`. */
     nullableMark: boolean
+    /** This is a {@link ElaborationNodeTimeout|`ElaborationNodeTimeout`}. */
     isTimeout: false;
 };
 
-export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> = {
+/**
+ * The displayable string version of each {@link ElaborationNodeCode|`ElaborationNodeCode`}.
+ */
+export
+/**
+ * The displayable string version of each {@link ElaborationNodeCode|`ElaborationNodeCode`}.
+ */
+const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> = {
     TEST:                  'Test',
     ADDITION:              'Addition',
     SUBTRACTION:           'Subtraction',
     MULTIPLICATION:        'Multiplication',
     DIVISION:              'Division',
-    MODULO:             'Modulo',
+    MODULO:                'Modulo',
     MAX:                   'Maximum',
     MIN:                   'Minimum',
     NULL_GUARD:            'Null guard',
     EQUALITY_CHECK:        'Equality check',
     GREATER_THAN:          'Greater than',
     LESS_THAN:             'Less than',
-    CYCLE:              'Cycle',
-    CLAMP:              'Clamp value',
-    LERP:               'Linear interpolation',
-    AND:                'And',
-    OR:                 'Or',
-    XOR:                'Exclusive or',
-    NOT:                'Not',
-    BUFFER:             'Buffer',
+    CYCLE:                 'Cycle',
+    CLAMP:                 'Clamp value',
+    LERP:                  'Linear interpolation',
+    AND:                   'And',
+    OR:                    'Or',
+    XOR:                   'Exclusive or',
+    NOT:                   'Not',
+    BUFFER:                'Buffer',
     BINARY_CHOICE:         'Binary choice',
-    MULTIPLE_CHOICE:    'Multiple choice',
-    ENCODER:            'Encoder',
+    MULTIPLE_CHOICE:       'Multiple choice',
+    ENCODER:               'Encoder',
     EXTRACT_RGB:           'Extract RGB',
     EXTRACT_HSL:           'Extract_HSL',
     EXTRACT_HSV:           'Extract_HSV',
     EXTRACT_XY:            'Extract_XY',
-    EXTRACT_COLOR_TEMP: 'Extract color temp',
+    EXTRACT_COLOR_TEMP:    'Extract color temp',
     FROM_RGB:              'Color from RGB',
     FROM_HSL:              'Color from HSL',
     FROM_HSV:              'Color from HSV',
     FROM_XY:               'Color from XY',
-    FROM_COLOR_TEMP:    'Color temp from K',
-    TIMEOUT:            'Timeout',
+    FROM_COLOR_TEMP:       'Color temp from K',
+    TIMEOUT:               'Timeout',
     DATE_VALUES:           'Values from date',
     TIME_VALUES:           'Values from time',
     DATE_TIME_VALUES:      'Values from date time',
     DATE_FROM_VALUES:      'Date from values',
     TIME_FROM_VALUES:      'Time from values',
-    DATE_COMPARE:       'Compare dates',
-    TIME_COMPARE:       'Compare times',
-    DATE_TIME_COMPARE:  'Compare date times',
+    DATE_COMPARE:          'Compare dates',
+    TIME_COMPARE:          'Compare times',
+    DATE_TIME_COMPARE:     'Compare date times',
     DATE_TIME_FROM_VALUES: 'Date Time from values',
     COMBINE_DATE_TIME:     'Combine date and time',
     EPOCH:                 'Get epoch time',
@@ -177,7 +259,30 @@ export const ELABORATION_NODE_DISPLAY_NAME: Record<ElaborationNodeCode, string> 
     RETRIEVE:              'Retrieve a value'
 };
 
-export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: ElaborationNodeLibraryItem[] }[] = [
+/**
+ * A collection of {@link ElaborationNodeLibraryItem|`ElaborationNodeLibraryItems`} representing
+ * {@link ElaborationNode|`ElaborationNode`s} with similar function.
+ */
+export interface ElaborationNodeLibrarySection {
+    /** The name of the section, to be shown in the UI. */
+    sectionName: string,
+    /**
+     * {@link ElaborationNodeLibraryItem|`ElaborationNodeLibraryItems`} representing
+     * {@link ElaborationNode|`ElaborationNode`s} that belong to this section.
+     */
+    nodes: ElaborationNodeLibraryItem[]
+}
+
+/**
+ * All the instantiable subclasses of {@link ElaborationNode|`ElaborationNode`}, organized in
+ * {@link ElaborationNodeLibrarySection|`ElaborationNodeLibrarySection`s} of {@link ElaborationNodeLibraryItem|`ElaborationNodeLibraryItem`s}.
+ */
+export
+/**
+ * All the instantiable subclasses of {@link ElaborationNode|`ElaborationNode`}, organized in
+ * {@link ElaborationNodeLibrarySection|`ElaborationNodeLibrarySection`s} of {@link ElaborationNodeLibraryItem|`ElaborationNodeLibraryItem`s}.
+ */
+const ELABORATION_NODE_LIBRARY: ElaborationNodeLibrarySection[] = [
     {
         sectionName: 'Math',
         nodes:       [
@@ -332,11 +437,11 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 constructor: ElaborationNodeNullGuard,
                 description: 'Assures a nullable parameter is transformed into a non-null parameter, returning a non-null fallback value if null',
                 code:        ElaborationNodeCode.NULL_GUARD,
-                datumType:  DatumType.NUMBER,
-                special:    true,
-                isTyped:    true,
-                nullMarked: false,
-                isTimeout:  false
+                datumType:   DatumType.NUMBER,
+                special:     true,
+                isTyped:     true,
+                nullMarked:  false,
+                isTimeout:   false
             },
             {
                 constructor: ElaborationNodeEqualityCheck,
@@ -345,8 +450,8 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
                 datumType:   DatumType.NUMBER,
                 special:     true,
                 isTyped:     true,
-                nullMarked: false,
-                isTimeout:  false
+                nullMarked:  false,
+                isTimeout:   false
             },
             {
                 constructor:     ElaborationNodeBinaryChoice,
@@ -576,6 +681,9 @@ export const ELABORATION_NODE_LIBRARY: { sectionName: string, nodes: Elaboration
     }
 ];
 
+/**
+ * The {@link ElaborationNodeLibraryItem|`ElaborationNodeLibraryItem`} relative to {@link ElaborationNodeAllTypesTest|`ElaborationNodeAllTypesTest`}.
+ */
 const testNode: ElaborationNodeLibraryItem =
           {
               constructor: ElaborationNodeAllTypesTest,
@@ -592,15 +700,24 @@ if (isDevMode()) {
         });
 }
 
-export const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
-    GROUP:       'Group mixes output',
-    SENSOR_DATA: 'Raw data from sensors',
+/** The displayable string version of each {@link DatumOrigin|`DatumOrigin`}. */
+export
+/** The displayable string version of each {@link DatumOrigin|`DatumOrigin`}. */
+const DATUM_ORIGIN_DISPLAY: Record<DatumOrigin, string> = {
+    GROUP:         'Group mixes output',
+    SENSOR_DATA:   'Raw data from sensors',
     SENSOR_UPDATE: 'Sensor update status',
-    SENSOR:      'Sensor mixes outputs',
-    SYSTEM:      'System',
-    CENTER:      'Center mixes outputs'
+    SENSOR:        'Sensor mixes outputs',
+    SYSTEM:        'System',
+    CENTER:        'Center mixes outputs'
 };
 
+/**
+ * Extract the correct display string for an {@link ExportedDatum|`ExportedDatum`}'s {@link ExportedDatum#origin|`origin`}.
+ *
+ * @param {ExportedDatum} datum - The {@link ExportedDatum|`ExportedDatum`} to extract the {@link ExportedDatum#origin|`origin`} from.
+ * @returns {string} - The correct display string.
+ */
 export function getExternalDatumOriginNameDisplay(datum: ExportedDatum): string {
     if (datum.origin == DatumOrigin.SYSTEM) {
         return (SYSTEM_ORIGIN_DISPLAY[datum.originName as SystemOrigin] as string | null) ?? origin;
@@ -609,16 +726,27 @@ export function getExternalDatumOriginNameDisplay(datum: ExportedDatum): string 
     }
 }
 
-
+/** A line between two points. */
 export interface Line {
+    /** The starting point. */
     from: Point;
+    /** The ending point. */
     to: Point;
 }
 
+/**
+ * Create a value for a {@link SVGPathElement|`SVGPathElement`}'s `d` attribute to assign to a smooth curve between two points.
+ * The curve has the control points coming off the start and end point in the specified main direction.
+ *
+ * @param {Point} from - The start point of the curve.
+ * @param {Point} to - The end point of the curve.
+ * @param {boolean} horizontal - The main direction of the curve.
+ * @returns {string} - The path `d` value.
+ */
 export function graphConnectionSmoothPath(from: Point, to: Point, horizontal: boolean = true): string {
     if (horizontal) {
-        const width  = to.x - from.x;
-        const height = Math.abs(to.y - from.y);
+        const width      = to.x - from.x;
+        const height     = Math.abs(to.y - from.y);
         const multiplier = width > 0 ? 0.3 : -0.7;
         return `M${from.x},${from.y}` +
                (height > MEASURES.CONNECTION_WIDTH * 5
@@ -629,8 +757,8 @@ export function graphConnectionSmoothPath(from: Point, to: Point, horizontal: bo
                    `L`) +
                `${to.x},${to.y}`;
     } else {
-        const width  = Math.abs(to.x - from.x);
-        const height = to.y - from.y;
+        const width      = Math.abs(to.x - from.x);
+        const height     = to.y - from.y;
         const multiplier = height > 0 ? 0.5 : -0.7;
         return `M${from.x},${from.y}` +
                (width > MEASURES.CONNECTION_WIDTH * 5
@@ -643,7 +771,14 @@ export function graphConnectionSmoothPath(from: Point, to: Point, horizontal: bo
     }
 }
 
-export const MEASURES = {
+/**
+ * Common distances and sizes for the rendering of {@link MixComponent|`MixComponent`}.
+ */
+export
+/**
+ * Common distances and sizes for the rendering of {@link MixComponent|`MixComponent`}.
+ */
+const MEASURES = {
     INPUT_WIDTH:                      250,
     INPUT_HEIGHT:                     90,
     ADD_INPUT_HEIGHT:                 50,
@@ -669,7 +804,7 @@ export const MEASURES = {
     OUTPUT_HEIGHT:                    70,
     ADD_OUTPUT_HEIGHT:                50,
     OUTPUT_SPACING:                   10,
-    UNDERPASS_BORDER_WIDTH:  7.5,
-    COLOR_INPUT_SQUARE_SIZE: 15,
-    GROUP_PADDING:           40
+    UNDERPASS_BORDER_WIDTH:           7.5,
+    COLOR_INPUT_SQUARE_SIZE:          15,
+    GROUP_PADDING:                    40
 };

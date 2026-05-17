@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="TypeDoc common" type="ShConfigurationType" folderName="TypeDoc">
-    <option name="SCRIPT_TEXT" value="npx typedoc" />
+    <option name="SCRIPT_TEXT" value="npx typedoc --options typedoc.config.mjs" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />

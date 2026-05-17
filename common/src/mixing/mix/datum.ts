@@ -422,9 +422,9 @@ export class ExportedDatum extends Datum {
     /**
      * Creates an instance of the class.
      *
-     * @param {string} name - Same as in {@link Datum|`new Datum()`}.
-     * @param {DatumType} type - Same as in {@link Datum|`new Datum()`}.
-     * @param {boolean} nullable - Same as in {@link Datum|`new Datum()`}.
+     * @param {string} name - Same as in {@link Datum| `new Datum()`}.
+     * @param {DatumType} type - Same as in {@link Datum| `new Datum()`}.
+     * @param {boolean} nullable - Same as in {@link Datum| `new Datum()`}.
      * @param {DatumOrigin} origin - The type of origin the datum is assigned to.
      * @param {string} originName - The unique name of the origin the datum is assigned to.
      * @param {string} [displayName] - The display name of the datum, used to identify it in the UI.

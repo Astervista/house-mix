@@ -150,11 +150,35 @@ const jsdocRules = {
             requireSeparateTemplates: true
         }
     ],
+    "jsdoc/check-tag-names": [
+        "warn",
+        {
+            "definedTags": [
+                "apiEndpoint",
+                "put",
+                "get",
+                "patch",
+                "post",
+                "delete"
+            ]
+        }
+    ],
     "jsdoc/require-template-description":            "warn"
 };
 
 export default defineConfig(
     eslint.configs.recommended,
+    tseslint.configs.strictTypeChecked,
+    tseslint.configs.stylisticTypeChecked,
+    {
+        languageOptions: {
+            parserOptions: {
+                projectService:  true,
+                tsconfigRootDir: import.meta.dirname
+            }
+        },
+        rules
+    },
     jsdoc({
               config:          "flat/recommended",
               languageOptions: {
@@ -165,25 +189,5 @@ export default defineConfig(
               },
               rules:           jsdocRules
           }
-    ),
-    tseslint.configs.strictTypeChecked,
-    {
-        languageOptions: {
-            parserOptions: {
-                projectService:  true,
-                tsconfigRootDir: import.meta.dirname
-            }
-        },
-        rules
-    },
-    tseslint.configs.stylisticTypeChecked,
-    {
-        languageOptions: {
-            parserOptions: {
-                projectService:  true,
-                tsconfigRootDir: import.meta.dirname
-            }
-        },
-        rules
-    }
+    )
 );

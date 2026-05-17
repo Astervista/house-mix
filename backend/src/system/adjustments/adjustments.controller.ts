@@ -33,8 +33,9 @@ export class AdjustmentsController {
      * Get all {@link Adjustment|`Adjustment`s} in the system.
      *
      * @returns {Promise<AdjustmentJSON<unknown>[]>} An array containing the resulting {@link Adjustment|`Adjustment`s}' {@link AdjustmentJSON|serializations}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-adjustments-get">`GET /system/adjustments`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-adjustments-get">`/system/adjustments`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("")
     public async getAll(): Promise<AdjustmentJSON<unknown>[]> {
@@ -50,8 +51,9 @@ export class AdjustmentsController {
      * @returns {Promise<{ id: number }>} The ID of the newly created adjustment, assigned by the system.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the adjustment value provided is not valid, or if
      *                                 the new {@link AdjustmentJSON#id|`adjustment id`} is not `"NEW"`.
-     * @see REST API endpoint <a href="../../rest/#operation-system-adjustments-put">`PUT /system/adjustments`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-adjustments-put">`/system/adjustments`</a>.
      * @group API Endpoints
+     * @put
      */
     @Put("")
     public async create(
@@ -77,8 +79,9 @@ export class AdjustmentsController {
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the data is invalid or if there
      *                                  is an attempt to change the {@link Adjustment#id|`id`} or the {@link Adjustment#type|`type`}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Adjustment|`Adjustment`} with the specified ID exists.
-     * @see REST API endpoint <a href="../../rest/#operation-system-adjustments-id-patch">`PATCH /system/adjustments/{id}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-adjustments-id-patch">`/system/adjustments/{id}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:id")
     public async edit(
@@ -102,8 +105,9 @@ export class AdjustmentsController {
      *
      * @param {number} id - The HTTP request's path parameter with the {@link Adjustment#id|`id`} of the {@link Adjustment|adjustment} to remove.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Adjustment|`Adjustment`} with the specified ID exists.
-     * @see REST API endpoint <a href="../../rest/#operation-system-adjustments-id-delete">`DELETE /system/adjustments/{id}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-adjustments-id-delete">`/system/adjustments/{id}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("/:id")
     public async delete(

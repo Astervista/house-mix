@@ -1,3 +1,8 @@
+/**
+ *  This module contains the {@link AddMixDialogComponent|`AddMixDialogComponent`} and related classes.
+ *
+ *  @module
+ */
 import {Component, Inject, ViewChild} from '@angular/core';
 import {MatDialogComponent} from '../../../utils/better-mat-dialog';
 import {MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle} from '@angular/material/dialog';
@@ -20,12 +25,32 @@ import {EntityNamesInputsComponent} from '../../auxiliary/entity-names-inputs/en
 import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 import {MixingService} from '../../../services/mixing.service';
 
+// noinspection ES6UnusedImports
+import type {Mix} from '@common/mixing/mix/mix';
+// noinspection ES6UnusedImports
+import type {Device} from '@common/devices/device';
 
-interface AddMixDialogDefaults {
+/**
+ * Default values when opening the {@link AddMixDialogComponent|`AddMixDialogComponent`}.
+ */
+export interface AddMixDialogDefaults {
+    /** The phase the mix will be placed in. */
     phase: MixPhase;
+    /** The target of the mix. */
     target: MixTarget;
 }
 
+/**
+ * A dialog for retrieving information before creating a {@link Mix|`Mix`}.
+ *
+ * The dialog will return a {@link MixPositionInfo|`MixPositionInfo`} that
+ * points to the entity the {@link Mix|`Mix`} will be associated with.
+ *
+ * @see {@link AddMixDialogDefaults|`AddMixDialogDefaults`} - The input data (can be `null`).
+ * @see {@link MixPositionInfo|`MixPositionInfo`} - The result data.
+ * @component
+ * @componentSelector `<house-mix-add-mix-dialog>`
+ */
 @Component({
                selector:    'house-mix-add-mix-dialog',
                imports: [
@@ -45,29 +70,57 @@ interface AddMixDialogDefaults {
            })
 export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaults | null, MixPositionInfo> {
 
+    /** The phase in the calculation of the system the {@link Mix|`Mix`} will be placed in. */
     private _selectedPhase: MixPhase   = MixPhase.SENSORS;
+    /** The target the {@link Mix|`Mix`} will be associated with. */
     private _selectedTarget: MixTarget = MixTarget.DEVICE;
 
+    /** All the actuators that don't have a {@link Mix|`Mix`} associated with them yet, an thus are available for mixing. */
     protected actuators: Actuator[] | null          = null;
+    /** The loading status of the {@link AddMixDialogComponent#actuators|available actuators}. */
     protected actuatorsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the sensors that don't have a {@link Mix|`Mix`} associated with them yet, and thus are available for mixing. */
     protected sensors: Sensor[] | null            = null;
+    /** The loading status of the {@link AddMixDialogComponent#sensors|available sensors}. */
     protected sensorsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the groups that don't have a {@link Mix|`Mix`} associated with them yet in the {@link MixPhase.SENSORS|`SENSORS`} phase, an thus are available for mixing. */
     protected leftGroups: Group[] | null             = null;
+    /** The loading status of the {@link AddMixDialogComponent#leftGroups|available groups in the sensor phase}. */
     protected leftGroupsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** All the groups that don't have a {@link Mix|`Mix`} associated with them yet in the {@link MixPhase.ACTUATORS|`ACTUATORS`} phase, an thus are available for mixing. */
     protected rightGroups: Group[] | null             = null;
+    /** The loading status of the {@link AddMixDialogComponent#rightGroups|available groups in the actuator phase}. */
     protected rightGroupsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** The names of the already existing mixes in the center. */
     protected mixNames: string[] | null            = null;
+    /** The loading status of the {@link AddMixDialogComponent#mixNames|center mix names}. */
     protected mixNamesLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
+    /** If the new mix isn't in the {@link MixPhase.CENTER|`CENTER`} phase, the entity it will be associated with. */
     protected selectedElement: Group | Actuator | Sensor | null = null;
 
+    /**
+     * The inputs where the names of a new {@link Mix|`Mix`} in the {@link MixPhase.CENTER|`CENTER`} phase are entered.
+     *
+     * @viewChild {@link EntityNamesInputsComponent|`EntityNamesInputsComponent`}
+     */
     @ViewChild(EntityNamesInputsComponent)
     protected mixNamesComponent?: EntityNamesInputsComponent;
 
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {AddMixDialogDefaults | null} data - The initial configuration of the dialog.
+     * @param {MatDialogRef<AddMixDialogComponent, MixPositionInfo>} dialogRef - The dialog reference.
+     * @param {DeviceService} deviceService - The {@link Device|`Device`} service. Instantiated by dependency injection.
+     * @param {GroupService} groupService - The {@link Group|`Group`} service. Instantiated by dependency injection.
+     * @param {MixingService} mixService - The {@link Mix|`Mix`} service. Instantiated by dependency injection.
+     */
     constructor(
         @Inject(MAT_DIALOG_DATA) data: AddMixDialogDefaults | null,
         dialogRef: MatDialogRef<AddMixDialogComponent, MixPositionInfo>,
@@ -86,10 +139,15 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /** The phase in the calculation of the system the {@link Mix|`Mix`} will be placed in. */
     public get selectedPhase(): MixPhase {
         return this._selectedPhase;
     }
 
+    /**
+     * Set the phase in the calculation of the system the {@link Mix|`Mix`} will be placed in,
+     * and reset the {@link AddMixDialogComponent#selectedTarget|`selectedTarget`}.
+     */
     public set selectedPhase(phase: MixPhase) {
         switch (phase) {
             case MixPhase.ACTUATORS:
@@ -108,22 +166,15 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         this.selectedElement = null;
     }
 
-    protected phaseKey(event: KeyboardEvent): void {
-        if (event.key == 'ArrowLeft') {
-            const phases       = Object.values(MixPhase);
-            const index        = phases.indexOf(this._selectedPhase);
-            this.selectedPhase = phases[(index - 1 + phases.length) % phases.length] ?? MixPhase.SENSORS;
-        } else if (event.key == 'ArrowRight' || event.key == 'Space') {
-            const phases       = Object.values(MixPhase);
-            const index        = phases.indexOf(this._selectedPhase);
-            this.selectedPhase = phases[(index + 1) % phases.length] ?? MixPhase.SENSORS;
-        }
-    }
-
+    /** The target the {@link Mix|`Mix`} will be associated with. */
     public get selectedTarget(): MixTarget {
         return this._selectedTarget;
     }
 
+    /**
+     * Set the target the {@link Mix|`Mix`} will be associated with,
+     * but only if the {@link AddMixDialogComponent#selectedPhase|`selectedPhase`} is correct.
+     */
     public set selectedTarget(target: MixTarget) {
         switch (target) {
             case MixTarget.GROUP:
@@ -141,6 +192,30 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         this.selectedElement = null;
     }
 
+    /**
+     * Listener for when a keyboard key is pressed when the element controlling
+     * {@link AddMixDialogComponent#selectedPhase|`selectedPhase`} is focused.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
+    protected phaseKey(event: KeyboardEvent): void {
+        if (event.key == 'ArrowLeft') {
+            const phases       = Object.values(MixPhase);
+            const index        = phases.indexOf(this._selectedPhase);
+            this.selectedPhase = phases[(index - 1 + phases.length) % phases.length] ?? MixPhase.SENSORS;
+        } else if (event.key == 'ArrowRight' || event.key == 'Space') {
+            const phases       = Object.values(MixPhase);
+            const index        = phases.indexOf(this._selectedPhase);
+            this.selectedPhase = phases[(index + 1) % phases.length] ?? MixPhase.SENSORS;
+        }
+    }
+
+    /**
+     * Listener for when a keyboard key is pressed when the element controlling
+     * {@link AddMixDialogComponent#selectedTarget|`selectedTarget`} is focused.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
     protected targetKey(event: KeyboardEvent): void {
 
         if (event.key == 'ArrowLeft' || event.key == 'ArrowRight' || event.key == 'Space') {
@@ -152,6 +227,12 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * Listener for when a keyboard key is pressed when the element controlling
+     * {@link AddMixDialogComponent#selectedElement|`selectedElement`} is focused.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
     protected elementsListKey(event: KeyboardEvent): void {
         let list: (Group | Sensor | Actuator)[];
         if (this._selectedPhase == MixPhase.SENSORS) {
@@ -176,6 +257,12 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * Requests the {@link AddMixDialogComponent#actuators|`actuators`} from the server.
+     *
+     * @param {boolean} invalidate - If `false`, the request is performed only if the  {@link AddMixDialogComponent#actuators|`actuators`}
+     *                               are `null` and thus have never been loaded. If `true`, the fetch is performed either way.
+     */
     protected loadActuators(invalidate: boolean = false): void {
         if (invalidate) {
             this.actuatorsLoadingStatus = LoadingStatus.LOADING;
@@ -197,6 +284,12 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * Requests the {@link AddMixDialogComponent#sensors|`sensors`} from the server.
+     *
+     * @param {boolean} invalidate - If `true`, the request is performed only if the {@link AddMixDialogComponent#sensors|`sensors`}
+     *                               are `null` and thus have never been loaded. If `false`, the fetch is performed either way.
+     */
     protected loadSensors(invalidate: boolean = false): void {
         if (invalidate) {
             this.sensorsLoadingStatus = LoadingStatus.LOADING;
@@ -218,6 +311,13 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * Requests the {@link AddMixDialogComponent#leftGroups|`leftGroups`} or {@link AddMixDialogComponent#rightGroups|`rightGroups`} from the server.
+     *
+     * @param {boolean} left - If `true`, the groups for the {@link MixPhase.SENSORS|`SENSORS`} phase are loaded, otherwise for the {@link MixPhase.ACTUATORS|`ACTUATORS`} phase.
+     * @param {boolean} invalidate - If `true`, the request is performed only if {@link AddMixDialogComponent#leftGroups|`leftGroups`} or {@link AddMixDialogComponent#rightGroups|`rightGroups`}
+     *                               is `null` and thus have never been loaded. If `false`, the fetch is performed either way.
+     */
     protected loadGroups(left: boolean, invalidate: boolean = false): void {
         if (invalidate) {
             if (left) {
@@ -265,6 +365,12 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * Requests the {@link AddMixDialogComponent#mixNames|`mixNames`} from the server.
+     *
+     * @param {boolean} invalidate - If `true`, the request is performed only if the {@link AddMixDialogComponent#mixNames|`mixNames`}
+     *                               are `null` and thus have never been loaded. If `false`, the fetch is performed either way.
+     */
     protected loadMixNames(invalidate: boolean = false): void {
         if (invalidate) {
             this.mixNamesLoadingStatus = LoadingStatus.LOADING;
@@ -284,6 +390,10 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * An instance of {@link MixPositionInfo|`MixPositionInfo`} given
+     * the current status of the dialog, or `null` if the dialog status is invalid.
+     */
     protected get result(): MixPositionInfo | null {
         if (this.selectedPhase == MixPhase.CENTER) {
             if (this.selectedTarget == MixTarget.CENTER) {
@@ -359,6 +469,10 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /**
+     * If the data entered in the dialog is valid, closes the dialog with the currently inserted data
+     * as a return value.
+     */
     protected confirm(): void {
         const result = this.result;
         if (this.result != null) {
@@ -366,12 +480,21 @@ export class AddMixDialogComponent extends MatDialogComponent<AddMixDialogDefaul
         }
     }
 
+    /** @ignore */
     protected readonly MixPhase              = MixPhase;
+    /** @ignore */
     protected readonly MixTarget             = MixTarget;
+    /** @ignore */
     protected readonly LoadingStatus         = LoadingStatus;
+    /** @ignore */
     protected readonly SENSOR_TYPE_ICON      = SENSOR_TYPE_ICON;
+    /** @ignore */
     protected readonly TOOLTIP_TIMEOUT       = TOOLTIP_TIMEOUT;
+    /** @ignore */
     protected readonly SENSOR_TYPE_DISPLAY   = SENSOR_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_DISPLAY = ACTUATOR_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_ICON    = ACTUATOR_TYPE_ICON;
+
 }

@@ -1,3 +1,8 @@
+/**
+ *  This module contains the {@link SystemAdjustmentDialogComponent|`SystemAdjustmentDialogComponent`} and related classes.
+ *
+ *  @module
+ */
 import {Component, Inject} from '@angular/core';
 import {MatDialogComponent} from '../../../utils/better-mat-dialog';
 import {Adjustment, AdjustmentAnimationOff, AdjustmentAnimationOn, AdjustmentSplitCommands, AdjustmentType} from '@common/system/adjustment/adjustment';
@@ -17,7 +22,23 @@ import {LoadingScrimComponent} from '../../auxiliary/loading-scrim/loading-scrim
 import {DeviceService} from '../../../services/device.service';
 import {InputReturnBehaviorDirective} from '../../../directives/input-return-behavior/input-return-behavior.directive';
 
+// noinspection ES6UnusedImports
+import type {Device} from '@common/devices/device';
+// noinspection ES6UnusedImports
+import type {MatDialog} from '@angular/material/dialog';
 
+/**
+ * A dialog for creating and editing an {@link Adjustment|`Adjustment`}.
+ *
+ * The dialog provides inputs for all the possible implementation of
+ * {@link Adjustment|`Adjustment`} with the relative options..
+ *
+ * @see {@link SystemAdjustmentDialogData|`SystemAdjustmentDialogData`} - The input data.
+ * @see {@link Adjustment|`Adjustment`} - The result data.
+ *
+ * @component
+ * @componentSelector `<house-mix-system-adjustment-dialog>`
+ */
 @Component({
                selector:    'house-mix-system-adjustment-dialog',
                imports:     [
@@ -43,16 +64,38 @@ import {InputReturnBehaviorDirective} from '../../../directives/input-return-beh
            })
 export class SystemAdjustmentDialogComponent extends MatDialogComponent<SystemAdjustmentDialogData, Adjustment<unknown, unknown>> {
 
+    /** The {@link FormGroup|`FormGroup`} handling all the controls in this dialog. */
     protected formGroup: FormGroup;
 
+    /** The {@link FormControl|`FormControl`} handling the {@link Adjustment#type|`Adjustment`'s `type`} input field. */
     protected adjustmentTypeFormControl: FormControl<AdjustmentType | null> = new FormControl<AdjustmentType | null>(null, Validators.required);
+    /**
+     * The {@link FormControl|`FormControl`} handling the minimum brightness input field for
+     * {@link AdjustmentAnimationOff|`AdjustmentAnimationOff`} and {@link AdjustmentAnimationOn|`AdjustmentAnimationOn`}.
+     */
     protected minBrightnessFormControl: FormControl<number | null>          = new FormControl<number | null>(null, Validators.required);
+    /** The {@link FormControl|`FormControl`} handling the input field for the {@link Actuator|`Actuator`} used as target in the adjustment. */
     protected selectedActuatorFormControl: FormControl<Actuator | null>     = new FormControl<Actuator | null>(null, Validators.required);
 
+    /**
+     * The list of available {@link Actuator|`Actuator`s} to choose from in
+     * {@link SystemAdjustmentDialogComponent#selectedActuatorFormControl|`selectedActuatorFormControl`}.
+     */
     protected actuators: Actuator[] | null          = null;
+    /**
+     *  The {@link LoadingStatus|`LoadingStatus`} of the request loading
+     * {@link SystemAdjustmentDialogComponent#actuators|`actuators`}.
+     */
     protected actuatorsLoadingStatus: LoadingStatus = LoadingStatus.LOADING;
 
-
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {SystemAdjustmentDialogData} data - The initial configuration of the dialog.
+     * @param {MatDialogRef<SystemAdjustmentDialogComponent, Adjustment<unknown, unknown>>} matDialogRef - The dialog reference.
+     * @param {DeviceService} deviceService - The {@link Device|`Device`} service. Instantiated by dependency injection.
+     */
     constructor(
         @Inject(MAT_DIALOG_DATA) data: SystemAdjustmentDialogData,
         matDialogRef: MatDialogRef<SystemAdjustmentDialogComponent, Adjustment<unknown, unknown>>,
@@ -86,14 +129,29 @@ export class SystemAdjustmentDialogComponent extends MatDialogComponent<SystemAd
         }
     }
 
+    /**
+     *  Whether the {@link SystemAdjustmentDialogComponent#adjustmentTypeFormControl|currently selected}
+     *  {@link AdjustmentType|`AdjustmentType`} is {@link AdjustmentType.ANIMATION_ON|`ANIMATION_ON`} or
+     *  {@link AdjustmentType.ANIMATION_OFF|`ANIMATION_OFF`}.
+     */
     protected get isTransitionAdjustment(): boolean {
         return this.adjustmentTypeFormControl.value == AdjustmentType.ANIMATION_ON || this.adjustmentTypeFormControl.value == AdjustmentType.ANIMATION_OFF;
     }
 
+    /**
+     *  Whether the {@link SystemAdjustmentDialogComponent#adjustmentTypeFormControl|currently selected}
+     *  {@link AdjustmentType|`AdjustmentType`} is {@link AdjustmentType.ANIMATION_ON|`SPLIT_COMMANDS`}.
+     */
     protected get isSplitAdjustment(): boolean {
         return this.adjustmentTypeFormControl.value == AdjustmentType.SPLIT_COMMANDS;
     }
 
+    /**
+     * Requests the {@link SystemAdjustmentDialogComponent#actuators|`actuators`} from the server.
+     *
+     * @param {boolean} invalidate - If `false`, the request is performed only if the {@link SystemAdjustmentDialogComponent#actuators|`actuators`}
+     *                               are `null` and thus have never been loaded. If `true`, the fetch is performed either way.
+     */
     protected loadActuators(invalidate: boolean = false): void {
         if (invalidate) {
             this.actuatorsLoadingStatus = LoadingStatus.LOADING;
@@ -118,7 +176,13 @@ export class SystemAdjustmentDialogComponent extends MatDialogComponent<SystemAd
         }
     }
 
-
+    /**
+     * Listener for when a keyboard key is pressed when the input linked to
+     * {@link SystemAdjustmentDialogComponent#selectedActuatorFormControl|`selectedActuatorFormControl`}
+     * is focused.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
     protected actuatorListKey(event: KeyboardEvent): void {
         if (event.key == 'ArrowLeft') {
             const index = this.selectedActuatorFormControl.value == null ? this.actuators?.length : this.actuators?.indexOf(this.selectedActuatorFormControl.value);
@@ -133,6 +197,10 @@ export class SystemAdjustmentDialogComponent extends MatDialogComponent<SystemAd
         }
     }
 
+    /**
+     * If the data entered in the dialog is valid, closes the dialog with the currently inserted data
+     * as a return value.
+     */
     protected confirm(): void {
         if (this.formGroup.valid && this.adjustmentTypeFormControl.value != null) {
             switch (this.adjustmentTypeFormControl.value) {
@@ -174,18 +242,31 @@ export class SystemAdjustmentDialogComponent extends MatDialogComponent<SystemAd
         }
     }
 
+    /** @ignore */
     protected readonly ADJUSTMENT_TYPES = ADJUSTMENT_TYPES;
-
+    /** @ignore */
     protected readonly ADJUSTMENT_TYPE_DISPLAY     = ADJUSTMENT_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly ADJUSTMENT_TYPE_DESCRIPTION = ADJUSTMENT_TYPE_DESCRIPTION;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_ICON          = ACTUATOR_TYPE_ICON;
+    /** @ignore */
     protected readonly TOOLTIP_TIMEOUT             = TOOLTIP_TIMEOUT;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_DISPLAY       = ACTUATOR_TYPE_DISPLAY;
+    /** @ignore */
     protected readonly LoadingStatus               = LoadingStatus;
 }
 
+/**
+ * Array containing all the possible {@link AdjustmentType|`AdjustmentType`s}.
+ */
 const ADJUSTMENT_TYPES = Object.values(AdjustmentType);
 
+/**
+ * Input data to a {@link MatDialog|`MatDialog`} using {@link SystemAdjustmentDialogComponent|`SystemAdjustmentDialogComponent`}.
+ */
 export interface SystemAdjustmentDialogData {
+    /** The {@link Adjustment|`Adjustment`} to be edited. If not defined, the dialog operates in creation mode. */
     edit?: Adjustment<unknown, unknown>;
 }

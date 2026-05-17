@@ -13,8 +13,8 @@ import ErrnoException = NodeJS.ErrnoException;
  * This service gives other services facilities for storing data persistently,
  * and handles promises and filesystem handling internally.
  *
- * It offers two functions, to retrieve and store the data: {@link FileService#readDataFile|`readDataFile()`}
- * and {@link FileService#saveDataFile|`saveDataFile()`}.
+ * It offers two functions, to retrieve and store the data: {@link FileService#readDataFile| `readDataFile()`}
+ * and {@link FileService#saveDataFile| `saveDataFile()`}.
  *
  * Files will be saved in the base save directory passed at launch as the
  * environment variable `APP_BASE_DIR`, inside the `/data/` directory,
@@ -111,7 +111,7 @@ export class FileService {
      * @template T - The format of the content of the file. It's only for resolving
      *               the type, the function doesn't typecheck and doesn't assure
      *               the result is of the correct requested type. It will be correct
-     *               if the file is always saved through {@link FileService#saveDataFile|`saveDataFile()`},
+     *               if the file is always saved through {@link FileService#saveDataFile| `saveDataFile()`},
      *               since that function is alse typechecked.
      */
     public async readDataFile<T>(path: string): Promise<T | null> {

@@ -39,8 +39,9 @@ export class TimersController {
      * Get all {@link SystemTimer|`SystemTimer`s} in the system.
      *
      * @returns {Promise<SystemTimerJSON[]>} An array containing the resulting {@link SystemTimer|`SystemTimer`s}' {@link SystemTimerJSON|serializations}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-timers-get">`GET /system/timers`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-timers-get">`/system/timers`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("")
     public async getAll(): Promise<SystemTimerJSON[]> {
@@ -54,8 +55,9 @@ export class TimersController {
      * @param {SystemTimerJSON} data - The HTTP request's body containing the {@link SystemTimerJSON|serialization} of the timer to add.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the timer's {@link SystemTimer#occurrence|`occurrence`} is out of range for the chosen {@link SystemTimer#type|`type`}.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a timer with the same name already exists.
-     * @see REST API endpoint <a href="../../rest/#operation-system-timers-post">`POST /system/timers`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-timers-post">`/system/timers`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("")
     public async create(
@@ -75,8 +77,9 @@ export class TimersController {
      * @param {SystemTimerJSON} data - The HTTP request's body containing the updated {@link SystemTimerJSON|serialization}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemTimer|`SystemTimer`} was found with the specific name.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the occurrence is invalid or if the name in the body doesn't match the path.
-     * @see REST API endpoint <a href="../../rest/#operation-system-timers-name-patch">`PATCH /system/timers/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-timers-name-patch">`/system/timers/{name}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name")
     public async edit(
@@ -101,8 +104,9 @@ export class TimersController {
      * @param {string} name - The HTTP request's path parameter with the {@link SystemTimer#name|`name`} of the timer to remove.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the timer is used in a mix.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemTimer|`SystemTimer`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-timers-name-delete">`DELETE /system/timers/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-timers-name-delete">`/system/timers/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("/:name")
     public async delete(
@@ -119,8 +123,9 @@ export class TimersController {
      * @returns {Promise<MixPositionInfo[]>} A list of {@link MixPositionInfo|positions} of all the mixes that
      *                                       reference the {@link SystemTimer|`SystemTimer`} and prevent it from being deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemTimer|`SystemTimer`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-timers-name-delete-locks-get">`GET /system/timers/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-timers-name-delete-locks-get">`/system/timers/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(

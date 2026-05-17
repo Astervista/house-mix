@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>HouseMix - Documentation</title>
+        <link rel="stylesheet" href="custom-style.css"/>
+        <script src="custom-script.js"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Hepta+Slab:wght@1..900&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap" rel="stylesheet">
+        <style>
+            :root {
+                --light-color-background: #ffffff;
+                --light-color-background-secondary: #f6f8fa;
+                --light-color-background-navbar: #f6f8fa;
+                --light-color-background-overlay: #c8d1da66;
+                --light-color-accent: #d1d9e0;
+                --light-color-text: #1f2328;
+                --light-color-text-aside: #59636e;
+                --light-color-link: #0969da;
+                --light-color-warning-border: #f7ebba;
+                --light-color-background-warning: #fff8c5;
+                --light-color-alert-note: #0969da;
+                --light-color-alert-tip: #1a7f37;
+                --light-color-alert-important: #8250df;
+                --light-color-alert-warning: #9a6700;
+                --light-color-alert-caution: #cf222e;
+                --dark-color-background: #0d1117;
+                --dark-color-background-secondary: #151b23;
+                --dark-color-background-navbar: #010409;
+                --dark-color-background-overlay: #21283066;
+                --dark-color-accent: #383e48;
+                --dark-color-text: #f0f6fc;
+                --dark-color-text-aside: #9198a1;
+                --dark-color-link: #4493f8;
+                --dark-color-warning-border: #3a2d12;
+                --dark-color-background-warning: #282215;
+                --dark-color-alert-note: #1f6feb;
+                --dark-color-alert-tip: #238636;
+                --dark-color-alert-important: #8957e5;
+                --dark-color-alert-warning: #9e6a03;
+                --dark-color-alert-caution: #da3633;
+                --color-warning-text: var(--color-text);
+                --color-contrast-text: var(--color-text);
+                --color-icon-background: var(--color-background);
+                --color-focus-outline: var(--color-accent);
+                --color-background-navbar: var(--light-color-background-navbar);
+                --color-background-overlay: var(--light-color-background-overlay);
+                --color-warning-border: var(--light-color-warning-border);
+                --color-ts-property: #ff984d;
+                --color-ts-interface: #ff984d;
+                --color-ts-module: #e04dff;
+                --color-ts-enum: #6eadff;
+                --color-ts-variable: #444444;
+                --color-ts-class: #6470ff;
+                --color-ts-constructor: #6470ff;
+                --color-icon-text: #ffffff;
+                --color-icon-arrow: #444444;
+                --color-icon-folder-border: #666666;
+                --color-icon-folder-fill: #cccccc;
+                --color-background: var(--light-color-background);
+                --color-background-secondary: var(--light-color-background-secondary);
+                --color-background-active: var(--light-color-background-active);
+                --color-background-warning: var(--light-color-background-warning);
+                --color-warning-text: var(--light-color-warning-text);
+                --color-icon-background: var(--light-color-icon-background);
+                --color-accent: var(--light-color-accent);
+                --color-active-menu-item: var(--light-color-active-menu-item);
+                --color-text: var(--light-color-text);
+                --color-contrast-text: var(--light-color-contrast-text);
+                --color-text-aside: var(--light-color-text-aside);
+                --color-icon-text: var(--light-color-icon-text);
+                --color-comment-tag-text: var(--light-color-text);
+                --color-comment-tag: var(--light-color-background);
+                --color-link: var(--light-color-link);
+                --color-focus-outline: var(--light-color-focus-outline);
+                --color-ts-keyword: var(--light-color-ts-keyword);
+                --color-ts-project: var(--light-color-ts-project);
+                --color-ts-module: var(--light-color-ts-module);
+                --color-ts-namespace: var(--light-color-ts-namespace);
+                --color-ts-enum: var(--light-color-ts-enum);
+                --color-ts-enum-member: var(--light-color-ts-enum-member);
+                --color-ts-variable: var(--light-color-ts-variable);
+                --color-ts-function: var(--light-color-ts-function);
+                --color-ts-class: var(--light-color-ts-class);
+                --color-ts-interface: var(--light-color-ts-interface);
+                --color-ts-constructor: var(--light-color-ts-constructor);
+                --color-ts-property: var(--light-color-ts-property);
+                --color-ts-method: var(--light-color-ts-method);
+                --color-ts-reference: var(--light-color-ts-reference);
+                --color-ts-call-signature: var(--light-color-ts-call-signature);
+                --color-ts-index-signature: var(--light-color-ts-index-signature);
+                --color-ts-constructor-signature: var(--light-color-ts-constructor-signature);
+                --color-ts-parameter: var(--light-color-ts-parameter);
+                --color-ts-type-parameter: var(--light-color-ts-type-parameter);
+                --color-ts-accessor: var(--light-color-ts-accessor);
+                --color-ts-get-signature: var(--light-color-ts-get-signature);
+                --color-ts-set-signature: var(--light-color-ts-set-signature);
+                --color-ts-type-alias: var(--light-color-ts-type-alias);
+                --color-document: var(--light-color-document);
+                --color-note: var(--light-color-note);
+                --color-tip: var(--light-color-tip);
+                --color-important: var(--light-color-important);
+                --color-warning: var(--light-color-warning);
+                --color-caution: var(--light-color-caution);
+                --external-icon: var(--light-external-icon);
+                --color-scheme: var(--light-color-scheme);
+            }
+
+            html[data-theme=dark]  {
+                --color-background: var(--dark-color-background);
+                --color-background-navbar: var(--dark-color-background);
+                --color-background-secondary: var(--dark-color-background-secondary);
+                --color-background-active: var(--dark-color-background-active);
+                --color-background-warning: var(--dark-color-background-warning);
+                --color-warning-text: var(--dark-color-warning-text);
+                --color-accent: var(--dark-color-accent);
+                --color-active-menu-item: var(--dark-color-active-menu-item);
+                --color-text: var(--dark-color-text);
+                --color-contrast-text: var(--dark-color-contrast-text);
+                --color-text-aside: var(--dark-color-text-aside);
+                --color-icon-background: var(--dark-color-icon-background);
+                --color-icon-text: var(--dark-color-icon-text);
+                --color-comment-tag-text: var(--dark-color-text);
+                --color-comment-tag: var(--dark-color-background);
+                --color-link: var(--dark-color-link);
+                --color-focus-outline: var(--dark-color-focus-outline);
+                --color-ts-keyword: var(--dark-color-ts-keyword);
+                --color-ts-project: var(--dark-color-ts-project);
+                --color-ts-module: var(--dark-color-ts-module);
+                --color-ts-namespace: var(--dark-color-ts-namespace);
+                --color-ts-enum: var(--dark-color-ts-enum);
+                --color-ts-enum-member: var(--dark-color-ts-enum-member);
+                --color-ts-variable: var(--dark-color-ts-variable);
+                --color-ts-function: var(--dark-color-ts-function);
+                --color-ts-class: var(--dark-color-ts-class);
+                --color-ts-interface: var(--dark-color-ts-interface);
+                --color-ts-constructor: var(--dark-color-ts-constructor);
+                --color-ts-property: var(--dark-color-ts-property);
+                --color-ts-method: var(--dark-color-ts-method);
+                --color-ts-reference: var(--dark-color-ts-reference);
+                --color-ts-call-signature: var(--dark-color-ts-call-signature);
+                --color-ts-index-signature: var(--dark-color-ts-index-signature);
+                --color-ts-constructor-signature: var(--dark-color-ts-constructor-signature);
+                --color-ts-parameter: var(--dark-color-ts-parameter);
+                --color-ts-type-parameter: var(--dark-color-ts-type-parameter);
+                --color-ts-accessor: var(--dark-color-ts-accessor);
+                --color-ts-get-signature: var(--dark-color-ts-get-signature);
+                --color-ts-set-signature: var(--dark-color-ts-set-signature);
+                --color-ts-type-alias: var(--dark-color-ts-type-alias);
+                --color-document: var(--dark-color-document);
+                --color-alert-note: var(--dark-color-alert-note);
+                --color-alert-tip: var(--dark-color-alert-tip);
+                --color-alert-important: var(--dark-color-alert-important);
+                --color-alert-warning: var(--dark-color-alert-warning);
+                --color-alert-caution: var(--dark-color-alert-caution);
+                --external-icon: var(--dark-external-icon);
+                --color-scheme: var(--dark-color-scheme);
+            }
+
+
+            @media (prefers-color-scheme: dark) {
+                html[data-theme=os] {
+                    --color-background: var(--dark-color-background);
+                    --color-background-navbar: var(--dark-color-background);
+                    --color-background-secondary: var(--dark-color-background-secondary);
+                    --color-background-active: var(--dark-color-background-active);
+                    --color-background-warning: var(--dark-color-background-warning);
+                    --color-warning-text: var(--dark-color-warning-text);
+                    --color-accent: var(--dark-color-accent);
+                    --color-active-menu-item: var(--dark-color-active-menu-item);
+                    --color-text: var(--dark-color-text);
+                    --color-contrast-text: var(--dark-color-contrast-text);
+                    --color-text-aside: var(--dark-color-text-aside);
+                    --color-icon-background: var(--dark-color-icon-background);
+                    --color-icon-text: var(--dark-color-icon-text);
+                    --color-comment-tag-text: var(--dark-color-text);
+                    --color-comment-tag: var(--dark-color-background);
+                    --color-link: var(--dark-color-link);
+                    --color-focus-outline: var(--dark-color-focus-outline);
+                    --color-ts-keyword: var(--dark-color-ts-keyword);
+                    --color-ts-project: var(--dark-color-ts-project);
+                    --color-ts-module: var(--dark-color-ts-module);
+                    --color-ts-namespace: var(--dark-color-ts-namespace);
+                    --color-ts-enum: var(--dark-color-ts-enum);
+                    --color-ts-enum-member: var(--dark-color-ts-enum-member);
+                    --color-ts-variable: var(--dark-color-ts-variable);
+                    --color-ts-function: var(--dark-color-ts-function);
+                    --color-ts-class: var(--dark-color-ts-class);
+                    --color-ts-interface: var(--dark-color-ts-interface);
+                    --color-ts-constructor: var(--dark-color-ts-constructor);
+                    --color-ts-property: var(--dark-color-ts-property);
+                    --color-ts-method: var(--dark-color-ts-method);
+                    --color-ts-reference: var(--dark-color-ts-reference);
+                    --color-ts-call-signature: var(--dark-color-ts-call-signature);
+                    --color-ts-index-signature: var(--dark-color-ts-index-signature);
+                    --color-ts-constructor-signature: var(--dark-color-ts-constructor-signature);
+                    --color-ts-parameter: var(--dark-color-ts-parameter);
+                    --color-ts-type-parameter: var(--dark-color-ts-type-parameter);
+                    --color-ts-accessor: var(--dark-color-ts-accessor);
+                    --color-ts-get-signature: var(--dark-color-ts-get-signature);
+                    --color-ts-set-signature: var(--dark-color-ts-set-signature);
+                    --color-ts-type-alias: var(--dark-color-ts-type-alias);
+                    --color-document: var(--dark-color-document);
+                    --color-alert-note: var(--dark-color-alert-note);
+                    --color-alert-tip: var(--dark-color-alert-tip);
+                    --color-alert-important: var(--dark-color-alert-important);
+                    --color-alert-warning: var(--dark-color-alert-warning);
+                    --color-alert-caution: var(--dark-color-alert-caution);
+                    --external-icon: var(--dark-external-icon);
+                    --color-scheme: var(--dark-color-scheme);
+                }
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+                user-select: none;
+            }
+
+            body {
+                background-color: #ffffff;
+                color: #1f2328;
+                display: flex;
+                flex-direction: column;
+                align-items: stretch;
+                font-family: "Fira Sans", sans-serif;
+            }
+
+            #content {
+                flex-grow: 1;
+                flex-basis: 0;
+                display: flex;
+                flex-direction: column;
+                padding: 20px 10px;
+            }
+
+            #footer{
+                border-top: solid 1px;
+            }
+
+            #nav-bar {
+                border-bottom: solid 1px;
+            }
+
+            #footer,
+            #nav-bar {
+                background-color: #f6f8fa;
+                border-color: #d1d9e0;
+                height: 64px;
+                display: flex;
+                align-items: center;
+            }
+
+            html[data-theme=dark] body {
+                background-color: #0d1117;
+                color: #f0f6fc;
+            }
+            html[data-theme=dark] #footer,
+            html[data-theme=dark] #nav-bar {
+                    background-color: #010409;
+                    border-color: #383e48;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                html[data-theme=os] body {
+                    background-color: #0d1117;
+                    color: #f0f6fc;
+                }
+
+                html[data-theme=os] #footer,
+                html[data-theme=os] #nav-bar {
+                    background-color: #010409;
+                    border-color: #383e48;
+                }
+            }
+
+            #nav-bar .banner {
+                height: calc(100% - 6px);
+                margin: 3px auto;
+            }
+
+            .banner.dark {
+                display: none;
+            }
+
+            html[data-theme=dark] .banner.dark {
+                display: block;
+            }
+            html[data-theme=dark] .banner.light {
+                display: none;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                html[data-theme=os] body {
+                    background-color: #0d1117;
+                    color: #f0f6fc;
+                }
+                html[data-theme=os] .banner.dark {
+                    display: block;
+                }
+                html[data-theme=os] .banner.light {
+                    display: none;
+                }
+            }
+
+            .theme-container {
+                width: initial;
+                margin: 0 auto;
+            }
+
+            .version-selector {
+                position: absolute;
+                right: 0;
+            }
+
+            h1, h2, p {
+                text-align: center;
+                font-weight: 200;
+                margin: 15px 0;
+            }
+
+            h1 {
+                font-size: 2.75rem;
+            }
+
+            h2 {
+                font-size: 2.25rem;
+            }
+
+            p {
+                margin: 5px 0;
+                font-size: 1.25rem;
+            }
+
+            .grid {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                flex-basis: 0;
+                align-items: stretch;
+                justify-content: space-evenly;
+            }
+
+            .grid .row {
+                display: flex;
+                align-items: center;
+                justify-content: space-evenly;
+            }
+
+            .grid a {
+                padding: 20px;
+                font-size: 2.5rem;
+                font-weight: 300;
+                color: var(--color-text);
+                text-decoration: none;
+                border: solid 2px var(--color-accent);
+                border-radius: 10px;
+                transition: background-color 0.2s;
+            }
+
+            .grid a:focus {
+                outline: none;
+                background: color-mix(in srgb, var(--color-text-aside), #0000 92%)
+            }
+
+            .grid a:hover {
+                background: color-mix(in srgb, var(--color-text-aside), #0000 92%)
+            }
+
+            .grid a:hover:focus {
+                background: color-mix(in srgb, var(--color-text-aside), #0000 82%)
+            }
+
+            .grid a:active {
+                background: color-mix(in srgb, var(--color-text-aside), #0000 82%)
+            }
+
+            .grid a:active:focus {
+                background: color-mix(in srgb, var(--color-text-aside), #0000 72%)
+            }
+
+            #astervista {
+                position: absolute;
+                display: flex;
+                padding: 5px 10px;
+                align-items: stretch;
+                height: 50px;
+                gap: 10px;
+                text-decoration: none;
+                color: var(--color-text)
+            }
+
+            #astervista img {
+                height: 100%;
+            }
+
+            #astervista .text {
+                display: flex;
+                flex-direction: column;
+                gap: 3px;
+            }
+
+            #astervista .name {
+                font-size: 1.2rem;
+                font-weight: 200;
+                font-family: "Montserrat", sans-serif;
+            }
+
+            #astervista .subtitle {
+                font-family: "Hepta Slab", monospace;
+                font-size: 1rem;
+            }
+
+        </style>
+        <script>
+            document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";
+        </script>
+    </head>
+    <body>
+        <div id="nav-bar">
+            <img alt="HouseMix - Documentation" src="assets/banner.svg" class="banner light"/>
+            <img alt="HouseMix - Documentation" src="assets/banner_dark.svg" class="banner dark"/>
+        </div>
+        <div id="content">
+            <h1>HouseMix</h1>
+            <h2>Documentation</h2>
+            <p>Welcome to the documentation for the project "House Mix"!</p>
+            <p>Choose a section to view or choose another version of the documentation on the top right.</p>
+            <div class="grid">
+                <div class="row">
+                    <a href="./backend">Backend</a>
+                    <a href="./common">Common</a>
+                </div>
+                <div class="row">
+                    <a href="./frontend">Frontend</a>
+                    <a href="./rest">REST API</a>
+                </div>
+            </div>
+        </div>
+        <div id="footer">
+            <a id="astervista" href="/">
+                <img src="/src/img/astervista.svg" alt="Astervista logo">
+                <div class="text">
+                    <span class="name">Astervista</span>
+                    <span class="subtitle">Projects documentation</span>
+                </div>
+            </a>
+        </div>
+    </body>
+</html>

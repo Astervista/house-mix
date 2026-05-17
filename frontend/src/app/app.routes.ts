@@ -1,3 +1,8 @@
+/**
+ * This module contains routing logic for the app.
+ *
+ * @module
+ */
 import {Router, Routes} from '@angular/router';
 import {HomeComponent} from './components/home/home.component';
 import {MixComponent} from './components/mixing/mix/mix.component';
@@ -8,14 +13,25 @@ import {Component} from '@angular/core';
 import {LocalStorageService} from './services/local-storage.service';
 import {MainPages} from './utils/constants';
 
-
+/**
+ * The main route redirection component.
+ *
+ * @component
+ * @componentSelector `<house-mix-default-redirect>`
+ */
 @Component({
                selector: 'house-mix-default-redirect',
                template: ''
            })
 export class DefaultRedirectComponent {
 
-
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {Router} router - The Angular router. Instantiated by dependency injection.
+     * @param {LocalStorageService} localStorageService - The local storage service. Instantiated by dependency injection.
+     */
     constructor(
         private router: Router,
         private localStorageService: LocalStorageService
@@ -38,7 +54,14 @@ export class DefaultRedirectComponent {
 
 }
 
-export const routes: Routes = [
+/**
+ * All the routes in the system.
+ */
+export
+/**
+ * All the routes in the system.
+ */
+const routes: Routes = [
     {path: '', component: DefaultRedirectComponent, pathMatch: 'full'}, //default route
     {path: 'devices', component: HomeComponent},
     {path: 'mixing', component: MixingComponent},

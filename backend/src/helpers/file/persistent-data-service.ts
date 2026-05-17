@@ -122,12 +122,12 @@ export class PersistentDataService<D extends Serializable<J>, J> {
      * so that critical operations can be done to the data before any
      * consumer can access it.
      *
-     * @param {(data: D) => (Promise<void> | void)} toDo - The function that
+     * @param {(data: D) => (Promise<void> | void)} toRun - The function that
      *          will be executed after the data is available.
      */
-    protected doAfterLoad(toDo: (data: D) => Promise<void> | void): void {
+    protected doAfterLoad(toRun: (data: D) => Promise<void> | void): void {
         this._data = this._data.then(async data => {
-            await toDo(data);
+            await toRun(data);
             return data;
         });
     }

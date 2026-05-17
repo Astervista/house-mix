@@ -1,0 +1,141 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "name": "Frontend project",
+    "plugin": [
+        "./typedoc-angular-plugin.js",
+        "./typedoc-rest-plugin.js",
+        "typedoc-rhineai-theme",
+        "@zamiell/typedoc-plugin-not-exported"
+    ],
+    "entryPointStrategy": "expand",
+    "entryPoints": [
+        "src/app"
+    ],
+    "exclude": [
+        "src/main.ts",
+        "src/server.ts",
+        "**/*.spec.ts",
+        "src/app/app.config.service"
+    ],
+    "readme": "README-docs.md",
+    "out": "../documentation/frontend",
+    "excludePrivate": false,
+    "excludeProtected": false,
+    "customCss": "../documentation/custom-style.css",
+    "customJs": "../documentation/custom-script.js",
+    "blockTags": [
+        "@inputAlias",
+        "@outputAlias",
+        "@componentSelector",
+        "@directiveName",
+        "@stylesheet",
+        "@layoutTemplate",
+        "@hostBinding",
+        "@viewChild",
+        "@viewChildren",
+        "@apiEndpoint"
+    ],
+    "modifierTags": [
+        "@input",
+        "@output",
+        "@required",
+        "@component",
+        "@directive",
+        "@service",
+        "@put",
+        "@get",
+        "@patch",
+        "@post",
+        "@delete",
+        "@apiProxy"
+    ],
+    "externalSymbolLinkMappings": {
+        "typescript": {
+            "Object": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",
+            "Array": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array",
+            "Promise": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+            "Map": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map",
+            "Record": "https://www.typescriptlang.org/docs/handbook/utility-types.html#recordkeys-type",
+            "ObjectConstructor.keys": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys",
+            "ImageData": "https://developer.mozilla.org/en-US/docs/Web/API/ImageData",
+            "CanvasRenderingContext2D": "https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D",
+            "HTMLElement": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement",
+            "HTMLCanvasElement": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLCanvasElement",
+            "HTMLDivElement": "https://developer.mozilla.org/en-US/docs/Web/API/HTMLDivElement",
+            "KeyboardEvent": "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent",
+            "MouseEvent": "https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent",
+            "MouseEvent.metaKey": "https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/metaKey",
+            "MouseEvent.ctrlKey": "https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/ctrlKey",
+            "KeyboardEvent.metaKey": "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/metaKey",
+            "KeyboardEvent.ctrlKey": "https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/ctrlKey",
+            "SVGPathElement":"https://developer.mozilla.org/en-US/docs/Web/API/SVGPathElement",
+            "MutationObserver":"https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver",
+            "ResizeObserver":"https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver",
+            "Error": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error",
+            "Date": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date",
+            "JSON.parse": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse",
+            "JSON.stringify": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify"
+        },
+        "@angular/core": {
+            "ElementRef": "https://angular.dev/api/core/ElementRef",
+            "AfterViewInit.ngAfterViewInit": "https://angular.dev/api/core/AfterViewInit#ngAfterViewInit",
+            "OnInit.ngOnInit": "https://angular.dev/api/core/OnInit#ngOnInit",
+            "OnDestroy.ngOnDestroy": "https://angular.dev/api/core/OnDestroy#ngOnDestroy"
+        },
+        "@angular/common": {
+            "HttpClient": "https://angular.dev/api/common/http/HttpClient",
+            "HttpErrorResponse": "https://angular.dev/api/common/http/HttpErrorResponse",
+            "HttpResponseBase.status": "https://angular.dev/api/common/http/HttpResponseBase#status"
+        },
+        "@angular/cdk": {
+            "Point": "https://angular.dev/api/cdk/drag-drop/Point#"
+        },
+        "@angular/platform-browser": {
+            "DomSanitizer": "https://angular.dev/api/platform-browser/DomSanitizer",
+            "SafeHtml": "https://angular.dev/api/platform-browser/SafeHtml"
+        },
+        "@angular/forms": {
+            "ControlValueAccessor.writeValue": "https://angular.dev/api/forms/ControlValueAccessor#writeValue",
+            "ControlValueAccessor.registerOnChange": "https://angular.dev/api/forms/ControlValueAccessor#registerOnChange",
+            "ControlValueAccessor.registerOnTouched": "https://angular.dev/api/forms/ControlValueAccessor#registerOnTouched",
+            "ControlValueAccessor.setDisabledState": "https://angular.dev/api/forms/ControlValueAccessor#setDisabledState",
+            "AbstractControl.valueChanges": "https://angular.dev/api/forms/AbstractControl#valueChanges",
+            "FormControl": "https://angular.dev/api/forms/FormControl",
+            "FormGroup": "https://angular.dev/api/forms/FormGroup"
+        },
+        "@types/node": {
+            "__global.NodeJS.Timeout": "https://nodejs.org/api/timers.html#class-timeout",
+            "NodeJS.ErrnoException": "https://nodejs.org/api/errors.html"
+        },
+        "@angular/material": {
+            "MatMenu": "https://material.angular.dev/components/menu/overview",
+            "MatIcon": "https://material.angular.dev/components/icon/overview",
+            "MatCheckbox": "https://material.angular.dev/components/checkbox/overview",
+            "MatDialog": "https://material.angular.dev/components/dialog/overview",
+            "MatDialog.open": "https://material.angular.dev/components/dialog/api#MatDialog",
+            "MatDialogRef": "https://material.angular.dev/components/dialog/api#MatDialogRef",
+            "MatDialogRef.afterClosed": "https://material.angular.dev/components/dialog/api#MatDialogRef",
+            "MatDialogRef.close": "https://material.angular.dev/components/dialog/api#MatDialogRef",
+            "MatDialogConfig": "https://material.angular.dev/components/dialog/api#MatDialogConfig",
+            "MatDialogConfig.data": "https://material.angular.dev/components/dialog/api#MatDialogConfig",
+            "MatTree": "https://material.angular.dev/components/tree/overview",
+            "MatSelect": "https://material.angular.dev/components/select/overview",
+            "MatTooltip": "https://material.angular.dev/components/tooltip/overview",
+            "MatSnackBar": "https://material.angular.dev/components/snack-bar/overview",
+            "MatInput": "https://material.angular.dev/components/input/overview",
+            "MatTimepicker": "https://material.angular.dev/components/timepicker/overview",
+            "MatDatepicker": "https://material.angular.dev/components/datepicker/overview"
+        },
+        "rxjs": {
+            "Observable": "https://rxjs.dev/api/index/class/Observable",
+            "Subscription": "https://rxjs.dev/api/index/class/Subscription",
+            "Subject": "https://rxjs.dev/api/index/class/Subject"
+        },
+        "@types/luxon": {
+            "DateTime": "https://moment.github.io/luxon/api-docs/index.html#datetime"
+        }
+    },
+    "validation": {
+        "invalidPath": false
+    }
+}

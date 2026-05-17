@@ -58,7 +58,7 @@ export class SystemParameter {
     }
     
     /**
-     * Set the type of the parameter. Uses {@link SystemParameter#editDatum|`editDatum()`} to assure the new
+     * Set the type of the parameter. Uses {@link SystemParameter#editDatum| `editDatum()`} to assure the new
      * value is consistent with the datum.
      */
     public set value(value: unknown) {

@@ -43,8 +43,9 @@ export class GroupController {
      * @returns {Promise<GroupJSON[]>} An array containing the resulting {@link Group|`Group`s}' {@link GroupJSON|serializations}.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if one of {@link GetGroupsOptions#actuatorMix|`actuatorMix`} and
      *     {@link GetGroupsOptions#sensorMix|`sensorMix`} is specified at the same time as {@link GetGroupsOptions#anyMixed|`anyMixed`}.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-get">`GET /groups`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-get">`/groups`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/")
     @ApiOkResponse({type: [Array<GroupJSON>]})
@@ -65,8 +66,9 @@ export class GroupController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if there already exist a {@link Group|group} with the same {@link Group#name|name}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link GroupCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
      *     the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-post">`POST /groups`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-post">`/groups`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("/")
     public async create(
@@ -84,8 +86,9 @@ export class GroupController {
      * @param {string} name - The HTTP request's path parameter with the {@link Group#name|`name`} of the group to retrieve.
      * @returns {Promise<GroupJSON>} - The {@link Group|`Group`}'s {@link GroupJSON|serialization}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-get">`GET /groups/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-get">`/groups/{name}`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name")
     public async getByName(@Param('name') name: string): Promise<GroupJSON> {
@@ -108,8 +111,9 @@ export class GroupController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if there already exist a {@link Group|group} with the same {@link Group#name|name}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link GroupCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
      *     the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-post">`POST /groups/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-post">`/groups/{name}`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("/:name")
     public async createName(
@@ -134,8 +138,9 @@ export class GroupController {
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a new {@link Group#name|`name`} was specified, but a {@link Group|group} with that name already exists.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-patch">`PATCH /groups/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-patch">`/groups/{name}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name")
     public async edit(
@@ -157,8 +162,9 @@ export class GroupController {
      *     referenced by another {@link Mix|mix}.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the provided options are invalid.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-delete">`DELETE /groups/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-delete">`/groups/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("/:name")
     public async delete(
@@ -189,8 +195,9 @@ export class GroupController {
      *                                       reference the {@link Group|`Group`} and prevent it from being deleted. If empty, it means that
      *                                       the {@link Group|`Group`} can be deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-delete-locks-get">`GET /groups/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-delete-locks-get">`/groups/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(
@@ -211,8 +218,9 @@ export class GroupController {
      *                               names.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Group|`Group`} cannot be moved to the requested {@link Group|`Group`}, because it would
      *     break dependencies inside the {@link Mix|mixes}.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-parent-patch">`PATCH /groups/{name}/parent`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-parent-patch">`/groups/{name}/parent`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name/parent")
     public async changeParent(
@@ -232,8 +240,9 @@ export class GroupController {
      * @param {string} name - The HTTP request's path parameter with the {@link Group#name|`name`} of the {@link Group|`Group`}.
      * @returns {Promise<UnavailableParents>} The information about the {@link UnavailableParents|unavailable groups}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Group|`Group`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-groups-name-unavailable-parents-get">`GET /groups/{name}/unavailable-parents`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-groups-name-unavailable-parents-get">`/groups/{name}/unavailable-parents`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/unavailable-parents")
     public async getUnavailableParents(

@@ -1,3 +1,8 @@
+/**
+ * This module contains the {@link MixingComponent|mixing view} component and related classes.
+ *
+ * @module
+ */
 import {AfterViewInit, Component, Directive, ElementRef, HostListener, Input, OnDestroy, QueryList, ViewChildren} from '@angular/core';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../auxiliary/toolbar/toolbar.component';
 import {Router} from '@angular/router';
@@ -22,95 +27,267 @@ import {MixPhase, MixTarget} from '@common/mixing/mix/rest-classes';
 import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {LoadingStatus} from '../../utils/enums';
 
+// noinspection ES6UnusedImports
+import type {Mix} from '@common/mixing/mix/mix';
+// noinspection ES6UnusedImports
+import type {Actuator} from '@common/devices/actuator/actuator';
+// noinspection ES6UnusedImports
+import type {Sensor} from '@common/devices/sensor/sensor';
+// noinspection ES6UnusedImports
+import type {ToolbarButton} from '../auxiliary/toolbar/toolbar.component';
+// noinspection ES6UnusedImports
+import type {Group} from '@common/devices/group/group';
+
+/**
+ * Any one of the directives that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link MixGraphElement|`MixGraphElement`} in the graph.
+ *
+ * @notExported
+ */
+type ElementDirective = OriginElementDirective | SensorElementDirective | GroupElementDirective | CenterElementDirective | ActuatorElementDirective;
+
+/**
+ * Directive that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link TopDatumOrigin|`TopDatumOrigin`} in the {@link MixingGraph|`MixingGraph`}.
+ * Accepts the {@link TopDatumOrigin|`TopDatumOrigin`} object and returns it with the
+ * {@link OriginElementDirective#getElement|`getElement()`} method.
+ *
+ * @directive
+ * @directiveName `[origin-element]`
+ */
 @Directive({
                selector: '[origin-element]'
            })
 export class OriginElementDirective {
 
-    @Input('origin-element') public originElement!: TopDatumOrigin;
+    /**
+     * The {@link TopDatumOrigin|`TopDatumOrigin`} referenced by the node.
+     *
+     * @input
+     * @inputAlias origin-element
+     */
+    @Input('origin-element')
+    public originElement!: TopDatumOrigin;
 
+    /**
+     * Creates an instance of the directive. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {ElementRef<HTMLElement>} elementRef - The reference to the DOM element.
+     */
     constructor(public elementRef: ElementRef<HTMLElement>) {}
 
+    /**
+     * Returns the {@link TopDatumOrigin|`TopDatumOrigin`} referenced by the node passed to the directive.
+     *
+     * @returns {TopDatumOrigin} - The {@link TopDatumOrigin|`TopDatumOrigin`} referenced by the node.
+     */
     public getElement(): TopDatumOrigin {
         return this.originElement;
     }
 
 }
 
+/**
+ * Directive that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link MixingGraphSensor|`MixingGraphSensor`} in the {@link MixingGraph|`MixingGraph`}.
+ * Accepts the {@link MixingGraphSensor|`MixingGraphSensor`} object and returns it with the
+ * {@link SensorElementDirective#getElement|`getElement()`} method.
+ *
+ * @directive
+ * @directiveName `[sensor-element]`
+ */
 @Directive({
                selector: '[sensor-element]'
            })
 export class SensorElementDirective {
 
-    @Input('sensor-element') public sensorElement!: MixingGraphSensor;
+    /**
+     * The {@link MixingGraphSensor|`MixingGraphSensor`} referenced by the node.
+     *
+     * @input
+     * @inputAlias sensor-element
+     */
+    @Input('sensor-element')
+    public sensorElement!: MixingGraphSensor;
 
+    /**
+     * Creates an instance of the directive. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {ElementRef<HTMLElement>} elementRef - The reference to the DOM element.
+     */
     constructor(public elementRef: ElementRef<HTMLElement>) {}
 
+    /**
+     * Returns the {@link MixingGraphSensor|`MixingGraphSensor`} referenced by the node passed to the directive.
+     *
+     * @returns {MixingGraphSensor} - The {@link MixingGraphSensor|`MixingGraphSensor`} referenced by the node.
+     */
     public getElement(): MixingGraphSensor {
         return this.sensorElement;
     }
 
 }
 
+/**
+ * Directive that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link MixingGraphGroup|`MixingGraphGroup`} in the {@link MixingGraph|`MixingGraph`}.
+ * Accepts the {@link MixingGraphGroup|`MixingGraphGroup`} object and returns it with the
+ * {@link GroupElementDirective#getElement|`getElement()`} method.
+ *
+ * @directive
+ * @directiveName `[group-element]`
+ */
 @Directive({
                selector: '[group-element]'
            })
 export class GroupElementDirective {
 
+    /**
+     * The {@link MixingGraphGroup|`MixingGraphGroup`} referenced by the node.
+     *
+     * @input
+     * @inputAlias group-element
+     * @required
+     */
     @Input({
                alias:    'group-element',
                required: true
            })
     public groupElement!: MixingGraphGroup;
 
+    /**
+     * Whether this group belongs to the sensor phase.
+     *
+     * @input
+     * @inputAlias group-element-sensor
+     * @required
+     */
     @Input({
                alias:    'group-element-sensor',
                required: true
            })
     public sensor!: boolean;
 
+    /**
+     * Creates an instance of the directive. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {ElementRef<HTMLElement>} elementRef - The reference to the DOM element.
+     */
     constructor(public elementRef: ElementRef<HTMLElement>) {}
 
+    /**
+     * Returns the {@link MixingGraphGroup|`MixingGraphGroup`} referenced by the node passed to the directive.
+     *
+     * @returns {MixingGraphGroup} - The {@link MixingGraphGroup|`MixingGraphGroup`} referenced by the node.
+     */
     public getElement(): MixingGraphGroup {
         return this.groupElement;
     }
 
 }
 
+/**
+ * Directive that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link MixingGraphActuator|`MixingGraphActuator`} in the {@link MixingGraph|`MixingGraph`}.
+ * Accepts the {@link MixingGraphActuator|`MixingGraphActuator`} object and returns it with the
+ * {@link ActuatorElementDirective#getElement|`getElement()`} method.
+ *
+ * @directive
+ * @directiveName `[actuator-element]`
+ */
 @Directive({
                selector: '[actuator-element]'
            })
 export class ActuatorElementDirective {
 
-    @Input('actuator-element') public actuatorElement!: MixingGraphActuator;
+    /**
+     * The {@link MixingGraphActuator|`MixingGraphActuator`} referenced by the node.
+     *
+     * @input
+     * @inputAlias actuator-element
+     * @required
+     */
+    @Input({
+               alias:    'actuator-element',
+               required: true
+           })
+    public actuatorElement!: MixingGraphActuator;
 
+    /**
+     * Creates an instance of the directive. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {ElementRef<HTMLElement>} elementRef - The reference to the DOM element.
+     */
     constructor(public elementRef: ElementRef<HTMLElement>) {}
 
+    /**
+     * Returns the {@link MixingGraphActuator|`MixingGraphActuator`} referenced by the node passed to the directive.
+     *
+     * @returns {MixingGraphActuator} - The {@link MixingGraphActuator|`MixingGraphActuator`} referenced by the node.
+     */
     public getElement(): MixingGraphActuator {
         return this.actuatorElement;
     }
 
 }
 
+/**
+ * Directive that attaches to an element in {@link MixingComponent|`MixingComponent`}'s template
+ * representing a {@link MixingGraphCenter|`MixingGraphCenter`} in the {@link MixingGraph|`MixingGraph`}.
+ * Accepts the {@link MixingGraphCenter|`MixingGraphCenter`} object and returns it with the
+ * {@link CenterElementDirective#getElement|`getElement()`} method.
+ *
+ * @directive
+ * @directiveName `[center-element]`
+ */
 @Directive({
                selector: '[center-element]'
            })
 export class CenterElementDirective {
 
+    /**
+     * The {@link MixingGraphCenter|`MixingGraphCenter`} referenced by the node.
+     *
+     * @input
+     * @inputAlias center-element
+     * @required
+     */
     @Input({
                alias:    'center-element',
                required: true
            })
     public centerElement!: MixingGraphCenter;
 
+    /**
+     * Creates an instance of the directive. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {ElementRef<HTMLElement>} elementRef - The reference to the DOM element.
+     */
     constructor(public elementRef: ElementRef<HTMLElement>) {}
 
+    /**
+     * Returns the {@link MixingGraphCenter|`MixingGraphCenter`} referenced by the node passed to the directive.
+     *
+     * @returns {MixingGraphCenter} - The {@link MixingGraphCenter|`MixingGraphCenter`} referenced by the node.
+     */
     public getElement(): MixingGraphCenter {
         return this.centerElement;
     }
 
 }
 
+/**
+ * The component for the "mixing" view, showing the system's {@link MixingGraph|`MixingGraph`},
+ * allowing for the creation and editing of {@link Mix|`Mix`es} in the system.
+ *
+ * @component
+ * @componentSelector `<house-mix-mixing>`
+ */
 @Component({
                selector:    'house-mix-mixing',
                imports:     [
@@ -133,46 +310,110 @@ export class CenterElementDirective {
            })
 export class MixingComponent implements AfterViewInit, OnDestroy {
 
+    /** The system's {@link MixingGraph|`MixingGraph`} to display.  */
     protected graph: MixingGraph | null = null;
+    /** A promise that will be resolved when {@link MixingComponent#graph|`graph`} has been loaded. */
     private graphReady: Promise<MixingGraph>;
-
+    /**
+     * The different levels the {@link Mix|`Mix`es} linked to {@link Sensor|`Sensor`s} are arranged in.
+     *
+     * @see {@link MixingGraph#generateGroupLevels| `generateGroupLevels()`} for a definition of what levels are.
+     */
     protected sensorGroupsLevels: MixingGraphGroup[][]   = [];
+    /**
+     * The different levels the {@link Mix|`Mix`es} linked to {@link Actuator|`Actuator`s} are arranged in.
+     *
+     * @see {@link MixingGraph#generateGroupLevels| `generateGroupLevels()`} for a definition of what levels are.
+     */
     protected actuatorGroupsLevels: MixingGraphGroup[][] = [];
+    /**
+     * {@link MixGraphElement|`MixGraphElement`s} shown at the same horizontal level can be reordered to tidy up the {@link MixingComponent#graph|`graph`}.
+     * This map contains all the order position of every element, keyed by the element itself.
+     */
     protected orders: Map<MixGraphElement, number> = new Map<MixGraphElement, number>();
 
+    /** The {@link MixGraphElement|`MixGraphElement`} or {@link TopDatumOrigin|`TopDatumOrigin`} that is currently selected. `null` means no element is selected. */
     private _selectedElement: MixGraphElement | TopDatumOrigin | null = null;
 
+    /** The {@link MixPhase|`MixPhase`} currently being selected. `null` means no phase is selected. */
     private _selectedPhase: MixGraphPhase | null = null;
 
+    /**
+     * All the {@link MixingComponent#graph|`graph`} nodes marked with the {@link OriginElementDirective|`OriginElementDirective`}.
+     *
+     * @viewChildren {@link OriginElementDirective|`OriginElementDirective`}
+     */
     @ViewChildren(OriginElementDirective)
     private originElements!: QueryList<OriginElementDirective>;
+    /**
+     * All the {@link MixingComponent#graph|`graph`} nodes marked with the {@link SensorElementDirective|`SensorElementDirective`}.
+     *
+     * @viewChildren {@link SensorElementDirective|`SensorElementDirective`}
+     */
     @ViewChildren(SensorElementDirective)
     private sensorElements!: QueryList<SensorElementDirective>;
+    /**
+     * All the {@link MixingComponent#graph|`graph`} nodes marked with the {@link GroupElementDirective|`GroupElementDirective`}.
+     *
+     * @viewChildren {@link GroupElementDirective|`GroupElementDirective`}
+     */
     @ViewChildren(GroupElementDirective)
     private groupElements!: QueryList<GroupElementDirective>;
+    /**
+     * All the {@link MixingComponent#graph|`graph`} nodes marked with the {@link CenterElementDirective|`CenterElementDirective`}.
+     *
+     * @viewChildren {@link CenterElementDirective|`CenterElementDirective`}
+     */
     @ViewChildren(CenterElementDirective)
     private centerElements!: QueryList<CenterElementDirective>;
+    /**
+     * All the {@link MixingComponent#graph|`graph`} nodes marked with the {@link ActuatorElementDirective|`ActuatorElementDirective`}.
+     *
+     * @viewChildren {@link ActuatorElementDirective|`ActuatorElementDirective`}
+     */
     @ViewChildren(ActuatorElementDirective)
     private actuatorElements!: QueryList<ActuatorElementDirective>;
 
+    /** The corner coordinates of every {@link MixGraphElement|`MixingGraphElement`} in the graph, used to mask a rectangle around a node. */
     protected elementFootprints: Line[] = [];
 
+    /** All the {@link MixingGraphLink|`MixingGraphLink`s} in the {@link MixingComponent#graph|`graph`}. */
     protected links: MixingGraphLink[] = [];
 
+    /** Whether the {@link TopDatumOrigin|`TopDatumOrigin`} row exceeds the horizontal width and thus should be scrollable. */
     protected originScrollStatus?: boolean;
+    /** Whether the {@link MixingGraphSensor|`MixingGraphSensor`} row exceeds the horizontal width and thus should be scrollable. */
     protected sensorScrollStatus?: boolean;
+    /** For each level in {@link MixingComponent#sensorGroupsLevels|`sensorGroupsLevels`}, whether its row exceeds the horizontal width and thus should be scrollable. */
     protected sensorGroupScrollStatuses: Map<MixingGraphGroup[], boolean>   = new Map<MixingGraphGroup[], boolean>();
+    /** Whether the {@link MixingGraphCenter|`MixingGraphCenter`} row exceeds the horizontal width and thus should be scrollable. */
     protected centerScrollStatus?: boolean;
+    /** For each level in {@link MixingComponent#actuatorGroupsLevels|`actuatorGroupsLevels`}, whether its row exceeds the horizontal width and thus should be scrollable. */
     protected actuatorGroupScrollStatuses: Map<MixingGraphGroup[], boolean> = new Map<MixingGraphGroup[], boolean>();
+    /** Whether the {@link MixingGraphActuator|`MixingGraphActuator`} row exceeds the horizontal width and thus should be scrollable. */
     protected actuatorScrollStatus?: boolean;
 
+    /** All {@link Subscription|`Subscription`s} opened during the lifecycle of this component to be cleaned up when destroyed. */
     private subscriptions: Subscription[] = [];
 
+    /** The status of the request for loading {@link MixingComponent#graph|`graph`}. */
     protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
+
+    /** Whether to show a little explanation of what a mix is in the splash screen that's sown when no mix has been created. */
     protected showMeaning: boolean         = false;
 
+    /** The url in the assets folder of a random time-related icon for the loading screen. */
     protected randomIcon: string = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
 
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {Router} router - The Angular router. Instantiated by dependency injection.
+     * @param {BetterMatDialog} matDialog - The dialog service. Instantiated by dependency injection.
+     * @param {MixingService} mixingService - The mixing service. Instantiated by dependency injection.
+     * @param {MatSnackBar} snackBar - The snackbar service. Instantiated by dependency injection.
+     */
     constructor(
         private router: Router,
         private matDialog: BetterMatDialog,
@@ -182,40 +423,9 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         this.graphReady = this.reloadGraph();
     }
 
-    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
-
-    @HostListener('keydown', ['$event'])
-    public onKeyDown(event: KeyboardEvent): void {
-        this.keySubject.next(event);
-    }
-
-    protected reload(): void {
-        this.ngOnDestroy();
-        this.links                = [];
-        this.elementFootprints    = [];
-        this.sensorGroupsLevels   = [];
-        this.actuatorGroupsLevels = [];
-        this._selectedPhase       = null;
-        this._selectedElement     = null;
-        this.loadingStatus        = LoadingStatus.LOADING;
-        this.graph                = null;
-        this.graphReady           = this.reloadGraph();
-        this.ngAfterViewInit();
-    }
-
-    private reloadGraph(): Promise<MixingGraph> {
-        this.graphReady = this
-            .mixingService
-            .getGraph()
-            .then(graph => {
-                this.graph = graph;
-                this.createLevels(graph);
-                this.reorderElements();
-                return graph;
-            });
-        return this.graphReady;
-    }
-
+    /**
+     * Implementation of {@link AfterViewInit#ngAfterViewInit| `AfterViewInit.ngAfterViewInit()`}.
+     */
     public ngAfterViewInit(): void {
         this.graphReady
             .then(graph => {
@@ -273,15 +483,74 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
             });
     }
 
+    /**
+     * Implementation of {@link OnDestroy#ngOnDestroy| `OnDestroy.ngOnDestroy()`}.
+     */
     public ngOnDestroy(): void {
         this.subscriptions.forEach(sub => {sub.unsubscribe();});
         this.subscriptions = [];
     }
 
+    /**
+     * Reloads all the data in the component. This resets and reconstructs all
+     * the structures related to the {@link MixingComponent#graph|`graph`},
+     * fetching it again from the server.
+     */
+    protected reload(): void {
+        this.ngOnDestroy();
+        this.links                = [];
+        this.elementFootprints    = [];
+        this.sensorGroupsLevels   = [];
+        this.actuatorGroupsLevels = [];
+        this._selectedPhase       = null;
+        this._selectedElement     = null;
+        this.loadingStatus        = LoadingStatus.LOADING;
+        this.graph                = null;
+        this.graphReady           = this.reloadGraph();
+        this.ngAfterViewInit();
+    }
+
+    /**
+     * Requests the {@link MixingComponent#graph|`graph`} again to the server.
+     *
+     * @returns {Promise<MixingGraph>} - The problem resolving when the {@link MixingComponent#graph|`graph`}
+     *                                  has been fetched and loaded.
+     */
+    private reloadGraph(): Promise<MixingGraph> {
+        this.graphReady = this
+            .mixingService
+            .getGraph()
+            .then(graph => {
+                this.graph = graph;
+                this.createLevels(graph);
+                this.reorderElements();
+                return graph;
+            });
+        return this.graphReady;
+    }
+
+    /**
+     * The subject publishing {@link KeyboardEvent|`KeyboardEvent`s} in the component
+     * to pass to {@link ToolbarComponent#keyObservable|`ToolbarComponent.keyObservable`}.
+     */
+    protected keySubject: Subject<KeyboardEvent> = new Subject<KeyboardEvent>();
+
+    /**
+     * Key up event listener on the component.
+     *
+     * @param {KeyboardEvent} event - The DOM event.
+     */
+    @HostListener('keydown', ['$event'])
+    public onKeyDown(event: KeyboardEvent): void {
+        this.keySubject.next(event);
+    }
+
+    /** The {@link MixGraphElement|`MixGraphElement`} or {@link TopDatumOrigin|`TopDatumOrigin`} that is currently selected. `null` means no element is selected. */
     public get selectedElement(): MixGraphElement | TopDatumOrigin | null {
         return this._selectedElement;
     }
 
+    /** Changes the {@link MixGraphElement|`MixGraphElement`} or {@link TopDatumOrigin|`TopDatumOrigin`} that is currently selected. `null` means dismiss current selection. */
     public set selectedElement(value: MixGraphElement | TopDatumOrigin | null) {
         this._selectedElement = value;
         this._selectedPhase   = null;
@@ -292,10 +561,12 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }, 0);
     }
 
+    /** The {@link MixGraphPhase|`MixGraphPhase`} currently being selected. `null` means no phase is selected. */
     public get selectedPhase(): MixGraphPhase | null {
         return this._selectedPhase;
     }
 
+    /** Changes the {@link MixGraphPhase|`MixGraphPhase`} currently being selected. `null` means dismiss current selection. */
     public set selectedPhase(value: MixGraphPhase | null) {
         this._selectedElement = null;
         this._selectedPhase   = value;
@@ -306,6 +577,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }, 0);
     }
 
+    /** Whether the {@link MixingComponent#graph|`graph`} is empty, meaning no mix has yet to be created. */
     public get isGraphEmpty(): boolean {
         return this.graph != null
                && (
@@ -318,6 +590,14 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
                ) == 0;
     }
 
+    /**
+     * Tests whether a {@link MixGraphElement|`MixGraphElement`} or {@link TopDatumOrigin|`TopDatumOrigin`} belongs
+     * to a specific {@link MixGraphPhase|phase in the elaboration}.
+     *
+     * @param {MixGraphElement | TopDatumOrigin} element - The element to check.
+     * @param {MixGraphPhase | null} phase - The phase to check against.
+     * @returns {boolean} `true` if the element refers to a {@link Mix|`Mix`} or datum linked to the requested phase, `false` otherwise.
+     */
     public isElementInPhase(element: MixGraphElement | TopDatumOrigin, phase: MixGraphPhase | null): boolean {
         if (phase == null) {
             return false;
@@ -338,6 +618,13 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /**
+     * Generated a unique string representing a {@link MixGraphElement|`MixGraphElement`} or {@link TopDatumOrigin|`TopDatumOrigin`},
+     * to use for tracking in template loops.
+     *
+     * @param {MixGraphElement | DatumOrigin} element - The element for which to generate the unique name.
+     * @returns {string} The unique name.
+     */
     public getElementUniqueName(element: MixGraphElement | DatumOrigin): string {
         if (element instanceof MixingGraphSensor) {
             return `&S=${encodeURIComponent(element.name)}`;
@@ -356,6 +643,7 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /** All the @{@link MixingComponent#links|`links`} in the graph, ordered so that selected links are come before unselected ones. */
     public get orderedLinks(): {
         linkId: string,
         line: Line,
@@ -387,12 +675,24 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         return result;
     }
 
+    /**
+     * Requests {@link MixingGraph#generateGroupLevels| `MixingGraph.generateGroupLevels()`}
+     * on a {@link MixingGraph|`MixingGraph`} and assign the result to
+     * {@link MixingComponent#sensorGroupsLevels|`sensorGroupsLevels`} and
+     * {@link MixingComponent#actuatorGroupsLevels|`actuatorGroupsLevels`}.
+     *
+     * @param {MixingGraph} graph - The graph to generate levels for.
+     */
     private createLevels(graph: MixingGraph): void {
         const {sensorGroupLevels, actuatorGroupLevels} = graph.generateGroupLevels();
         this.sensorGroupsLevels                        = sensorGroupLevels;
         this.actuatorGroupsLevels                      = actuatorGroupLevels;
     }
 
+    /**
+     * Reorder all the elements in each row of the graph such that the least amount
+     * of {@link MixingGraphLink|`MixingGraphLink`s} cross each other.
+     */
     private reorderElements(): void {
         const orders: Map<MixGraphElement, number> = new Map<MixGraphElement, number>();
         if (this.graph != null) {
@@ -438,6 +738,14 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         this.orders = orders;
     }
 
+    /**
+     * Apply information about the order of elements to an array of elements.
+     *
+     * @param {T[]} elements - The array of elements to be ordered.
+     * @param {Map<MixGraphElement, number>} orders - A map containing for every element in the array, its order.
+     * @returns {T[]} A ordered copy of the array.
+     * @template T The type of elements in the array.
+     */
     private finalizeOrder<T extends MixGraphElement>(elements: T[], orders: Map<MixGraphElement, number>): T[] {
         const orderedElements = elements
             .slice()
@@ -465,6 +773,16 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         return orderedElements;
     }
 
+    /**
+     * Update a map containing the order of all the {@link MixGraphElement|`MixGraphElement`s} in the graph with new
+     * values, keeping in mind the order of all the other {@link MixGraphElement|`MixGraphElement`s} that
+     * depend on it, in order to keep all the dependencies next to each other.
+     *
+     * @param {MixGraphElement} element - The element whose dependencies have to be reordered.
+     * @param {Map<MixGraphElement, number>} orders - A map containing for every element in the graph, its order.
+     * @param {number} orderProgressive - A counter that keeps the newest non-used order position.
+     * @returns {number} The updated value for `orderProgressive`.
+     */
     private reorderChildElements(element: MixGraphElement, orders: Map<MixGraphElement, number>, orderProgressive: number): number {
         if (this.graph) {
             const dependingElements     = this
@@ -499,6 +817,12 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         return orderProgressive;
     }
 
+    /**
+     * Update the {@link MixingComponent#links|`links`} based on the position of the DOM elements relative to a
+     * {@link MixingGraph|`MixingGraph`}'s nodes.
+     *
+     * @param {MixingGraph} graph - The graph to work on.
+     */
     protected recalculateConnections(graph: MixingGraph): void {
         if (
             (this.originElements.length != graph.origins.filter(origin => ORIGIN_DISPLAYED_TOP.includes(origin as TopDatumOrigin)).length)
@@ -971,6 +1295,12 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         });
     }
 
+    /**
+     * Reorder link's order so that links coming from a {@link MixGraphElement|`MixGraphElement`} cross each other the least possible times.
+     *
+     * @param {(false | MixingGraphLink)[]} links - The links, all coming from a single {@link MixGraphElement|`MixGraphElement`}, to reorder.
+     *                                              If `false` is ever present in the array, the function just returns.
+     */
     private reorderLinks(links: (false | MixingGraphLink)[]): void {
         if (links.includes(false)) {
             return;
@@ -990,7 +1320,18 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
 
     }
 
-    private getConnectorEnd(element: SensorElementDirective | OriginElementDirective | GroupElementDirective | CenterElementDirective | ActuatorElementDirective,
+    /**
+     * Gets the coordinates in the DOM of an end of a {@link MixingGraphLink|`MixingGraphLink`} linked to a node
+     * marked by one of the {@link ElementDirective|`ElementDirective`s}.
+     *
+     * @param {ElementDirective} element - The directive linked to the element that the {@link MixingGraphLink|`MixingGraphLink`} end will be attached to.
+     * @param {boolean} top - If `true`, the end of the {@link MixingGraphLink|`MixingGraphLink`} is attached to the top of the element.
+     * @param {(false | MixingGraphLink)[]} slots - All the slots in the side of the element. If `false`, the slot is free,
+     *                                              otherwise the slot is already occupied by the {@link MixingGraphLink|`MixingGraphLink`} in that position.
+     * @param {MixingGraphLink} putInSlot - The {@link MixingGraphLink|`MixingGraphLink`} the end is being calcolated for, to put in a free slot.
+     * @returns {Point} - The coordinates of the end of the link requested.
+     */
+    private getConnectorEnd(element: ElementDirective,
                             top: boolean,
                             slots: (false | MixingGraphLink)[],
                             putInSlot: MixingGraphLink): Point {
@@ -1010,6 +1351,18 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         };
     }
 
+    /**
+     * Extract the correct {@link ElementDirective|`ElementDirective`} from a {@link MixingGraphDependency|`MixingGraphDependency`}.
+     *
+     * @param {OriginElementDirective[]} originElements - All the {@link OriginElementDirective|`OriginElementDirective`s} of nodes in the {@link MixingGraph|`MixingGraph`}.
+     * @param {SensorElementDirective[]} sensorElements - All the {@link SensorElementDirective|`SensorElementDirective`s} of nodes in the {@link MixingGraph|`MixingGraph`}.
+     * @param {GroupElementDirective[]} sensorGroupElements - All the {@link GroupElementDirective|`GroupElementDirective`s} of nodes in the {@link MixingGraph|`MixingGraph`}.
+     * @param {CenterElementDirective[]} centerElements - All the {@link CenterElementDirective|`CenterElementDirective`s} of nodes in the {@link MixingGraph|`MixingGraph`}.
+     * @param {GroupElementDirective[]} actuatorGroupElements - All the {@link GroupElementDirective|`GroupElementDirective`s} of nodes in the {@link MixingGraph|`MixingGraph`}.
+     * @param {MixingGraphDependency} dependency - The {@link MixingGraphDependency|`MixingGraphDependency`} to extract the source from.
+     * @param {boolean} sensorSide - For a {@link MixingGraphGroup|`MixingGraphGroup`} dependency, `true` if the dependency has to bee found in the sensor side, `false` if in the actuator side.
+     * @returns {SensorElementDirective | OriginElementDirective | GroupElementDirective | CenterElementDirective | null} - The requested {@link ElementDirective|`ElementDirective`}.
+     */
     private getSourceFromDependency(
         originElements: OriginElementDirective[],
         sensorElements: SensorElementDirective[],
@@ -1039,6 +1392,12 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /**
+     * Scroll a overflowing row.
+     *
+     * @param {HTMLElement} element - The row that's overflowing.
+     * @param {boolean} left - `true` if the row should be scrolled to the left, `false` if to the right.
+     */
     protected rowScroll(element: HTMLElement, left: boolean): void {
         if (!left) {
             const mostRight        =
@@ -1079,10 +1438,18 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /** The elements to show in the toolbar. */
     protected get toolbarElements(): ToolbarElement[] {
         return this.filterToolbar();
     }
 
+    /**
+     * Filters a list of {@link ToolbarElement|`ToolbarElement`s} returning only the elements that
+     * should be shown given the current state of the component.
+     *
+     * @param {ToolbarElement[]} toFilter - The list of {@link ToolbarElement|`ToolbarElement`s} to filter. Defaults to {@link ALL_TOOLBAR_ELEMENTS|`ALL_TOOLBAR_ELEMENTS`}.
+     * @returns {ToolbarElement[]} The filtered list of {@link ToolbarElement|`ToolbarElement`s}.
+     */
     private filterToolbar(toFilter: ToolbarElement[] = ALL_TOOLBAR_ELEMENTS): ToolbarElement[] {
         return toFilter
             .filter(toolbarElement => this.isToolbarElementVisible(toolbarElement))
@@ -1098,6 +1465,45 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
             });
     }
 
+    /**
+     * Checks whether a {@link ToolbarElement|`ToolbarElement`s} should be shown given the current state of the component.
+     *
+     * @param {ToolbarElement} toolbarElement - The {@link ToolbarElement|`ToolbarElement`} to check.
+     * @returns {boolean} Whether the element should be shown.
+     */
+    private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
+        if (!Object.values<string>(ToolbarAction).includes(toolbarElement.id)) {
+            return true;
+        }
+        if (this.loadingStatus != LoadingStatus.LOADED) {
+            return [
+                ToolbarAction.DEVICES,
+                ToolbarAction.MIXING,
+                ToolbarAction.SYSTEM
+            ]
+                .includes(toolbarElement.id as ToolbarAction);
+        }
+        switch (toolbarElement.id as ToolbarAction) {
+            case ToolbarAction.DELETE:
+                return this.selectedElement != null
+                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
+                       && !this.hasDependencies(this.selectedElement);
+            case ToolbarAction.EDIT:
+                return this.selectedElement != null
+                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin);
+            case ToolbarAction.ADD:
+            case ToolbarAction.DEVICES:
+            case ToolbarAction.MIXING:
+            case ToolbarAction.SYSTEM:
+                return true;
+        }
+    }
+
+    /**
+     * Performs the action linked to a {@link ToolbarButton|`ToolbarButton`}'s click.
+     *
+     * @param {ToolbarAction} id - The {@link ToolbarButton#id|`id`} of the {@link ToolbarButton|`ToolbarButton`} that was clicked.
+     */
     protected toolbarClick(id: ToolbarAction): void {
         switch (id) {
             case ToolbarAction.EDIT:
@@ -1191,6 +1597,11 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /**
+     * Open a dialog to create a new {@link Mix|`Mix`}, and navigate to the mix editing view if successful.
+     *
+     * @param {MixGraphPhase} graphPhase - The {@link MixGraphPhase|`MixGraphPhase`} to preset the dialog with.
+     */
     protected addMix(graphPhase?: MixGraphPhase): void {
         let phase: MixPhase;
         let target: MixTarget;
@@ -1240,34 +1651,13 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
             });
     }
 
-    private isToolbarElementVisible(toolbarElement: ToolbarElement): boolean {
-        if (!Object.values<string>(ToolbarAction).includes(toolbarElement.id)) {
-            return true;
-        }
-        if (this.loadingStatus != LoadingStatus.LOADED) {
-            return [
-                ToolbarAction.DEVICES,
-                ToolbarAction.MIXING,
-                ToolbarAction.SYSTEM
-            ]
-                .includes(toolbarElement.id as ToolbarAction);
-        }
-        switch (toolbarElement.id as ToolbarAction) {
-            case ToolbarAction.DELETE:
-                return this.selectedElement != null
-                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin)
-                       && !this.hasDependencies(this.selectedElement);
-            case ToolbarAction.EDIT:
-                return this.selectedElement != null
-                       && !ORIGIN_DISPLAYED_TOP.includes(this.selectedElement as TopDatumOrigin);
-            case ToolbarAction.ADD:
-            case ToolbarAction.DEVICES:
-            case ToolbarAction.MIXING:
-            case ToolbarAction.SYSTEM:
-                return true;
-        }
-    }
-
+    /**
+     * Checks whether a node in the {@link MixingComponent#graph|`graph`} has other nodes depending on it.
+     *
+     * @param {MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE} selectedElement - The
+     *        element to check.
+     * @returns {boolean} - Whether the element has other nodes depending on it.
+     */
     private hasDependencies(selectedElement: MixingGraphActuator | MixingGraphGroup | MixingGraphSensor | MixingGraphCenter | DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE): boolean {
         if (selectedElement == DatumOrigin.SYSTEM || selectedElement == DatumOrigin.SENSOR_DATA || selectedElement == DatumOrigin.SENSOR_UPDATE) {
             return true;
@@ -1321,54 +1711,138 @@ export class MixingComponent implements AfterViewInit, OnDestroy {
         }
     }
 
+    /**
+     * Navigate to another section of the app.
+     *
+     * @param {string} section - The section to navigate to.
+     */
     protected goTo(section: string): void {
         void this.router.navigate([section]);
     }
 
+
+    /**
+     * Navigate to the mix editing view.
+     *
+     * @param {number} mix - The id of the {@link Mix|`Mix`} to edit.
+     */
     protected openMix(mix: number): void {
         void this.router.navigate(['mixing', 'edit', mix]);
     }
 
+    /**
+     * Casts a `string` to a {@link ToolbarAction|`ToolbarAction`}.
+     * Does not check for the real existence of an action with such name.
+     *
+     * @param {string} val - The string representation of a {@link ToolbarAction|`ToolbarAction`}.
+     * @returns {ToolbarAction} `val` cast as {@link ToolbarAction|`ToolbarAction`}.
+     */
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
+    /** @ignore */
     protected readonly ORIGIN_DISPLAYED_TOP      = ORIGIN_DISPLAYED_TOP;
+    /** @ignore */
     protected readonly DATUM_ORIGIN_DISPLAY      = DATUM_ORIGIN_DISPLAY;
+    /** @ignore */
     protected readonly ACTUATOR_TYPE_ICON        = ACTUATOR_TYPE_ICON;
+    /** @ignore */
     protected readonly SENSOR_TYPE_ICON          = SENSOR_TYPE_ICON;
+    /** @ignore */
     protected readonly graphConnectionSmoothPath = graphConnectionSmoothPath;
+    /** @ignore */
     protected readonly MixGraphPhase             = MixGraphPhase;
+    /** @ignore */
     protected readonly DatumOrigin               = DatumOrigin;
+    /** @ignore */
     protected readonly MEASURES                  = MEASURES;
+    /** @ignore */
     protected readonly TOOLTIP_TIMEOUT           = TOOLTIP_TIMEOUT;
-
+    /** @ignore */
     protected readonly ToolbarAction = ToolbarAction;
+    /** @ignore */
     protected readonly LoadingStatus = LoadingStatus;
+    /** @ignore */
     protected readonly Math          = Math;
 }
 
+/**
+ * All the {@link DatumOrigin|`DatumOrigin`} values that can appear ath the top of a {@link MixingGraph|`MixingGraph`}.
+ *
+ * @notExported
+ */
 type TopDatumOrigin = DatumOrigin.SYSTEM | DatumOrigin.SENSOR_DATA | DatumOrigin.SENSOR_UPDATE;
 
+/**
+ * A link between two nodes in a {@link MixingGraph|`MixingGraph`}.
+ *
+ * @notExported
+ */
 interface MixingGraphLink {
+    /** The originating node. */
     from: MixGraphElement | TopDatumOrigin,
+    /** The destination node. */
     to: MixGraphElement | TopDatumOrigin,
+    /** The coordinates of the link in the DOM. */
     displayPosition: Line;
 }
 
+/**
+ * A list of all the possible values of {@link DatumOrigin|`DatumOrigin`}.
+ *
+ * @notExported
+ */
 const ORIGIN_DISPLAYED_TOP: TopDatumOrigin[] = [
     DatumOrigin.SYSTEM,
     DatumOrigin.SENSOR_DATA,
     DatumOrigin.SENSOR_UPDATE
 ];
 
+/**
+ * All the distinct phases of a {@link MixingGraph|`MixingGraph`}.
+ *
+ * @notExported
+ */
+enum MixGraphPhase {
+    /** The phase containing all the inputs coming from the system. */
+    INPUTS          = 'INPUTS',
+    /** The phase containing all the {@link Mix|`Mix`es} linked to a {@link Sensor|`Sensor`}. */
+    SENSORS         = 'SENSORS',
+    /** The phase containing all the {@link Mix|`Mix`es} linked to a {@link Group|`Group`}, when elaborating data coming from the {@link Sensor|`Sensor`s}. */
+    SENSOR_GROUPS   = 'SENSOR_GROUPS',
+    /** The phase containing all the {@link Mix|`Mix`es} in the center of the {@link MixingGraph|`MixingGraph`}. */
+    CENTER          = 'CENTER',
+    /** The phase containing all the {@link Mix|`Mix`es} linked to a {@link Group|`Group`}, when elaborating data coming from the {@link Actuator|`Actuator`s}. */
+    ACTUATOR_GROUPS = 'ACTUATOR_GROUPS',
+    /** The phase containing all the {@link Mix|`Mix`es} linked to an {@link Actuator|`Actuator`}. */
+    ACTUATORS       = 'ACTUATORS'
+}
+
+/**
+ * All the actions {@link MixingComponent|`MixingComponent`}'s {@link ToolbarComponent|`ToolbarComponent`} can offer.
+ * Used as {@link ToolbarButton#id|`id`} for the {@link ALL_TOOLBAR_ELEMENTS|toolbar buttons}.
+ *
+ * @notExported
+ */
 enum ToolbarAction {
+    /** Button to move to the "Home" (device) view. */
     DEVICES = 'devices',
+    /** Button to move to the "Mixing" view. */
     MIXING  = 'mixing',
+    /** Button to move to the "System" view. */
     SYSTEM  = 'system',
+    /** Delete the {@link Mix|`Mix`} linked to the currently selected node. */
     DELETE  = 'delete',
+    /** Add a new {@link Mix|`Mix`} to the system. */
     ADD     = 'add',
+    /** Edit the {@link Mix|`Mix`} linked to the currently selected node. */
     EDIT    = 'edit'
 }
 
+/**
+ * All the {@link ToolbarElement|`ToolbarElement`s} in {@link MixingComponent|`MixingComponent`}'s {@link ToolbarComponent|`ToolbarComponent`}.
+ *
+ * @notExported
+ */
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
@@ -1437,12 +1911,3 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     }
 
 ];
-
-enum MixGraphPhase {
-    INPUTS          = 'INPUTS',
-    SENSORS         = 'SENSORS',
-    SENSOR_GROUPS   = 'SENSOR_GROUPS',
-    CENTER          = 'CENTER',
-    ACTUATOR_GROUPS = 'ACTUATOR_GROUPS',
-    ACTUATORS       = 'ACTUATORS'
-}

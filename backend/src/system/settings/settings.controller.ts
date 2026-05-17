@@ -31,8 +31,9 @@ export class SettingsController {
      * Get the current {@link SystemSettings|`SystemSettings`} of the system.
      *
      * @returns {Promise<SystemSettingsJSON>} The resulting {@link SystemSettings|`SystemSettings`}' {@link SystemSettingsJSON|serialization}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-settings-get">`GET /system/settings`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-settings-get">`/system/settings`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/")
     public async getSettings(): Promise<SystemSettingsJSON> {
@@ -45,8 +46,9 @@ export class SettingsController {
      *
      * @param {SystemSettingsJSON} update - The HTTP request's body containing the {@link SystemSettingsJSON|serialization} of the settings to update.
      * @returns {Promise<SystemSettingsJSON>} The updated {@link SystemSettings|`SystemSettings`}' {@link SystemSettingsJSON|serialization}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-settings-patch">`PATCH /system/settings`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-settings-patch">`/system/settings`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/")
     public async updateSettings(@Body() update: SystemSettingsJSON): Promise<SystemSettingsJSON> {

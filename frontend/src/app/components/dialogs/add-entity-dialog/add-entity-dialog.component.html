@@ -126,7 +126,7 @@
             </button>
         </div>
         <div class="exposes-properties">
-            @if (data.edit == null || data.entityType == EntityType.ACTUATOR || lockedExposedLoadingStatus == LoadingStatus.LOADED) {
+            @if (data.edit == null || data.entityType == EntityType.ACTUATOR || lockedExposesLoadingStatus == LoadingStatus.LOADED) {
                 @if (deviceExposes.length == 0) {
                     <span class="no-data">No property has been defined</span>
                 } @else {
@@ -189,7 +189,7 @@
                 }
             } @else {
                 <house-mix-loading-scrim
-                    [loadingStatus]="lockedExposedLoadingStatus"
+                    [loadingStatus]="lockedExposesLoadingStatus"
                     errorText="Cannot retrieve exposed properties">
 
                 </house-mix-loading-scrim>

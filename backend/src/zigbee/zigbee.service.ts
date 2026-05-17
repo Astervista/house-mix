@@ -64,11 +64,11 @@ export interface EnqueuedItem {
  * This service monitors mqtt for changes on {@link Device|`Device`s} on the system.
  *
  * Every device that published on the mqtt server at the `/zigbee2mqtt/{device}` topic can be monitored for changes on the status.
- * The service offers the {@link ZigbeeService#listenDeviceStatus|`listenDeviceStatus()`} function to listen for the status changes
+ * The service offers the {@link ZigbeeService#listenDeviceStatus| `listenDeviceStatus()`} function to listen for the status changes
  * on a specific {@link Device|`Device`} identified on the system with its topic.
  *
  * Every device can be sent a message to change its behavior at the `/zigbee2mqtt/{device}/set` topic through the
- * {@link ZigbeeService#setStatus|`setStatus()`} function. The service handles throttling of multiple simultaneous
+ * {@link ZigbeeService#setStatus| `setStatus()`} function. The service handles throttling of multiple simultaneous
  * set messages to avoid clogging of the zigbee network and unwanted states. It also applies {@link Adjustment|`Adjustment`s}
  * to the messages to correct unwanted behavior.
  *

@@ -469,7 +469,7 @@ export type MixingGraphGroupLevel = MixingGraphGroup[];
  * {@link MixingGraph#actuatorGroups|actuator groups} separated in {@link MixingGraphGroupLevel|levels} such that at each level's
  * groups' mixes depend only on mixes from previous levels.
  *
- * @see {@link MixingGraph#generateGroupLevels|`MixingGraph.generateGroupLevels()`}.
+ * @see {@link MixingGraph#generateGroupLevels| `MixingGraph.generateGroupLevels()`}.
  */
 export interface MixingGraphGroupLevels {
     /** The mixes linked to {@link MixingGraph#sensorGroups|sensor groups}, separated in levels. */

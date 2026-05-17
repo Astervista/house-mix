@@ -1107,33 +1107,33 @@ export class MixService extends PersistentDataService<MixData, MixDataJSON> {
     }
     
     /**
-     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s.
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`s}.
      *
      * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
      * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
-     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`s} to check.
      * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
      */
     private importDependsOn(imp: ExportedDatum, sensorNames: string[], groupNames: string[]): boolean;
     /**
-     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s,
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`s},
      * considering the datum depending only if its name is in a specific list of outputs to check.
      *
      * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
      * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
-     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`s} to check.
      * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to.
      * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
      */
     private importDependsOn(imp: ExportedDatum, sensorNames: string[], groupNames: string[], outputsToCheck?: string[]): boolean;
     
     /**
-     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`}s,
+     * Check whether an {@link ExportedDatum|`ExportedDatum`} is referencing one of a list of {@link Sensor|`Sensor`s} or {@link Group|`Group`s},
      * possibly restricting the conflict check to a subgroup of input names.
      *
      * @param {ExportedDatum} imp - The {@link ExportedDatum|`ExportedDatum`} to check.
      * @param {string[]} sensorNames - The names of the {@link Sensor|`Sensor`s} to check.
-     * @param {string[]} groupNames - The names of the {@link Group|`Group`}s to check.
+     * @param {string[]} groupNames - The names of the {@link Group|`Group`s} to check.
      * @param {string[]} outputsToCheck - The names of the outputs to restrict the conflict check to, or `undefined` to consider all outputs.
      * @returns {boolean} Whether the {@link ExportedDatum|`ExportedDatum`} fulfills the restrictions to be considered dependant.
      */
@@ -1325,7 +1325,7 @@ export class MixService extends PersistentDataService<MixData, MixDataJSON> {
      *
      * @param {EntityType} entityType - The type of the entity to check for deletion.
      * @param {string} name - The name of the entity to check for deletion.
-     * @param {(number | "NEW")[]} excludeMixes - The @{@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
+     * @param {(number | "NEW")[]} excludeMixes - The {@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
      * @returns {Promise<boolean>} Whether the entity can be deleted (`true` if there are no {@link Mix|`Mix`es} depending on it.
      */
     public async canDelete(entityType: EntityType, name: string, excludeMixes: (number | "NEW")[] = []): Promise<boolean> {
@@ -1357,7 +1357,7 @@ export class MixService extends PersistentDataService<MixData, MixDataJSON> {
      *
      * @param {EntityType | Exclude<SystemOrigin, SystemOrigin.ENVIRONMENT>} entityType - The type of the entity to check for deletion.
      * @param {string} name - The name of the entity to check for deletion.
-     * @param {(number | "NEW")[]} excludeMixes - The @{@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
+     * @param {(number | "NEW")[]} excludeMixes - The {@link Mix#id|`id`s} of the mixes to exclude from the check. `NEW` will be ignored.
      * @returns {Promise<MixPositionInfo[]>} The {@link MixPositionInfo|`mix positions`} that prevent the entity from being deleted.
      */
     public async getDeleteLocks(entityType: EntityType | Exclude<SystemOrigin, SystemOrigin.ENVIRONMENT>, name: string, excludeMixes: (number | "NEW")[] = []): Promise<MixPositionInfo[]> {

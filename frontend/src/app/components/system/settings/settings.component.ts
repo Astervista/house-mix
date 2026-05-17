@@ -1,3 +1,8 @@
+/**
+ * This module contains the {@link SystemSettings|settings view} component and related classes.
+ *
+ * @module
+ */
 import {Component} from '@angular/core';
 import {ToolbarComponent, ToolbarElement, ToolBarElementType} from '../../auxiliary/toolbar/toolbar.component';
 import {Router} from '@angular/router';
@@ -23,7 +28,18 @@ import {MatProgressSpinner} from '@angular/material/progress-spinner';
 import {SystemService} from '../../../services/system.service';
 import {MatSnackBar} from '@angular/material/snack-bar';
 
+// noinspection ES6UnusedImports
+import type {ToolbarButton} from '../../auxiliary/toolbar/toolbar.component';
+// noinspection ES6UnusedImports
+import type {HomeComponent} from '../../home/home.component';
 
+/**
+ * The component for the "settings" view, where {@link SystemSettings|`SystemSettings`} and
+ * {@link LocalSettings|`LocalSettings`} can be edited.
+ *
+ * @component
+ * @componentSelector `<house-mix-settings>`
+ */
 @Component({
                selector:    'house-mix-settings',
                imports:     [
@@ -37,13 +53,19 @@ import {MatSnackBar} from '@angular/material/snack-bar';
            })
 export class SettingsComponent {
 
+    /** {@link FormControl|`FormControl`} for the slider input for {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`}. */
     protected offlineCheckFormControl: FormControl<number | null> = new FormControl<number | null>(2);
+    /** {@link FormControl|`FormControl`} for the slider input for {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`}. */
     protected onlineCheckFormControl: FormControl<number | null>  = new FormControl<number | null>(0);
+    /** {@link FormControl|`FormControl`} for the slider input for {@link SystemSettings#unavailableTimeout|`SystemSettings.unavailableTimeout`}. */
     protected unavailableFormControl: FormControl<number | null>  = new FormControl<number | null>(5);
 
+    /** The status of the request for loading the {@link SettingsComponent#settings|`settings`}. */
     protected loadingStatus: LoadingStatus = LoadingStatus.LOADING;
+    /** The url in the assets folder of a random time-related icon for the loading screen. */
     protected randomIcon: string           = Math.random() > 0.5 ? 'clock.svg' : 'hourglass.svg';
 
+    /** The {@link SystemSettings|`SystemSettings`} currently in use. */
     protected settings: SystemSettings = SystemSettings.fromJSON({
                                                                      homeName:           'Home',
                                                                      offlineCheck:       60,
@@ -52,8 +74,19 @@ export class SettingsComponent {
                                                                      throttleTiming:     100
                                                                  });
 
+    /** The {@link LocalSettings|`LocalSettings`} currently in use. */
     protected localSettings: LocalSettings;
 
+    /**
+     * Creates an instance of the component. Do not call this constructor directly,
+     * it's handled by Angular's rendering engine or component factory.
+     *
+     * @param {Router} router - The Angular router. Instantiated by dependency injection.
+     * @param {BetterMatDialog} dialog - The dialog service. Instantiated by dependency injection.
+     * @param {LocalStorageService} localStorageService - The local storage service. Instantiated by dependency injection.
+     * @param {SystemService} systemService - The system service. Instantiated by dependency injection.
+     * @param {MatSnackBar} snackBar - The snackbar service. Instantiated by dependency injection.
+     */
     constructor(
         private router: Router,
         private dialog: BetterMatDialog,
@@ -75,6 +108,11 @@ export class SettingsComponent {
         });
     }
 
+    /**
+     * Reloads all the data in the component. This resets the loaded {@link SettingsComponent#settings|`settings`}
+     * and {@link SettingsComponent#localSettings|`localSettings`}. The function also handles the
+     * {@link SettingsComponent#loadingStatus|`loadingStatus`}.
+     */
     protected reload(): void {
         this.loadingStatus = LoadingStatus.LOADING;
         this
@@ -89,6 +127,11 @@ export class SettingsComponent {
             });
     }
 
+    /**
+     * Updates the inputs and the {@link SettingsComponent#settings|`settings`} property when new data is received from the server.
+     *
+     * @param {SystemSettings} settings - The new {@link SystemSettings|`SystemSettings`} data.
+     */
     private newSettingsData(settings: SystemSettings): void {
         this.settings = settings;
         this.setNumberSlider(settings.offlineCheck, CHECK_OPTIONS, this.offlineCheckFormControl);
@@ -96,10 +139,14 @@ export class SettingsComponent {
         this.setNumberSlider(settings.unavailableTimeout, UNAVAILABLE_OPTIONS, this.unavailableFormControl);
     }
 
+    /**
+     * Performs the action linked to the {@link ToolbarButton|`ToolbarButton`}'s click.
+     */
     protected toolbarClick(): void {
         void this.router.navigate(['system']);
     }
 
+    /** Open a dialog asking for the new value for {@link SystemSettings#homeName|`SystemSettings.homeName`}, and updates it if successful. */
     protected changeName(): void {
         this.dialog.open(StringInputDialogComponent, {
             data: {
@@ -134,6 +181,13 @@ export class SettingsComponent {
             });
     }
 
+    /**
+     * Open a dialog asking for the new value for {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`}
+     * or {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`}, and updates it if successful.
+     *
+     * @param {boolean} online - If `true`, the edited value is for {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`},
+     *                           if `false`, the edited value is for {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`}.
+     */
     protected changeCheck(online: boolean): void {
         this
             .dialog
@@ -160,6 +214,12 @@ export class SettingsComponent {
             });
     }
 
+    /**
+     * Update the {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`} value, change the
+     * {@link SettingsComponent#offlineCheckFormControl|`offlineCheckFormControl`} and send new settings to the server.
+     *
+     * @param {number} result - The new value for {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`}.
+     */
     private updateOfflineCheck(result: number): void {
         const rollBackValue = this.settings.offlineCheck;
         if (rollBackValue != result) {
@@ -183,6 +243,12 @@ export class SettingsComponent {
         }
     }
 
+    /**
+     * Update the {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`} value, change the
+     * {@link SettingsComponent#onlineCheckFormControl|`onlineCheckFormControl`} and send new settings to the server.
+     *
+     * @param {number} result - The new value for {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`}.
+     */
     private updateOnlineCheck(result: number): void {
         const rollBackValue = this.settings.onlineCheck;
         if (rollBackValue != result) {
@@ -206,6 +272,10 @@ export class SettingsComponent {
         }
     }
 
+    /**
+     * Open a dialog asking for the new value for {@link SystemSettings#unavailableTimeout|`SystemSettings.unavailableTimeout`},
+     * and updates it if successful.
+     */
     protected changeUnavailable(): void {
         this
             .dialog
@@ -228,6 +298,12 @@ export class SettingsComponent {
             });
     }
 
+    /**
+     * Update the {@link SystemSettings#unavailableTimeout|`SystemSettings.unavailableTimeout`} value, change the
+     * {@link SettingsComponent#unavailableFormControl|`unavailableFormControl`} and send new settings to the server.
+     *
+     * @param {number} result - The new value for {@link SystemSettings#unavailableTimeout|`SystemSettings.unavailableTimeout`}.
+     */
     private updateUnavailable(result: number): void {
         const rollBackValue = this.settings.unavailableTimeout;
         if (rollBackValue != result) {
@@ -251,6 +327,10 @@ export class SettingsComponent {
         }
     }
 
+    /**
+     * Open a dialog asking for the new value for {@link SystemSettings#throttleTiming|`SystemSettings.throttleTiming`},
+     * and updates it if successful.
+     */
     protected changeThrottle(): void {
         this
             .dialog
@@ -273,6 +353,12 @@ export class SettingsComponent {
             });
     }
 
+    /**
+     * Update the {@link SystemSettings#throttleTiming|`SystemSettings.throttleTiming`} value and send new settings
+     * to the server.
+     *
+     * @param {number} result - The new value for {@link SystemSettings#throttleTiming|`SystemSettings.throttleTiming`}.
+     */
     private updateThrottle(result: number): void {
         const rollBackValue = this.settings.throttleTiming;
         if (rollBackValue != result) {
@@ -294,15 +380,28 @@ export class SettingsComponent {
         }
     }
 
+    /** Persist the new changes to {@link SettingsComponent#localSettings|`localSettings`}. */
     private saveLocalSettings(): void {
         this.localStorageService.setItem(LOCAL_SETTINGS_KEY, this.localSettings);
     }
 
+    /**
+     * Update the {@link LocalSettings#startPage|`startPage`} value in the {@link SettingsComponent#localSettings|`localSettings`}.
+     *
+     * @param {MainPages} page - The new value for {@link LocalSettings#startPage|`startPage`}.
+     * @protected
+     */
     protected changeStartPage(page: MainPages): void {
         this.localSettings.startPage = page;
         this.saveLocalSettings();
     }
 
+    /**
+     * Update the {@link LocalSettings#deviceViewLayoutTree|`deviceViewLayoutTree`} value in the
+     * {@link SettingsComponent#localSettings|`localSettings`}.
+     *
+     * @param {boolean} [isTree] - The new value for the layout. If omitted, the value is toggled.
+     */
     protected changeDevicesLayout(isTree?: boolean): void {
         isTree ??= !this.localSettings.deviceViewLayoutTree;
         if (this.localSettings.deviceViewLayoutTree != isTree) {
@@ -311,6 +410,12 @@ export class SettingsComponent {
         this.saveLocalSettings();
     }
 
+    /**
+     * Update the {@link LocalSettings#darkMode|`darkMode`} value in the {@link SettingsComponent#localSettings|`localSettings`}
+     * and apply the theme to the document.
+     *
+     * @param {boolean} [dark] - The new value for the dark mode. If omitted, the value is toggled.
+     */
     protected changeTheme(dark?: boolean): void {
         dark ??= !this.localSettings.darkMode;
         if (this.localSettings.darkMode != dark) {
@@ -324,6 +429,13 @@ export class SettingsComponent {
         this.saveLocalSettings();
     }
 
+    /**
+     * Move a slider to the nearest step value to an actual value.
+     *
+     * @param {number} value - The value to be represented on the slider.
+     * @param {number[]} stepPositions - The values for the various steps, where to round to.
+     * @param {FormControl<number | null>} sliderFormControl - The {@link FormControl|`FormControl`} for the slider.
+     */
     private setNumberSlider(value: number, stepPositions: number[], sliderFormControl: FormControl<number | null>): void {
         let lastValue              = -Infinity;
         const positionWithInfinity = stepPositions.concat(Infinity);
@@ -342,6 +454,12 @@ export class SettingsComponent {
         }
     }
 
+    /**
+     * Transform a value in seconds into a readable display string.
+     *
+     * @param {number} seconds - The value in seconds.
+     * @returns {string} A string containing the value of `seconds` in a huma readable format..
+     */
     protected getDurationString(seconds: number): string {
         const secondsMod = seconds % 60;
         if (seconds < 60) {
@@ -363,19 +481,40 @@ export class SettingsComponent {
         }
     }
 
-    protected readonly ALL_TOOLBAR_ELEMENTS = ALL_TOOLBAR_ELEMENTS;
-
+    /**
+     * Casts a `string` to a {@link ToolbarAction|`ToolbarAction`}.
+     * Does not check for the real existence of an action with such name.
+     *
+     * @param {string} val - The string representation of a {@link ToolbarAction|`ToolbarAction`}.
+     * @returns {ToolbarAction} `val` cast as {@link ToolbarAction|`ToolbarAction`}.
+     */
     protected asToolbarAction(val: string): ToolbarAction { return val as ToolbarAction; }
 
+    /** @ignore */
+    protected readonly ALL_TOOLBAR_ELEMENTS = ALL_TOOLBAR_ELEMENTS;
+    /** @ignore */
     protected readonly MainPages     = MainPages;
+    /** @ignore */
     protected readonly LoadingStatus = LoadingStatus;
 }
 
+/**
+ * All the actions {@link SettingsComponent|`SettingsComponent`}'s {@link ToolbarComponent|`ToolbarComponent`} can offer.
+ * Used as {@link ToolbarButton#id|`id`} for the {@link ALL_TOOLBAR_ELEMENTS|toolbar buttons}.
+ *
+ * @notExported
+ */
 enum ToolbarAction {
+    /** The back button. */
     BACK = 'back',
 }
 
 
+/**
+ * All the {@link ToolbarElement|`ToolbarElement`s} in {@link SettingsComponent|`SettingsComponent`}'s {@link ToolbarComponent|`ToolbarComponent`}.
+ *
+ * @notExported
+ */
 const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     {
         type:  ToolBarElementType.BUTTON,
@@ -392,6 +531,11 @@ const ALL_TOOLBAR_ELEMENTS: ToolbarElement[] = [
     }
 ];
 
+/**
+ * Slider values for {@link SystemSettings#offlineCheck|`SystemSettings.offlineCheck`} and {@link SystemSettings#onlineCheck|`SystemSettings.onlineCheck`}.
+ *
+ * @notExported
+ */
 const CHECK_OPTIONS = [
     10,
     30,
@@ -406,6 +550,11 @@ const CHECK_OPTIONS = [
     600
 ];
 
+/**
+ * Slider values for {@link SystemSettings#unavailableTimeout|`SystemSettings.unavailableTimeout`}.
+ *
+ * @notExported
+ */
 const UNAVAILABLE_OPTIONS = [
     60,
     150,
@@ -420,14 +569,26 @@ const UNAVAILABLE_OPTIONS = [
     5400
 ];
 
+/**
+ * This is a representation of all the settings and customization regarding the current browser session.
+ * These are the settings that can be changed in the {@link SettingsComponent|`SettingsComponent`}
+ * view in the frontend, but are only the subset of those that remain local to the system.
+ */
 export interface LocalSettings {
+    /** The view to be shown when the browser page is first loaded with a blank link. */
     startPage: MainPages,
+    /** Whether the {@link HomeComponent|`HomeComponent`} should display the devices and groups in a tree structure. */
     deviceViewLayoutTree: boolean,
+    /** If the UI should be in dark mode. */
     darkMode: boolean,
+    /** The cahced name of the home the system is attached to. It's the name seen in the header of any frontend page. */
     homeName: string,
 }
 
-export const LOCAL_SETTINGS_KEY: LocalStorageObject<LocalSettings> = {
+/** The key for saving {@link SettingsComponent#localSettings|`localSettings`} in the {@link LocalStorageService|`LocalStorageService`}. */
+export
+/** The key for saving {@link SettingsComponent#localSettings|`localSettings`} in the {@link LocalStorageService|`LocalStorageService`}. */
+const LOCAL_SETTINGS_KEY: LocalStorageObject<LocalSettings> = {
     name:         'localSettings',
     defaultValue: {
         startPage:            MainPages.DEVICES,

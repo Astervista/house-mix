@@ -5,7 +5,7 @@
 
 </div>
 <span class="color-display"
-      [style.background-color]="this.getStyleColor()"></span>
+      [style.background-color]="styleColor"></span>
 <div class="canvas-container">
     <div
         class="horizontal-container"
@@ -19,7 +19,7 @@
         </canvas>
         <span class="horizontal-selector"
               [class.dragging]="dragging == 'HORZ'"
-              [style.background-color]="this.getStyleColor()"
+              [style.background-color]="styleColor"
               [style.border-color]="'var(--mat-sys-background)'"
               [style.left.%]="currentSliderPos * 100">
         </span>

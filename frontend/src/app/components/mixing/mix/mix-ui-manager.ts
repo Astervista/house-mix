@@ -1,45 +1,85 @@
+/**
+ *  This module contains the {@link MixUiManager|`MixUiManager`} class and other support class for the {@link MixComponent|`MixComponent`}.
+ *
+ *  @module
+ */
 import {Point} from '@angular/cdk/drag-drop';
 import {ArbitraryInputsElaborationNode, ElaborationNode} from '@common/mixing/mix/elaboration-node';
 import {Connection, ConnectionDrain, ConnectionDrainToNode, ConnectionDrainType, ConnectionSource, ConnectionSourceFromNode, ConnectionSourceType, Mix} from '@common/mixing/mix/mix';
 import {Datum, DatumInfo, ElaborationNodeDatum, ExportedDatum} from '@common/mixing/mix/datum';
 import {Line, MEASURES} from '../constants';
 import {ResizeEvent} from '../../../directives/resize-event/resize-event.directive';
+// noinspection ES6UnusedImports
+import type {MixComponent} from './mix.component';
 import {NodeInputInfo} from './mix.component';
 import {MixLayout, NodeGroupJSON} from '@common/mixing/mix/mix-layout';
 import {recordFromEntries} from '@common/utils/generics';
 
+/**
+ * A class to handle all the UI operations for the main SVG canvas in the
+ * {@link MixComponent|`MixComponent`} {@link Mix|`Mix`} editing view.
+ *
+ * This class handles the calculation of the graphical components, their positions,
+ * mouse events, the creation of new {@link Connection|`Connection`s} and
+ * {@link ElaborationNode|`ElaborationNode`s}.
+ */
 export class MixUiManager {
 
+    /** The current translation of all the elements on the canvas, to allow panning. */
     public translation: Point = {x: MEASURES.SECTIONS_SEPARATOR + MEASURES.INPUT_WIDTH, y: 0};
+    /** The current scale of all the elements on the canvas, to allow zooming. */
     public scale: number      = 1;
 
-    private nodePositions: Map<ElaborationNode, Point>                   = new Map<ElaborationNode, Point>();
-    public visibleNodes: ElaborationNode[]                               = [];
-    private maxNodeXPosition: number                                     = 0;
+    /** The coordinates of every {@link ElaborationNode|`ElaborationNode`} in the {@link MixUiManager#mix|`mix`}, keyed by the {@link ElaborationNode|`ElaborationNode`} itself. */
+    private nodePositions: Map<ElaborationNode, Point> = new Map<ElaborationNode, Point>();
+    /** This list contains all the {@link ElaborationNode|`ElaborationNode`s} in the {@link MixUiManager#mix|`mix`} that are not descendant of a collapsed {@link NodeGroup|`NodeGroup`}. */
+    public visibleNodes: ElaborationNode[]             = [];
+    /** The x position of the right edge of the rightmost visible {@link ElaborationNode|`ElaborationNode`} in the {@link MixUiManager#mix|`mix`}. Beyond that, only exports are shown. */
+    private maxNodeXPosition: number                   = 0;
+
+    /**
+     * A map containing each collapsed {@link ElaborationNode|`ElaborationNode`}'s topmost collapsed {@link NodeGroup|`NodeGroup`} ancestor, that is currently preventing it to be shown.
+     * If a node is not in this map, it is visible. Keys are the {@link ElaborationNode|`ElaborationNode`} themselves.
+     */
     private invisibleNodeCollapsedGroup: Map<ElaborationNode, NodeGroup> = new Map<ElaborationNode, NodeGroup>();
 
+    /** All the {@link NodeGroup|`NodeGroup`s} in the {@link MixUiManager#mix|`mix`} that are not child of other {@link NodeGroup|`NodeGroup`s}. */
     public firstLevelGroups: NodeGroup[] = [];
+    /** All the {@link NodeGroup|`NodeGroup`s} in the {@link MixUiManager#mix|`mix`}. */
     public allGroups: NodeGroup[]        = [];
+    /** This list contains all the {@link NodeGroup|`NodeGroup`s} in the {@link MixUiManager#mix|`mix`} that are not descendant of a collapsed {@link NodeGroup|`NodeGroup`}. */
     public visibleGroups: NodeGroup[]    = [];
 
+    /** All the {@link Connection|`Connection`s} position in the {@link MixUiManager#mix|`mix`}, keyed by the {@link Connection|`Connection`} itself. */
     private connections: Map<Connection, Line>         = new Map<Connection, Line>();
+    /** A map containing whether the {@link Connection|`Connection`s} in the {@link MixUiManager#mix|`mix`} are hidden because they are between two hidden {@link ElaborationNode|`ElaborationNode`s}, keyed by the {@link Connection|`Connection`} itself. */
     public hiddenConnections: Map<Connection, boolean> = new Map<Connection, boolean>();
 
+    /** All the {@link ElaborationNode#inputs|`inputs`} that cannot be used for {@link MixUiManager#connections|`connections`} because they are already used in one. */
     private lockedInputs: ElaborationNodeDatum[] = [];
+    /** All the {@link Mix#outputs|`outputs`} that cannot be used for {@link MixUiManager#connections|`connections`} because they are already used in one. */
     private lockedExternalOutputs: Datum[]       = [];
 
+    /** The {@link Mix|`Mix`} currently being displayed in the editor. */
     private _mix: Mix | null = null;
 
-    public availableExportsLength: number | null = null;
-
+    /** The SVG canvas {@link HTMLElement|`HTMLElement`} displaying the {@link MixUiManager#mix|`mix`}. */
     public svgElement: HTMLElement | null = null;
 
+    /** Whether to show or hide the "Add output" button under the outputs. If `false`, the outputs are fixed and cannot be added or removed. */
     public showOutputAdd: boolean = true;
 
+    /** {@link Point|`Point`} containing the width and height of the viewable area of the {@link MixUiManager#svgElement|`svgElement`}. */
     private _viewSize: Point = {x: 0, y: 0};
 
+    /**
+     * The list of registered change callbacks.
+     *
+     * @see {@link MixUiManager#addChangeCallback| `addChangeCallback()`}.
+     */
     private changeCallbacks: (() => void)[] = [];
 
+    /** Change the currently displayed {@link Mix|`Mix`} and recalculate all the view elements. */
     public set mix(mix: Mix) {
         this._mix = mix;
         this.refreshMix();
@@ -47,10 +87,12 @@ export class MixUiManager {
         this.calculateVisibleElements();
     }
 
+    /** Adjust the current viewable area of the {@link MixUiManager#svgElement|`svgElement`} after a resize event on it is received.  */
     public set viewSize(resizeEvent: ResizeEvent) {
         this._viewSize = {x: resizeEvent.width, y: resizeEvent.height};
     }
 
+    /** The center of the current viewable area of the {@link MixUiManager#svgElement|`svgElement`} in the scaled and translated coordinates (coordinates that are coherent with the {@link MixUiManager#nodePositions|`nodePositions`}. */
     public get screenCenter(): Point {
         return {
             x: (-this.translation.x + (this.svgElement?.getBoundingClientRect().width ?? 0) / 2) / this.scale,
@@ -58,8 +100,8 @@ export class MixUiManager {
         };
     }
 
+    /** This function refreshes all the changes made to the mix that are not easily catchable. */
     public refreshMix(): void {
-        // Sometimes changes made to the mix are not catchable. This function refreshes these changes
         const mix = this._mix;
         if (mix == null) {
             return;
@@ -102,24 +144,22 @@ export class MixUiManager {
 
     }
 
+    /**
+     * Recalculate {@link ElaborationNode|`ElaborationNode`s}' positions by rearranging them following the structure of their dependencies.
+     *
+     * @throws {Error} If the layout cannot be recalculated due to an internal inconsistency in the tree structure.
+     */
     public rearrangeNodes(): void {
         const mix = this._mix;
         if (mix == null) {
             return;
         }
 
-        interface TreeNode {
-            node: ElaborationNode;
-            children: TreeNode[];
-            parents: TreeNode[];
-            level?: number;
-        }
-
         const tree: TreeNode[]              = [];
-        const sourceTreeNodes: TreeNode[] = [];
+        const sourceTreeNodes: TreeNode[]   = [];
         const connections                   = mix.connections.slice();
         let missingNodes: ElaborationNode[] = mix.nodes.slice();
-        let maxHeight: number | null      = null;
+        let maxHeight: number | null        = null;
         for (const node of mix.nodes) {
             // We gather all nodes that don't have other nodes before them (meaning they come either from inputs, or have all constant or null inputs
             if (!mix.connections.some(connection => connection.drainType == ConnectionDrainType.NODE && connection.drainNodeId == node.id)) {
@@ -232,7 +272,7 @@ export class MixUiManager {
                 levelNumber++;
             }
             // All nodes have been placed. We now sort the parents by level to have an ordered tree
-            const ordered = [...placedParents.values()].sort(
+            const ordered      = [...placedParents.values()].sort(
                 (a, b) => {
                     if (a.level == null || b.level == null) {
                         return 0;
@@ -240,8 +280,8 @@ export class MixUiManager {
                     return a.level - b.level;
                 }
             );
-            let y         = 0;
-            let lastLevel = 0;
+            let y              = 0;
+            let lastLevel      = 0;
             const levelHeights = new Map<number, number>();
             for (const treeNode of ordered) {
                 if (treeNode.level != lastLevel) {
@@ -348,22 +388,22 @@ export class MixUiManager {
         }
 
         let centerY;
-        let topShift: number | null       = null;
+        let topShift: number | null    = null;
         let bottomShift: number | null = null;
         let shift: 'CENTER' | 'TOP' | 'BOTTOM';
         if ((maxHeight == null) || (tree.length == 0)) {
             centerY = 0;
-            shift = 'CENTER';
+            shift   = 'CENTER';
         } else {
             centerY = -maxHeight / 2 - MEASURES.NODE_SPACING;
             shift   = 'TOP';
         }
         for (const cluster of clusters) {
             let nextMaxHeight = 0;
-            let x         = 0;
+            let x             = 0;
             for (const node of cluster.cluster) {
-                const stacks = Math.max(this.getNodeInputCount(node.node), node.node.outputs.length);
-                const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
+                const stacks  = Math.max(this.getNodeInputCount(node.node), node.node.outputs.length);
+                const height  = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
                 nextMaxHeight = Math.max(nextMaxHeight, height);
                 this.nodePositions.set(node.node, {
                     x,
@@ -375,7 +415,7 @@ export class MixUiManager {
                 case 'TOP':
                     cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: -nextMaxHeight / 2}, node.node);});
                     topShift = centerY - nextMaxHeight - MEASURES.NODE_SPACING;
-                    shift = 'BOTTOM';
+                    shift    = 'BOTTOM';
                     if (bottomShift == null) {
                         centerY = (maxHeight ?? 0) / 2;
                     } else {
@@ -384,14 +424,14 @@ export class MixUiManager {
                     maxHeight = nextMaxHeight;
                     break;
                 case 'CENTER':
-                    centerY = -nextMaxHeight / 2 - MEASURES.NODE_SPACING;
-                    shift   = 'TOP';
+                    centerY   = -nextMaxHeight / 2 - MEASURES.NODE_SPACING;
+                    shift     = 'TOP';
                     maxHeight = nextMaxHeight;
                     break;
                 case 'BOTTOM':
                     cluster.cluster.forEach(node => {this.shiftNode({x: 0, y: nextMaxHeight / 2}, node.node);});
                     bottomShift = centerY + nextMaxHeight + MEASURES.NODE_SPACING;
-                    shift   = 'TOP';
+                    shift       = 'TOP';
                     if (topShift == null) {
                         centerY = -(maxHeight ?? 0) / 2;
                     } else {
@@ -413,7 +453,7 @@ export class MixUiManager {
             .connections
             .forEach(connection => {this.updateConnection(connection);});
 
-        const viewWidth = this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR + MEASURES.OUTPUT_WIDTH;
+        const viewWidth    = this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR + MEASURES.OUTPUT_WIDTH;
         this.translation.x = this._viewSize.x / 2 - viewWidth / 2 + (MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR * 0.5) / 2;
         if (this.translation.x < MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR) {
             this.translation.x = MEASURES.INPUT_WIDTH + MEASURES.SECTIONS_SEPARATOR;
@@ -421,6 +461,7 @@ export class MixUiManager {
         this.translation.y = this._viewSize.y / 2;
     }
 
+    /** Update the value of {@link MixUiManager#maxNodeXPosition|`maxNodeXPosition`}. */
     private recalculateMaxX(): void {
 
         let nodeMaxX =
@@ -434,6 +475,7 @@ export class MixUiManager {
         this.maxNodeXPosition = nodeMaxX;
     }
 
+    /** Check whether some operation pushed some visible {@link ElaborationNode|`ElaborationNode`s} out of bounds before the 0 x coordinate, move the {@link ElaborationNode|`ElaborationNode`s} and recalculate all the positions accordingly. */
     private checkMinX(): void {
 
         if (this._mix != null) {
@@ -463,6 +505,12 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Move an {@link ElaborationNode|`ElaborationNode`} by a specific `delta`.
+     *
+     * @param {Point} delta - The coordinates to add to the {@link ElaborationNode|`ElaborationNode`}'s current position.
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to move.
+     */
     private shiftNode(delta: Point, node: ElaborationNode): void {
         const oldPosition = this.nodePositions.get(node);
         if (oldPosition != null) {
@@ -473,9 +521,15 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Register the addition of an {@link ElaborationNode|`ElaborationNode`} to the {@link MixUiManager#mix|`mix`}
+     * by calculating all the values for its graphical representation and recalculating related ones.
+     *
+     * @param {ElaborationNode} node - The newly added {@link ElaborationNode|`ElaborationNode`}.
+     */
     public addNode(node: ElaborationNode): void {
-        const stacks = Math.max(this.getNodeInputCount(node), node.outputs.length);
-        const height = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
+        const stacks  = Math.max(this.getNodeInputCount(node), node.outputs.length);
+        const height  = MEASURES.NODE_HEADING_HEIGHT + MEASURES.NODE_CONNECTION_HEIGHT * stacks + MEASURES.NODE_INTERNAL_SPACING * (stacks + 1);
         const center  = this.screenCenter;
         const centerX = center.x - MEASURES.SECTIONS_SEPARATOR / 2;
         const centerY = center.y;
@@ -488,6 +542,12 @@ export class MixUiManager {
         this.visibleNodes.push(node);
     }
 
+    /**
+     * Register the removal of an {@link ElaborationNode|`ElaborationNode`} from the {@link MixUiManager#mix|`mix`}
+     * by removing all the values for its graphical representation and recalculating related ones.
+     *
+     * @param {ElaborationNode} node - The removed {@link ElaborationNode|`ElaborationNode`}.
+     */
     public nodeDeleted(node: ElaborationNode): void {
         if (this._mix != null) {
             this.nodePositions.delete(node);
@@ -521,6 +581,11 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Update all the connections linked to an {@link ElaborationNode|`ElaborationNode`} after changes on the {@link ElaborationNode|`ElaborationNode`}'s position or size.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} that was updated.
+     */
     public updateNode(node: ElaborationNode): void {
         this._mix
             ?.connections
@@ -531,10 +596,20 @@ export class MixUiManager {
             .forEach(connection => {this.updateConnection(connection);});
     }
 
+    /**
+     * Register the addition of a {@link Connection|`Connection`} to the {@link MixUiManager#mix|`mix`} by recalculating all the values for its graphical representation.
+     *
+     * @param {Connection} connection - The newly added {@link Connection|`Connection`}.
+     */
     public addConnection(connection: Connection): void {
         this.updateConnection(connection);
     }
 
+    /**
+     * Update the graphical representation of a {@link Connection|`Connection`} in the {@link MixUiManager#mix|`mix`} after some action may have changed its characteristics.
+     *
+     * @param {Connection} connection - The newly added {@link Connection|`Connection`}.
+     */
     private updateConnection(connection: Connection): void {
         if (this._mix == null) {
             return;
@@ -557,7 +632,7 @@ export class MixUiManager {
             from = this.getNodeConnectorPosition(node, datum, true);
             if (!this.visibleNodes.includes(node)) {
                 fromHidden = true;
-                fromGroup = this.invisibleNodeCollapsedGroup.get(node) ?? null;
+                fromGroup  = this.invisibleNodeCollapsedGroup.get(node) ?? null;
             }
         } else if (connection.sourceType === ConnectionSourceType.INPUT) {
             const datum = this._mix.imports.find(a => a.uniqueName == connection.inputName);
@@ -590,7 +665,7 @@ export class MixUiManager {
                 }
             } else {
                 toHidden = true;
-                toGroup = this.invisibleNodeCollapsedGroup.get(node) ?? null;
+                toGroup  = this.invisibleNodeCollapsedGroup.get(node) ?? null;
             }
         }
         if (connection.drainType === ConnectionDrainType.OUTPUT) {
@@ -611,6 +686,12 @@ export class MixUiManager {
         this.connections.set(connection, {from, to});
     }
 
+    /**
+     * Register the removal of a {@link Connection|`Connection`} from the {@link MixUiManager#mix|`mix`}
+     * by removing all the values for its graphical representation and recalculating related ones.
+     *
+     * @param {Connection} connection - The removed {@link Connection|`Connection`}.
+     */
     public removeConnection(connection: Connection): void {
         this.connections.delete(connection);
         if (connection.drainType == ConnectionDrainType.NODE) {
@@ -637,6 +718,13 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Update the graphical representation of all {@link Connection|`Connection`s} in the {@link MixUiManager#mix|`mix`}
+     * that are connected either to {@link Mix#outputs|`outputs`} or from {@link Mix#inputs|`inputs`}.
+     *
+     * @param {boolean} input - If `true`, only connections from {@link Mix#inputs|`inputs`} are recalculated,
+     *                          if `false`, only the ones to {@link Mix#outputs|`outputs`}.
+     */
     public updateEdgeConnections(input: boolean): void {
         this
             ._mix
@@ -649,23 +737,64 @@ export class MixUiManager {
             });
     }
 
+    /**
+     * Check if an {@link ElaborationNode#inputs|`input`} to an {@link ElaborationNode|`ElaborationNode`}
+     * can be used for a {@link Connection|`Connection`} or if it's already used in another one.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to check.
+     * @param {Datum} datum - The {@link Datum|`Datum`} representing the {@link ElaborationNode#inputs|`input`} to check.
+     * @returns {boolean} - If `true`, the {@link ElaborationNode#inputs|`input`} is already connected to something,
+     *                      if `false` it can be used in a new {@link Connection|`Connection`}.
+     */
     public isInputLocked(node: ElaborationNode, datum: Datum): boolean {
         return this.lockedInputs.some(a => a.node == node && a.datum == datum);
     }
 
+    /**
+     * Check if an {@link Mix#outputs|`output`} in the {@link MixUiManager#mix|`mix`} to an {@link ElaborationNode|`ElaborationNode`}
+     * can be used for a {@link Connection|`Connection`} or if it's already used in another one.
+     *
+     * @param {Datum} datum - The {@link Mix#outputs|`output`} to check.
+     * @returns {boolean} - If `true`, the {@link Mix#outputs|`output`} is already connected to something,
+     *                      if `false` it can be used in a new {@link Connection|`Connection`}.
+     */
     public isExternalOutputLocked(datum: Datum): boolean {
         return this.lockedExternalOutputs.includes(datum);
     }
 
+    /**
+     * Get the coordinates of an {@link ElaborationNode|`ElaborationNode`} in the {@link MixUiManager#mix|`mix`}.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to get the position of.
+     * @returns {Point} - The coordinates of the {@link ElaborationNode|`ElaborationNode`}.
+     */
     public getNodePosition(node: ElaborationNode): Point {
         return {...this.nodePositions.get(node) ?? {x: 0, y: 0}};
     }
 
+    /**
+     * Change the position of an {@link ElaborationNode|`ElaborationNode`} in the {@link Mix|`Mix`}.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to set the position of.
+     * @param {Point} position - The new coordinates of the {@link ElaborationNode|`ElaborationNode`}.
+     */
     public setNodePosition(node: ElaborationNode, position: Point): void {
         this.nodePositions.set(node, position);
         this.maxNodeXPosition = Math.max(this.maxNodeXPosition, position.x + MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2);
     }
 
+
+    /**
+     * Calculate the position of a connector on an {@link ElaborationNode|`ElaborationNode`}.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} the connector is a part of.
+     * @param {Datum} connector - The {@link Datum|`Datum`} of the {@link ElaborationNode#inputs|`input`} or {@link ElaborationNode#outputs|`output`} to get the position of.
+     * @param {boolean} rightFacing - If `true`, the `connector` is on the right side of the {@link ElaborationNode|`ElaborationNode`} (it's an {@link ElaborationNode#outputs|`output`}),
+     *                                if `false`, the `connector` is on the left side of the {@link ElaborationNode|`ElaborationNode`} (it's an {@link ElaborationNode#inputs|`input`}).
+     * @param {boolean} additional - Whether the {@link Datum|`Datum`} is the new additional input connector in a {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode`}.
+     *                               `null` is equivalent to `false`.
+     * @returns {Point} - The coordinates of the connector, in the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`})..
+     */
     public getNodeConnectorPosition(node: ElaborationNode, connector: Datum, rightFacing: boolean, additional?: boolean): Point {
         if (this.visibleNodes.includes(node)) {
             if (rightFacing) {
@@ -673,7 +802,7 @@ export class MixUiManager {
 
                 from.x += MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2;
 
-                from.y += this.getConnectionTop(node.outputs.indexOf(connector));
+                from.y += this.getConnectorTop(node.outputs.indexOf(connector));
                 from.y += this.getConnectionsDisplacement(node, false);
 
                 return from;
@@ -683,9 +812,9 @@ export class MixUiManager {
                 to.x += MEASURES.SECTIONS_SEPARATOR / 2;
 
                 if (additional == true) {
-                    to.y += this.getConnectionTop(node.inputs.length);
+                    to.y += this.getConnectorTop(node.inputs.length);
                 } else {
-                    to.y += this.getConnectionTop(node.inputs.indexOf(connector));
+                    to.y += this.getConnectorTop(node.inputs.indexOf(connector));
                 }
                 to.y += this.getConnectionsDisplacement(node, true);
 
@@ -694,13 +823,23 @@ export class MixUiManager {
         } else {
             const groupToAttach = this.invisibleNodeCollapsedGroup.get(node);
             if (groupToAttach != null) {
-                return this.getGroupConnectorPosition(groupToAttach, node.id, connector, rightFacing);
+                return this.getGroupConnectorPosition(groupToAttach, connector, rightFacing);
             }
             return {x: 0, y: 0};
         }
     }
 
-    public getGroupConnectorPosition(group: NodeGroup, nodeId: number, connector: Datum, rightFacing: boolean): Point {
+    /**
+     * Calculate the position of a connector on an {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} the connector is a part of.
+     * @param {Datum} connector - The {@link Datum|`Datum`} of the {@link ElaborationNode#inputs|`input`} or {@link ElaborationNode#outputs|`output`} to get the position of.
+     * @param {boolean} rightFacing - If `true`, the `connector` is on the right side of the {@link NodeGroup|`NodeGroup`} (it's an {@link ElaborationNode#outputs|`output`}),
+     *                                if `false`, the `connector` is on the left side of the {@link NodeGroup|`NodeGroup`} (it's an {@link ElaborationNode#inputs|`input`}).
+     *                               `null` is equivalent to `false`.
+     * @returns {Point} - The coordinates of the connector, in the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`})..
+     */
+    public getGroupConnectorPosition(group: NodeGroup, connector: Datum, rightFacing: boolean): Point {
         if (rightFacing) {
             const from = {
                 x: group.x + (group.width - MEASURES.NODE_WIDTH) / 2,
@@ -710,7 +849,7 @@ export class MixUiManager {
             from.x += MEASURES.NODE_WIDTH + MEASURES.SECTIONS_SEPARATOR / 2;
 
             if (group.showConnectors) {
-                from.y += this.getConnectionTop(group.outputs.findIndex(a => a.datum == connector));
+                from.y += this.getConnectorTop(group.outputs.findIndex(a => a.datum == connector));
                 from.y += this.getConnectionsDisplacement(group, false);
                 from.y += MEASURES.NODE_HEADING_HEIGHT / 2;
             } else {
@@ -727,7 +866,7 @@ export class MixUiManager {
             to.x += MEASURES.SECTIONS_SEPARATOR / 2;
 
             if (group.showConnectors) {
-                to.y += this.getConnectionTop(group.inputs.findIndex(a => a.datum == connector));
+                to.y += this.getConnectorTop(group.inputs.findIndex(a => a.datum == connector));
                 to.y += this.getConnectionsDisplacement(group, true);
                 to.y += MEASURES.NODE_HEADING_HEIGHT / 2;
             } else {
@@ -738,6 +877,15 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Calculate the position of a connector on a {@link Mix#imports|`Mix import`} or {@link Mix#outputs|`Mix output`}.
+     *
+     * @param {Datum} connector - The {@link Datum|`Datum`} of the {@link Mix#imports|`import`} or {@link Mix#outputs|`output`} to get the position of.
+     * @param {boolean} rightFacing - If `true`, the `connector` is an {@link Mix#imports|`import`},
+     *                                if `false`, the `connector` is an {@link Mix#outputs|`output`}.
+     *                               `null` is equivalent to `false`.
+     * @returns {Point} - The coordinates of the connector, in the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`})..
+     */
     public getExternalConnectorPosition(connector: ExportedDatum | Datum, rightFacing: boolean): Point {
         if (rightFacing) {
             if (!(connector instanceof ExportedDatum)) {
@@ -763,6 +911,14 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Gets the position of a {@link Connection|`Connection`} in the {@link MixUiManager#mix|`mix`}, in the coordinates of the global space (the same as the position of the
+     * {@link ElaborationNode|`ElaborationNode`s}).
+     *
+     * @param {Connection} connection - The {@link Connection|`Connection`} to get the position of.
+     * @returns {Line | null} The position of the connection, as a copy of the {@link Line|`Line`} between the coordinates of source point of the {@link Connection|`Connection`} and the
+     *     drain point of the {@link Connection|`Connection`}.
+     */
     public getConnectionPosition(connection: Connection): Line | null {
         const position = this.connections.get(connection);
         if (position == null) {
@@ -771,18 +927,30 @@ export class MixUiManager {
         return {...position};
     }
 
-    public get draggingConnector(): Line | null {
+    /**
+     * Gets the position of the connection currently being dragged, if any.
+     *
+     * @returns {Line | null} - The position of the connection, as a copy of the {@link Line|`Line`} between the coordinates of source point of the
+     *                          {@link Connection|`Connection`} and the drain point of the {@link Connection|`Connection`}.
+     *                          `null` means nothing is being dragged or the dragging doesn't involve a {@link Connection|`Connection`}.
+     */
+    public get draggingConnection(): Line | null {
         if (this.currentDragging == null) {
             return null;
         }
         if ((this.currentDragging.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (this.currentDragging.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
-            return {from: this.currentDragging.connector.from, to: this.currentDragging.snapPosition ?? this.currentDragging.connector.to};
+            return {from: this.currentDragging.connection.from, to: this.currentDragging.snapPosition ?? this.currentDragging.connection.to};
         } else if ((this.currentDragging.type == DraggingElementType.LINK_TO_NODE_INPUT) || (this.currentDragging.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT)) {
-            return {from: this.currentDragging.snapPosition ?? this.currentDragging.connector.from, to: this.currentDragging.connector.to};
+            return {from: this.currentDragging.snapPosition ?? this.currentDragging.connection.from, to: this.currentDragging.connection.to};
         }
         return null;
     }
 
+    /**
+     * Gets the {@link DatumInfo|`DatumInfo`} about the start of the {@link Connection|`Connection`} currently being dragged.
+     *
+     * @returns {DatumInfo | null} The {@link DatumInfo|`DatumInfo`}. `null` means nothing is being dragged or the dragging doesn't involve a {@link Connection|`Connection`}.
+     */
     public get draggingConnectorDatumInfo(): DatumInfo | null {
         if (this.currentDragging == null) {
             return null;
@@ -798,6 +966,7 @@ export class MixUiManager {
         return null;
     }
 
+    /** When the {@link Connection|`Connection`} being dragged is an existing one being moved from one of its ends, this is such {@link Connection|`Connection`}. `null` means nothing is being dragged or the dragging doesn't involve an existing {@link Connection|`Connection`}. */
     public get replacingConnection(): Connection | null {
         if (
             (this.currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT)
@@ -810,10 +979,19 @@ export class MixUiManager {
         return null;
     }
 
+    /**
+     * For an {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`}, gives how much the input or output connectors
+     * should be shifted down vertically to match with the ones on the other side of the  {@link ElaborationNode|`ElaborationNode`}
+     * or {@link NodeGroup|`NodeGroup`} to be visually centered.
+     *
+     * @param {ElaborationNode | NodeGroup} node - The {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`} the connectors are displayed on.
+     * @param {boolean} left - If `true`, this calculation gives the displacement of the input connectors with respect to the output ones, `false` for the other way around.
+     * @returns {number} - The distance the connectors should be moved down vertically.
+     */
     public getConnectionsDisplacement(node: ElaborationNode | NodeGroup, left: boolean): number {
 
-        const inputCount = this.getNodeInputCount(node);
-        const leftHeight = MEASURES.NODE_CONNECTION_HEIGHT * inputCount + MEASURES.NODE_INTERNAL_SPACING * (inputCount - 1);
+        const inputCount  = this.getNodeInputCount(node);
+        const leftHeight  = MEASURES.NODE_CONNECTION_HEIGHT * inputCount + MEASURES.NODE_INTERNAL_SPACING * (inputCount - 1);
         const rightHeight = MEASURES.NODE_CONNECTION_HEIGHT * node.outputs.length + MEASURES.NODE_INTERNAL_SPACING * (node.outputs.length - 1);
         if (left) {
             return Math.max(0, (rightHeight - leftHeight) / 2);
@@ -822,10 +1000,22 @@ export class MixUiManager {
         }
     }
 
-    public getConnectionTop(index: number): number {
+    /**
+     * Get the vertical position of an input or output connector at a specific index inside an {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {number} index - The index of the connector in its side.
+     * @returns {number} - The vertical position of the connector with respect to the top of the input or output block.
+     */
+    public getConnectorTop(index: number): number {
         return MEASURES.NODE_HEADING_HEIGHT / 2 + MEASURES.NODE_INTERNAL_SPACING * (index + 1) + MEASURES.NODE_CONNECTION_HEIGHT * (index + 0.5);
     }
 
+    /**
+     * Get the total number of input connectors on an {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {ElaborationNode | NodeGroup} node - The {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`} to get the input count of.
+     * @returns {number} - The total number of input connectors.
+     */
     public getNodeInputCount(node: ElaborationNode | NodeGroup): number {
         if (node instanceof ArbitraryInputsElaborationNode) {
             return node.inputs.length + 1;
@@ -834,6 +1024,12 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Get the total height of all the {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`},
+     * in the coordinates of the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`}).
+     *
+     * @returns {number} - The total height.
+     */
     public get inputsHeight(): number {
         if (this._mix == null) {
             return 0;
@@ -842,20 +1038,17 @@ export class MixUiManager {
         if (this._mix.imports.length != 0) {
             inputsOnly = this._mix.imports.length * MEASURES.INPUT_HEIGHT + (this._mix.imports.length - 1) * MEASURES.INPUT_SPACING;
         } else {
-            if (this._mix.imports.length == this.availableExportsLength) {
-                return 0;
-            } else {
-                return MEASURES.ADD_INPUT_HEIGHT;
-            }
+            return MEASURES.ADD_INPUT_HEIGHT;
         }
-        if (this._mix.imports.length == this.availableExportsLength) {
-            return inputsOnly;
-        } else {
-            return MEASURES.ADD_INPUT_HEIGHT + MEASURES.INPUT_SPACING + inputsOnly;
-        }
+        return MEASURES.ADD_INPUT_HEIGHT + MEASURES.INPUT_SPACING + inputsOnly;
     }
 
-
+    /**
+     * Get the total height of all the {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`outputs`},
+     * in the coordinates of the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`}).
+     *
+     * @returns {number} - The total height.
+     */
     public get outputsHeight(): number {
         if (this._mix == null) {
             return 0;
@@ -875,10 +1068,23 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * The x coordinate where to draw the {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`outputs`},
+     * in the coordinates of the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`}).
+     *
+     * @returns {number} - The x coordinate.
+     */
     public get outputsPosition(): number {
         return this.maxNodeXPosition + MEASURES.SECTIONS_SEPARATOR;
     }
 
+    /**
+     * Change the order of a {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`}.
+     *
+     * @param {ExportedDatum} datum - The {@link Mix#imports|`import`} to move.
+     * @param {boolean} forwards - If `true`, the {@link Mix#imports|`import`} will be shifted one position forwards
+     *                             in the list, if `false` it will be shifted one position backwards.
+     */
     public moveImport(datum: ExportedDatum, forwards: boolean): void {
         if (this._mix != null) {
             this._mix.moveImport(datum, forwards);
@@ -889,6 +1095,13 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Change the order of a {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`output`}.
+     *
+     * @param {ExportedDatum} datum - The {@link Mix#outputs|`output`} to move.
+     * @param {boolean} forwards - If `true`, the {@link Mix#outputs|`output`} will be shifted one position forwards
+     *                             in the list, if `false` it will be shifted one position backwards.
+     */
     public moveOutput(datum: Datum, forwards: boolean): void {
         if (this._mix != null) {
             this._mix.moveOutput(datum, forwards);
@@ -899,16 +1112,24 @@ export class MixUiManager {
         }
     }
 
+    /** Information about the element currently being dragged. */
     private currentDragging: DraggingElement | null = null;
 
+    /** Whether a {@link Connection|`Connection`} is currently being dragged towards a left-facing connector. */
     public get draggingConnectionForInput(): boolean {
         return (this.currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (this.currentDragging?.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT);
     }
 
+    /** Whether a {@link Connection|`Connection`} is currently being dragged towards a right-facing connector. */
     public get draggingConnectionForOutput(): boolean {
         return (this.currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT) || (this.currentDragging?.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT);
     }
 
+    /**
+     * If a {@link Connection|`Connection`} is currently being dragged towards a left-facing connector and is substituting an
+     * existing {@link Connection|`Connection`} towards an {@link ElaborationNode|`ElaborationNode`}, this is the
+     * {@link ElaborationNode#inputs|`input`} the original {@link Connection|`Connection`} was pointing to, or `null` in any other case.
+     */
     public get draggingConnectionInput(): Datum | null {
         const currentDragging = this.currentDragging;
         if ((currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (currentDragging?.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
@@ -923,6 +1144,11 @@ export class MixUiManager {
         return null;
     }
 
+    /**
+     * If a {@link Connection|`Connection`} is currently being dragged towards a right-facing connector and is substituting an
+     * existing {@link Connection|`Connection`} from an {@link ElaborationNode|`ElaborationNode`}, this is the
+     * {@link ElaborationNode#outputs|`output`} the original {@link Connection|`Connection`} was coming from, or `null` in any other case.
+     */
     public get draggingConnectionOutput(): Datum | null {
         const currentDragging = this.currentDragging;
         if ((currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT) || (currentDragging?.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT)) {
@@ -937,6 +1163,11 @@ export class MixUiManager {
         return null;
     }
 
+    /**
+     * If a {@link Connection|`Connection`} is currently being dragged towards a left-facing connector substituting an
+     * existing {@link Connection|`Connection`} towards an {@link Mix#outputs|`output`}, this is the
+     * {@link Mix#outputs|`output`} the original {@link Connection|`Connection`} was pointing to, or `null` in any other case.
+     */
     public get draggingConnectionExternalOutput(): Datum | null {
         const currentDragging = this.currentDragging;
         if ((currentDragging?.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (currentDragging?.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
@@ -949,6 +1180,11 @@ export class MixUiManager {
         return null;
     }
 
+    /**
+     * If a {@link Connection|`Connection`} is currently being dragged towards a right-facing connector and is substituting an
+     * existing {@link Connection|`Connection`} from an {@link Mix#imports|`import`}, this is the
+     * {@link Mix#imports|`import`} the original {@link Connection|`Connection`} was coming from, or `null` in any other case.
+     */
     public get draggingConnectionExternalInput(): ExportedDatum | null {
         const currentDragging = this.currentDragging;
         if ((currentDragging?.type == DraggingElementType.LINK_TO_NODE_INPUT) || (currentDragging?.type == DraggingElementType.LINK_TO_EXTERNAL_OUTPUT)) {
@@ -961,10 +1197,52 @@ export class MixUiManager {
         return null;
     }
 
+    /**
+     * Transform the screen coordinate in a {@link MouseEvent|`MouseEvent`} to one in the global space (the same as the position of the {@link ElaborationNode|`ElaborationNode`}).
+     *
+     * @param {MouseEvent} event - The DOM event to extract the coordinates from.
+     * @returns {Point} - The transformed global space coordinates, in {@link Point|`Point`} form.
+     */
     private extractTransformedPosition(event: MouseEvent): Point {
         return {x: (event.clientX - this.translation.x) / this.scale, y: (event.clientY - this.translation.y) / this.scale};
     }
 
+    /**
+     * Elaborate a mousedown event on the background.
+     *
+     * @param {MouseEvent} event - The DOM event.
+     */
+    public backgroundMouseDown(event: MouseEvent): void {
+        if (this.currentDragging != null) {
+            return;
+        }
+        this.currentDragging = {
+            type:             DraggingElementType.BACKGROUND,
+            startTranslation: {...this.translation},
+            startDrag:        {x: event.clientX, y: event.clientY}
+        };
+    }
+
+    /** The cursor that the background should show. */
+    public get backgroundCursor(): string {
+        if (this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND) {
+            return 'move';
+        } else {
+            return 'default';
+        }
+    }
+
+    /** Whether the background is currently being dragged. */
+    public get draggingBackground(): boolean {
+        return this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND;
+    }
+
+    /**
+     * Elaborate the mousedown event on an {@link ElaborationNode|`ElaborationNode`}.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {MouseEvent} event - The DOM event.
+     */
     public nodeMouseDown(node: ElaborationNode, event: MouseEvent): void {
         const pointerPosition = this.extractTransformedPosition(event);
         if (event.button != 0) {
@@ -988,10 +1266,22 @@ export class MixUiManager {
         };
     }
 
+    /**
+     * Whether an {@link ElaborationNode|`ElaborationNode`} is currently being dragged.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to check.
+     * @returns {boolean} The {@link ElaborationNode|`ElaborationNode`} is currently being dragged.
+     */
     public isDraggingNode(node: ElaborationNode): boolean {
         return this.currentDragging?.type == DraggingElementType.NODE && this.currentDragging.node == node && this.currentDragging.hasMoved;
     }
 
+    /**
+     * Elaborate the mousedown event on a {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {ElaborationNode} group - The {@link NodeGroup|`NodeGroup`} that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {MouseEvent} event - The DOM event.
+     */
     public groupMouseDown(group: NodeGroup, event: MouseEvent): void {
         const pointerPosition = this.extractTransformedPosition(event);
         if (event.button != 0) {
@@ -1019,10 +1309,24 @@ export class MixUiManager {
         };
     }
 
+    /**
+     * Whether a {@link NodeGroup|`NodeGroup`} is currently being dragged.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} to check.
+     * @returns {boolean} The {@link NodeGroup|`NodeGroup`} is currently being dragged.
+     */
     public isDraggingGroup(group: NodeGroup): boolean {
         return this.currentDragging?.type == DraggingElementType.GROUP && this.currentDragging.group == group && this.currentDragging.hasMoved;
     }
 
+    /**
+     * Elaborate the mousedown event on an {@link ElaborationNode|`ElaborationNode`}'s connector.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} containing the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {Datum | NodeInputInfo} datum - The {@link Datum|`Datum`} or {@link NodeInputInfo|`NodeInputInfo`} linked to the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {boolean} rightFacing - If `true`, the connector is an {@link ElaborationNode#outputs|`output`}, if `false` it is an {@link ElaborationNode#inputs|`input`}.
+     * @param {MouseEvent} event - The DOM event.
+     */
     public nodeConnectorMouseDown(node: ElaborationNode, datum: Datum | NodeInputInfo, rightFacing: boolean, event: MouseEvent): void {
         if (datum instanceof Datum) {
             this.connectorMouseDown({node, datum, external: false, rightFacing}, event, null);
@@ -1031,19 +1335,35 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Elaborate the mousedown event on a {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`}'s connector.
+     *
+     * @param {ExportedDatum} datum - The {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`} linked to the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {MouseEvent} event - The DOM event.
+     */
     public externalConnectorRightFacingMouseDown(datum: ExportedDatum, event: MouseEvent): void {
         this.connectorMouseDown({datum, external: true, rightFacing: true}, event, null);
     }
 
+    /**
+     * Elaborate the mousedown event on a {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`output`}'s connector.
+     *
+     * @param {Datum} datum - The {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`output`} linked to the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {MouseEvent} event - The DOM event.
+     */
     public externalConnectorLeftFacingMouseDown(datum: Datum, event: MouseEvent): void {
         this.connectorMouseDown({datum, external: true, rightFacing: false}, event, null);
     }
 
+    /**
+     * Elaborate the mousedown event on a connector.
+     *
+     * @param {ConnectorInfo} connector - Information about the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {MouseEvent} event - The DOM event.
+     * @param {Connection | null} replacingConnection - If the connector already had a {@link Connection|`Connection`} to it that is being replaced, this is it.
+     */
     private connectorMouseDown(connector:
-                                   { node: ElaborationNode, datum: Datum, external: false, rightFacing: true } |
-                                   { node: ElaborationNode, datum: Datum, external: false, rightFacing: false, specialAdditional?: boolean } |
-                                   { datum: ExportedDatum, external: true, rightFacing: true } |
-                                   { datum: Datum, external: true, rightFacing: false },
+                               ConnectorInfo,
                                event: MouseEvent,
                                replacingConnection: Connection | null): void {
         const pointerPosition = this.extractTransformedPosition(event);
@@ -1060,7 +1380,7 @@ export class MixUiManager {
                     type:             DraggingElementType.LINK_FROM_NODE_OUTPUT,
                     node:             connector.node,
                     outputName:       connector.datum.name,
-                    connector:        {from, to: {...from}},
+                    connection:       {from, to: {...from}},
                     startDrag:        {...pointerPosition},
                     snapPosition:     null,
                     candidatePartner: null,
@@ -1074,7 +1394,7 @@ export class MixUiManager {
                 newDragging = {
                     type:             DraggingElementType.LINK_FROM_EXTERNAL_INPUT,
                     inputName:        connector.datum.uniqueName,
-                    connector:        {from, to: {...from}},
+                    connection:       {from, to: {...from}},
                     startDrag:        {...pointerPosition},
                     snapPosition:     null,
                     candidatePartner: null,
@@ -1104,14 +1424,14 @@ export class MixUiManager {
                     }
                 }
                 if (to != null) {
-                    newDragging.connector.to = {...to};
+                    newDragging.connection.to = {...to};
 
-                    newDragging.startDrag.x -= to.x - newDragging.connector.from.x;
-                    newDragging.startDrag.y -= to.y - newDragging.connector.from.y;
+                    newDragging.startDrag.x -= to.x - newDragging.connection.from.x;
+                    newDragging.startDrag.y -= to.y - newDragging.connection.from.y;
 
                     newDragging.replacingConnection = replacingConnection;
 
-                    newDragging.snapPosition = {...newDragging.connector.to};
+                    newDragging.snapPosition = {...newDragging.connection.to};
                 }
             }
 
@@ -1159,7 +1479,7 @@ export class MixUiManager {
                         type:             DraggingElementType.LINK_TO_NODE_INPUT,
                         node:             connector.node,
                         inputName:        connector.datum.name,
-                        connector:        {from: {...to}, to},
+                        connection:       {from: {...to}, to},
                         startDrag:        {...pointerPosition},
                         snapPosition:     null,
                         candidatePartner: null,
@@ -1175,7 +1495,7 @@ export class MixUiManager {
                     newDragging = {
                         type:             DraggingElementType.LINK_TO_EXTERNAL_OUTPUT,
                         outputName:       connector.datum.name,
-                        connector:        {from: {...to}, to},
+                        connection:       {from: {...to}, to},
                         startDrag:        {...pointerPosition},
                         snapPosition:     null,
                         candidatePartner: null,
@@ -1193,14 +1513,14 @@ export class MixUiManager {
                         // No connection, we are creating a new one
                         const from = this.getNodeConnectorPosition(sourceNode, sourceDatum, true);
 
-                        newDragging.connector.from = {...from};
+                        newDragging.connection.from = {...from};
 
-                        newDragging.startDrag.x -= from.x - newDragging.connector.to.x;
-                        newDragging.startDrag.y -= from.y - newDragging.connector.to.y;
+                        newDragging.startDrag.x -= from.x - newDragging.connection.to.x;
+                        newDragging.startDrag.y -= from.y - newDragging.connection.to.y;
 
                         newDragging.replacingConnection = replacingConnection;
                         newDragging.candidatePartner    = {external: false, node: sourceNode, datum: sourceDatum, input: false};
-                        newDragging.snapPosition        = {...newDragging.connector.from};
+                        newDragging.snapPosition        = {...newDragging.connection.from};
                     }
                 }
 
@@ -1213,6 +1533,14 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Elaborate a mousemove event on {@link ElaborationNode|`ElaborationNode`}'s connector.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} containing the connector that received the {@link MouseEvent|`MouseEvent`}.
+     * @param {Datum | NodeInputInfo} connector - The {@link Datum|`Datum`} or {@link NodeInputInfo|`NodeInputInfo`} linked to the connector that received the
+     *        {@link MouseEvent|`MouseEvent`}.
+     * @param {boolean} rightFacing - If `true`, the connector is an {@link ElaborationNode#outputs|`output`}, if `false` it is an {@link ElaborationNode#inputs|`input`}.
+     */
     public nodeConnectorMouseMove(node: ElaborationNode, connector: Datum | NodeInputInfo, rightFacing: boolean): void {
         if (this._mix != null) {
             if (
@@ -1255,6 +1583,12 @@ export class MixUiManager {
         }
     }
 
+
+    /**
+     * Elaborate a mousemove event on a {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`}'s connector.
+     *
+     * @param {ExportedDatum} connector - The {@link MixUiManager#mix|`mix`}'s {@link Mix#imports|`import`} linked to the connector that received the {@link MouseEvent|`MouseEvent`}.
+     */
     public externalConnectorRightFacingMouseMove(connector: ExportedDatum): void {
         if (this._mix != null) {
             if (
@@ -1271,6 +1605,11 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Elaborate a mousemove event on a {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`output`}'s connector.
+     *
+     * @param {Datum} connector - The {@link MixUiManager#mix|`mix`}'s {@link Mix#outputs|`output`} linked to the connector that received the {@link MouseEvent|`MouseEvent`}.
+     */
     public externalConnectorLeftFacingMouseMove(connector: Datum): void {
         if (this._mix != null) {
             if (
@@ -1286,29 +1625,11 @@ export class MixUiManager {
         }
     }
 
-    public backgroundMouseDown(event: MouseEvent): void {
-        if (this.currentDragging != null) {
-            return;
-        }
-        this.currentDragging = {
-            type:           DraggingElementType.BACKGROUND,
-            startTransform: {...this.translation},
-            startDrag:      {x: event.clientX, y: event.clientY}
-        };
-    }
-
-    public get backgroundCursor(): string {
-        if (this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND) {
-            return 'move';
-        } else {
-            return 'default';
-        }
-    }
-
-    public get draggingBackground(): boolean {
-        return this.currentDragging == null || this.currentDragging.type == DraggingElementType.BACKGROUND;
-    }
-
+    /**
+     * Elaborate a mousemove event on a {@link NodeGroup|`NodeGroup`}'s header.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} that received the {@link MouseEvent|`MouseEvent`} on its header.
+     */
     public groupHeaderMove(group: NodeGroup): void {
         if (this.currentDragging != null && (this.currentDragging.type == DraggingElementType.GROUP || this.currentDragging.type == DraggingElementType.NODE)) {
             this.currentDragging.moveToGroup = group;
@@ -1325,6 +1646,7 @@ export class MixUiManager {
         }
     }
 
+    /** Elaborate a mouseleave event on a {@link NodeGroup|`NodeGroup`}'s header. */
     public groupHeaderLeave(): void {
         if (this.currentDragging != null && (this.currentDragging.type == DraggingElementType.GROUP || this.currentDragging.type == DraggingElementType.NODE)) {
             this.currentDragging.moveToGroup  = undefined;
@@ -1332,6 +1654,11 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Elaborate a mousemove event on the whole SVG canvas, according to what the current dragging status is.
+     *
+     * @param {MouseEvent} event - The DOM event.
+     */
     public mouseMove(event: MouseEvent): void {
         const pointerPosition = this.extractTransformedPosition(event);
         if (this.currentDragging == null) {
@@ -1415,15 +1742,15 @@ export class MixUiManager {
                 this.recalculateGroupBounds(group);
             }
         } else if (this.currentDragging.type == DraggingElementType.BACKGROUND) {
-            this.translation.x = this.currentDragging.startTransform.x + event.clientX - this.currentDragging.startDrag.x;
-            this.translation.y = this.currentDragging.startTransform.y + event.clientY - this.currentDragging.startDrag.y;
+            this.translation.x = this.currentDragging.startTranslation.x + event.clientX - this.currentDragging.startDrag.x;
+            this.translation.y = this.currentDragging.startTranslation.y + event.clientY - this.currentDragging.startDrag.y;
         } else if ((this.currentDragging.type == DraggingElementType.LINK_FROM_NODE_OUTPUT) || (this.currentDragging.type == DraggingElementType.LINK_FROM_EXTERNAL_INPUT)) {
-            this.currentDragging.connector.to.x = this.currentDragging.connector.from.x + pointerPosition.x - this.currentDragging.startDrag.x;
-            this.currentDragging.connector.to.y = this.currentDragging.connector.from.y + pointerPosition.y - this.currentDragging.startDrag.y;
+            this.currentDragging.connection.to.x = this.currentDragging.connection.from.x + pointerPosition.x - this.currentDragging.startDrag.x;
+            this.currentDragging.connection.to.y = this.currentDragging.connection.from.y + pointerPosition.y - this.currentDragging.startDrag.y;
 
             if (this.currentDragging.snapPosition) {
-                const dx       = this.currentDragging.connector.to.x - this.currentDragging.snapPosition.x;
-                const dy       = this.currentDragging.connector.to.y - this.currentDragging.snapPosition.y;
+                const dx       = this.currentDragging.connection.to.x - this.currentDragging.snapPosition.x;
+                const dy       = this.currentDragging.connection.to.y - this.currentDragging.snapPosition.y;
                 const distance = dx * dx + dy * dy;
                 if (distance > MEASURES.CONNECTOR_SNAP_RADIUS_SQUARED) {
                     this.currentDragging.snapPosition     = null;
@@ -1431,12 +1758,12 @@ export class MixUiManager {
                 }
             }
         } else { // LINK_TO_NODE_INPUT or LINK_TO_EXTERNAL_OUTPUT
-            this.currentDragging.connector.from.x = this.currentDragging.connector.to.x + pointerPosition.x - this.currentDragging.startDrag.x;
-            this.currentDragging.connector.from.y = this.currentDragging.connector.to.y + pointerPosition.y - this.currentDragging.startDrag.y;
+            this.currentDragging.connection.from.x = this.currentDragging.connection.to.x + pointerPosition.x - this.currentDragging.startDrag.x;
+            this.currentDragging.connection.from.y = this.currentDragging.connection.to.y + pointerPosition.y - this.currentDragging.startDrag.y;
 
             if (this.currentDragging.snapPosition) {
-                const dx       = this.currentDragging.connector.from.x - this.currentDragging.snapPosition.x;
-                const dy       = this.currentDragging.connector.from.y - this.currentDragging.snapPosition.y;
+                const dx       = this.currentDragging.connection.from.x - this.currentDragging.snapPosition.x;
+                const dy       = this.currentDragging.connection.from.y - this.currentDragging.snapPosition.y;
                 const distance = dx * dx + dy * dy;
                 if (distance > MEASURES.CONNECTOR_SNAP_RADIUS_SQUARED) {
                     this.currentDragging.snapPosition     = null;
@@ -1446,6 +1773,7 @@ export class MixUiManager {
         }
     }
 
+    /** Elaborate a mouseup event on the whole SVG canvas, and elaborate the end of the current drag procedure. */
     public mouseUp(): void {
         if ((this.currentDragging == null) || (this._mix == null)) {
             return;
@@ -1486,7 +1814,7 @@ export class MixUiManager {
                                     sourceNodeOutputName: this.currentDragging.outputName,
                                     drainType:            ConnectionDrainType.NODE,
                                     drainNodeId:          this.currentDragging.candidatePartner.node.id,
-                                    drainNodeInputName: drainNodeInputName
+                                    drainNodeInputName:   drainNodeInputName
                                 };
                                 if (this._mix.wouldAddCycle(newConnection)) {
                                     deleteOld = false;
@@ -1570,7 +1898,7 @@ export class MixUiManager {
                                 sourceNodeOutputName: this.currentDragging.candidatePartner.datum.name,
                                 drainType:            ConnectionDrainType.NODE,
                                 drainNodeId:          this.currentDragging.node.id,
-                                drainNodeInputName: drainNodeInputName
+                                drainNodeInputName:   drainNodeInputName
                             };
                         }
                     } else {
@@ -1641,6 +1969,11 @@ export class MixUiManager {
         this.currentDragging = null;
     }
 
+    /**
+     * Elaborate a mousewheel event on the whole SVG canvas, and adjust zoom accordingly.
+     *
+     * @param {WheelEvent} wheelEvent - The DOM event.
+     */
     public wheel(wheelEvent: WheelEvent): void {
         let change     = Math.pow(10, wheelEvent.deltaY / 700);
         const newScale = Math.max(0.1, Math.min(5, this.scale * change));
@@ -1659,21 +1992,37 @@ export class MixUiManager {
         this.scale    = newScale;
     }
 
-
+    /**
+     * Register a callback to be called whenever some elaboration by this class has changed the status of the {@link MixUiManager#mix|`mix`} or its {@link MixLayout|`MixLayout`}.
+     *
+     * @param {() => void} callback - The callback to register.
+     */
     public addChangeCallback(callback: () => void): void {
         this.changeCallbacks.push(callback);
     }
 
+    /**
+     * Remove a callback previously registered with {@link MixUiManager#addChangeCallback| `addChangeCallback()`}.
+     *
+     * @param {() => void} callback - The callback to remove.
+     */
     public removeChangeCallback(callback: () => void): void {
         this.changeCallbacks = this.changeCallbacks.filter(a => a != callback);
     }
 
+    /** Call the callbacks previously registered with {@link MixUiManager#addChangeCallback| `addChangeCallback()`}. Call this function every time some elaboration by this class has changed the status of the {@link MixUiManager#mix|`mix`} or its {@link MixLayout|`MixLayout`}. */
     private emitChanges(): void {
         this.changeCallbacks.forEach(callback => {
             callback();
         });
     }
 
+    /**
+     * Export the current layout status of the {@link MixUiManager#mix|`mix`} as a {@link MixLayout|`MixLayout`}.
+     *
+     * @returns {MixLayout} The current layout status of the {@link MixUiManager#mix|`mix`} as a {@link MixLayout|`MixLayout`}.
+     * @see {@link MixUiManager#importLayout| `importLayout()`}.
+     */
     public exportLayout(): MixLayout {
         return new MixLayout(
             recordFromEntries([...this.nodePositions.entries()].map(entry => [entry[0].id, entry[1]])),
@@ -1681,6 +2030,12 @@ export class MixUiManager {
         );
     }
 
+    /**
+     * Restore the layout status of the {@link MixUiManager#mix|`mix`} from a {@link MixLayout|`MixLayout`}.
+     *
+     * @param {MixLayout} layout - The {@link MixLayout|`MixLayout`} to restore.
+     * @see {@link MixUiManager#exportLayout| `exportLayout()`}.
+     */
     public importLayout(layout: MixLayout): void {
         const mix = this._mix;
         if (mix != null) {
@@ -1721,6 +2076,12 @@ export class MixUiManager {
 
     // GROUP HANDLING
 
+    /**
+     * Create a new {@link NodeGroup|`NodeGroup`} containing some {@link ElaborationNode|`ElaborationNode`s} or other {@link NodeGroup|`NodeGroup`s}.
+     *
+     * @param {(ElaborationNode | NodeGroup)[]} newGroupElements - The {@link ElaborationNode|`ElaborationNode`s} or other {@link NodeGroup|`NodeGroup`s}
+     *                                                             to add to the new {@link NodeGroup|`NodeGroup`} as children.
+     */
     public createGroup(newGroupElements: (ElaborationNode | NodeGroup)[]): void {
         if (this._mix != null) {
             const sampleElement = newGroupElements[0];
@@ -1791,6 +2152,13 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Move some {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} to another {@link NodeGroup|`NodeGroup`}, removing them from
+     * the current {@link NodeGroup|`NodeGroup`}, if any.
+     *
+     * @param {ElaborationNode | NodeGroup} element - The {@link ElaborationNode|`ElaborationNode`} or {@link NodeGroup|`NodeGroup`} to move.
+     * @param {NodeGroup} toGroup - The destination {@link NodeGroup|`NodeGroup`}.
+     */
     public switchGroup(element: ElaborationNode | NodeGroup, toGroup: NodeGroup): void {
         if (this._mix != null) {
             if (element instanceof ElaborationNode) {
@@ -1813,7 +2181,7 @@ export class MixUiManager {
                 }
                 toGroup.nodes.push(element);
                 const oldPosition = this.nodePositions.get(element);
-                const stacks = Math.max(this.getNodeInputCount(element), element.outputs.length);
+                const stacks      = Math.max(this.getNodeInputCount(element), element.outputs.length);
                 if (oldPosition != null) {
                     this.nodePositions.set(element, {
                         x: oldPosition.x,
@@ -1852,6 +2220,12 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Delete a {@link NodeGroup|`NodeGroup`} removing it from the {@link MixUiManager#mix|`mix`} and putting all of its descendant into its parent {@link NodeGroup|`NodeGroup`},
+     * if the group has one. Otherwise, {@link NodeGroup#subGroups|`subGroups`} are put in the root.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} to delete.
+     */
     public deleteGroup(group: NodeGroup): void {
         if (this._mix != null) {
             this.allGroups = this.allGroups.filter(otherGroup => otherGroup != group);
@@ -1883,6 +2257,13 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Remove some {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} from their containing {@link NodeGroup|`NodeGroup`}.
+     * The removed elements are put in the next {@link NodeGroup|`NodeGroup`} up or in the root if no such {@link NodeGroup|`NodeGroup`} exists.
+     *
+     * @param {(ElaborationNode | NodeGroup)[]} elements - The {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} to remove from their parent
+     *     {@link NodeGroup|`NodeGroup`}.
+     */
     public degroup(elements: (NodeGroup | ElaborationNode)[]): void {
         if (this._mix != null) {
             for (const element of elements) {
@@ -1925,6 +2306,14 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Checks whether a set of {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} can be put
+     * together in a group, or if their location prevents them from doing it. This is equivalent to check whether
+     * all the elements are direct siblings.
+     *
+     * @param {(ElaborationNode | NodeGroup)[]} newGroupElements - The {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} to attempt to group.
+     * @returns {boolean} Whether `newGroupElements` can be grouped together.
+     */
     public canFormGroup(newGroupElements: (ElaborationNode | NodeGroup)[]): boolean {
         if (this._mix != null) {
             const result = NodeGroup
@@ -1939,12 +2328,13 @@ export class MixUiManager {
                         ),
                     this.firstLevelGroups
                 );
-            // We don't care if the answer is no or unknown, if we haven't found out now the answer is no
+            // We don't care if the answer is no or unknown, if we haven't found out by now the answer is no
             return result === true;
         }
         return false;
     }
 
+    /** Scan the whole {@link MixUiManager#mix|`mix`} layout to recalculate all the {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`s} that are not visible because children of a collapsed {@link NodeGroup|`NodeGroup`}. */
     public calculateVisibleElements(): void {
         if (this._mix != null) {
             const nodesToRemove: ElaborationNode[] = [];
@@ -1975,6 +2365,11 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Toggle the visibility of a {@link NodeGroup|`NodeGroup`}'s descendants (its {@link NodeGroup#collapsed|`collapsed`} status).
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} to toggle the {@link NodeGroup#collapsed|`collapsed`} status of.
+     */
     public toggleCollapsedGroup(group: NodeGroup): void {
         group.collapsed = !group.collapsed;
         this.calculateVisibleElements();
@@ -1992,8 +2387,19 @@ export class MixUiManager {
         }
     }
 
-    public moveGroupExport(group: NodeGroup, datum: Datum, inputId: number, forwards: boolean, isInput: boolean): void {
-        group.moveExport(datum, inputId, forwards, isInput);
+
+    /**
+     * Change the order of a {@link NodeGroup|`NodeGroup`}'s {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} containing the export to move.
+     * @param {Datum} datum - The {@link Datum|`Datum`} to move.
+     * @param {number} nodeId - The {@link ElaborationNode#id|`id`} of the {@link ElaborationNode|`ElaborationNode`} the export belongs to.
+     * @param {boolean} forwards - If `true`, the export will be shifted one position forwards in the list,
+     *                             if `false` it will be shifted one position backwards.
+     * @param {boolean} isInput - Whether the export is an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     */
+    public moveGroupExport(group: NodeGroup, datum: Datum, nodeId: number, forwards: boolean, isInput: boolean): void {
+        group.moveExport(datum, nodeId, forwards, isInput);
         if (this._mix != null) {
             for (const connection of this._mix.connections) {
                 this.updateConnection(connection);
@@ -2002,6 +2408,11 @@ export class MixUiManager {
         }
     }
 
+    /**
+     * Toggle the single connectors visibility in a {@link NodeGroup|`NodeGroup`} (its {@link NodeGroup#showConnectors|`showConnectors`} status).
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} to toggle the {@link NodeGroup#showConnectors|`showConnectors`} status to.
+     */
     public toggleShowConnectorsGroup(group: NodeGroup): void {
         group.showConnectors = !group.showConnectors;
         this.calculateVisibleElements();
@@ -2018,6 +2429,12 @@ export class MixUiManager {
         this.emitChanges();
     }
 
+    /**
+     * Recalculate a {@link NodeGroup|`NodeGroup`}'s bounds from the position of its children.
+     *
+     * @param {NodeGroup} group - The {@link NodeGroup|`NodeGroup`} to recalculate the bounds of.
+     * @returns {Rect} The new bounds of the {@link NodeGroup|`NodeGroup`}.
+     */
     private recalculateGroupBounds(group: NodeGroup): Rect {
         const positions: Rect[] = group.nodes
                                        .map(node => {
@@ -2049,184 +2466,396 @@ export class MixUiManager {
 
 }
 
+/**
+ * A rectangular area in 2D.
+ *
+ * @notExported
+ */
 interface Rect {
+    /** The x coordinate of the left side of the rectangle. */
     x: number;
+    /** The y coordinate of the top side of the rectangle. */
     y: number;
+    /** The width of the rectangle. */
     width: number;
+    /** The height of the rectangle. */
     height: number;
 }
 
+/**
+ * The type of dragging being performed.
+ *
+ * @notExported
+ */
 enum DraggingElementType {
+    /** Nothing is being dragged. */
     NODE,
+    /** A {@link NodeGroup|`NodeGroup`} is being dragged. */
     GROUP,
+    /** The background is being dragged to translate the whole canvas. */
     BACKGROUND,
+    /** A {@link Connection|`Connection`} is being dragged starting from an {@link ElaborationNode|`ElaborationNode`}'s {@link ElaborationNode#outputs|`output`}. */
     LINK_FROM_NODE_OUTPUT,
+    /** A {@link Connection|`Connection`} is being dragged starting from a {@link Mix|`Mix`}'s {@link Mix#inputs|`input`}. */
     LINK_FROM_EXTERNAL_INPUT,
+    /** A {@link Connection|`Connection`} is being dragged to an {@link ElaborationNode|`ElaborationNode`}'s {@link ElaborationNode#inputs|`input`}. */
     LINK_TO_NODE_INPUT,
+    /** A {@link Connection|`Connection`} is being dragged to a {@link Mix|`Mix`}'s {@link Mix#outputs|`output`}. */
     LINK_TO_EXTERNAL_OUTPUT
 }
 
 
+/**
+ * While dragging a new {@link Connection|`Connection`}, this class describes the {@link ElaborationNode|`ElaborationNode`}'s
+ * {@link ElaborationNode#outputs|`output`} that is currently hovered over and would be selected as the destination of the
+ * {@link Connection|`Connection`} if the dragging were to be stopped.
+ *
+ * @notExported
+ */
 interface CandidateNodeOutput {
+    /** This candidate is relative to an {@link ElaborationNode|`ElaborationNode`}. */
     external: false;
+    /** The {@link ElaborationNode|`ElaborationNode`} the {@link ElaborationNode#outputs|`output`} belongs to. */
     node: ElaborationNode,
+    /** The candidate {@link ElaborationNode#outputs|`output`}. */
     datum: Datum,
+    /** This candidate is an {@link ElaborationNode#outputs|`output`}. */
     input: false;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`}, this class describes the {@link ElaborationNode|`ElaborationNode`}'s
+ * {@link ElaborationNode#inputs|`input`} that is currently hovered over and would be selected as the source of the
+ * {@link Connection|`Connection`} if the dragging were to be stopped.
+ *
+ * @notExported
+ */
 interface CandidateNodeInput {
+    /** This candidate is relative to an {@link ElaborationNode|`ElaborationNode`}. */
     external: false;
-    node: ElaborationNode,
-    datum: Datum,
+    /** The {@link ElaborationNode|`ElaborationNode`} the {@link ElaborationNode#inputs|`input`} belongs to. */
+    node: ElaborationNode;
+    /** The candidate {@link ElaborationNode#inputs|`input`}. */
+    datum: Datum;
+    /** This candidate is an {@link ElaborationNode#inputs|`input`}. */
     input: true;
+    /** Whether the input is an additional one for an {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode`}. */
     isArbitrary?: boolean;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`}, this class describes the {@link Mix|`Mix`}'s
+ * {@link Mix#imports|`import`} that is currently hovered over and would be selected as the source of the
+ * {@link Connection|`Connection`} if the dragging were to be stopped.
+ *
+ * @notExported
+ */
 interface CandidateExternalInput {
+    /** This candidate is relative to a {@link Mix|`Mix`}'s outside connection. */
     external: true;
+    /** The candidate {@link Mix#imports|`import`}. */
     datum: ExportedDatum;
+    /** This candidate is an {@link ExportedDatum|`import`}. */
     input: true;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`}, this class describes the {@link Mix|`Mix`}'s
+ * {@link Mix#outputs|`output`} that is currently hovered over and would be selected as the destination of the
+ * {@link Connection|`Connection`} if the dragging were to be stopped.
+ *
+ * @notExported
+ */
 interface CandidateExternalOutput {
+    /** This candidate is relative to a {@link Mix|`Mix`}'s outside connection. */
     external: true;
+    /** The candidate {@link Mix#outputs|`output`}. */
     datum: Datum;
+    /** This candidate is an output. */
     input: false;
 }
 
+/**
+ * While dragging an {@link ElaborationNode|`ElaborationNode`}, this class describes all the parameters
+ * and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingNode {
+    /** An {@link ElaborationNode|`ElaborationNode`} is being dragged. */
     type: DraggingElementType.NODE,
+    /** Whether the dragging has already moved the {@link ElaborationNode|`ElaborationNode`}. */
     hasMoved: boolean,
+    /** The {@link ElaborationNode|`ElaborationNode`} being dragged. */
     node: ElaborationNode,
+    /** The coordinates the {@link ElaborationNode|`ElaborationNode`} started being dragged from. */
     startPosition: Point,
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point,
+    /** If the dragging is over a {@link NodeGroup|`NodeGroup`}'s header, this is the {@link NodeGroup|`NodeGroup`}, `undefined` otherwise. */
     moveToGroup?: NodeGroup,
+    /** If the dragging is over a {@link NodeGroup|`NodeGroup`}'s header, this is the position to snap the {@link ElaborationNode|`ElaborationNode`} to, `undefined` otherwise. */
     snapPosition?: Point
 }
 
+/**
+ * While dragging a {@link NodeGroup|`NodeGroup`}, this class describes all the parameters
+ * and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingGroup {
+    /** A {@link NodeGroup|`NodeGroup`} is being dragged. */
     type: DraggingElementType.GROUP,
+    /** Whether the dragging has already moved the {@link NodeGroup|`NodeGroup`}. */
     hasMoved: boolean,
+    /** The {@link NodeGroup|`NodeGroup`} being dragged. */
     group: NodeGroup,
+    /** The coordinates the {@link NodeGroup|`NodeGroup`} started being dragged from. */
     startPosition: Point,
+    /** The coordinates of every {@link ElaborationNode|`ElaborationNode`} descending from the {@link NodeGroup|`NodeGroup`} when the dragging began. */
     nodeStartPositions: Point[],
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point,
+    /** If the dragging is over a {@link NodeGroup|`NodeGroup`}'s header, this is the {@link NodeGroup|`NodeGroup`}, `undefined` otherwise. */
     moveToGroup?: NodeGroup
+    /** If the dragging is over a {@link NodeGroup|`NodeGroup`}'s header, this is the position to snap the dragged {@link NodeGroup|`NodeGroup`} to, `undefined` otherwise. */
     snapPosition?: Point
 }
 
+/**
+ * While dragging the background, this class describes all the parameters
+ * and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingBackground {
+    /** The background is being dragged. */
     type: DraggingElementType.BACKGROUND,
-    startTransform: Point,
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point
+    /** The initial translation of the canvas when the dragging began. */
+    startTranslation: Point,
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`} starting from an {@link ElaborationNode|`ElaborationNode`}'s {@link ElaborationNode#outputs|`output`},
+ * this class describes all the parameters and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingFromNodeOutput {
+    /** A {@link Connection|`Connection`} is being dragged from an {@link ElaborationNode|`ElaborationNode`}'s {@link ElaborationNode#outputs|`output`}. */
     type: DraggingElementType.LINK_FROM_NODE_OUTPUT;
+    /** The {@link ElaborationNode|`ElaborationNode`} the dragging started from. */
     node: ElaborationNode;
+    /** The name of the {@link ElaborationNode#outputs|`output`} the dragging started from. */
     outputName: string;
-    connector: Line;
+    /** The current coordinates of the {@link Connection|`Connection`} being dragged. */
+    connection: Line;
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point;
+    /** The coordinates to snap the end of the {@link Connection|`Connection`} to if hovering over a compatible connector, `null` otherwise. */
     snapPosition: Point | null;
+    /** If the dragging is replacing an existing {@link Connection|`Connection`}, this is it. */
     replacingConnection?: Connection;
+    /** The connector currently hovered over that would be the destination if released. */
     candidatePartner: CandidateNodeInput | CandidateExternalOutput | null;
+    /** Information about the data type of the source connector. */
     datumInfo: DatumInfo;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`} starting from a {@link Mix|`Mix`}'s {@link Mix#imports|`import`},
+ * this class describes all the parameters and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingFromExternalInput {
+    /** A {@link Connection|`Connection`} is being dragged from an external input. */
     type: DraggingElementType.LINK_FROM_EXTERNAL_INPUT;
+    /** The name of the {@link Mix#imports|`import`} the dragging started from. */
     inputName: string,
-    connector: Line;
+    /** The current coordinates of the {@link Connection|`Connection`} being dragged. */
+    connection: Line;
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point;
+    /** The coordinates to snap the end of the {@link Connection|`Connection`} to if hovering over a compatible connector, `null` otherwise. */
     snapPosition: Point | null;
+    /** If the dragging is replacing an existing {@link Connection|`Connection`}, this is it. */
     replacingConnection?: Connection;
+    /** The connector currently hovered over that would be the destination if released. */
     candidatePartner: CandidateNodeInput | CandidateExternalOutput | null;
+    /** Information about the data type of the source connector. */
     datumInfo: DatumInfo;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`} towards an {@link ElaborationNode|`ElaborationNode`}'s {@link ElaborationNode#inputs|`input`},
+ * this class describes all the parameters and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingToNodeInput {
+    /** A {@link Connection|`Connection`} is being dragged to a node input. */
     type: DraggingElementType.LINK_TO_NODE_INPUT;
+    /** The {@link ElaborationNode|`ElaborationNode`} the dragging is targeting. */
     node: ElaborationNode;
+    /** The name of the {@link ElaborationNode#inputs|`input`} the dragging is targeting. */
     inputName: string;
-    connector: Line;
+    /** The current coordinates of the {@link Connection|`Connection`} being dragged. */
+    connection: Line;
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point;
+    /** The coordinates to snap the start of the {@link Connection|`Connection`} to, if hovering over a compatible connector, `null` otherwise. */
     snapPosition: Point | null;
+    /** If the dragging is replacing an existing {@link Connection|`Connection`}, this is it. */
     replacingConnection?: Connection;
+    /** The connector currently hovered over that would be the source if released. */
     candidatePartner: CandidateNodeOutput | CandidateExternalInput | null;
+    /** Information about the data type of the target connector. */
     datumInfo: DatumInfo;
+    /** Whether the target is the additional input add connector of an {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode`}. */
     isAdditional?: boolean;
 }
 
+/**
+ * While dragging a new {@link Connection|`Connection`} towards a {@link Mix|`Mix`}'s {@link Mix#outputs|`output`},
+ * this class describes all the parameters and information about the dragging.
+ *
+ * @notExported
+ */
 interface DraggingToExternalOutput {
+    /** A {@link Connection|`Connection`} is being dragged to an external output. */
     type: DraggingElementType.LINK_TO_EXTERNAL_OUTPUT;
+    /** The name of the {@link Mix#outputs|`output`} the dragging is targeting. */
     outputName: string;
-    connector: Line;
+    /** The current coordinates of the {@link Connection|`Connection`} being dragged. */
+    connection: Line;
+    /** The coordinates of the mouse when the dragging began. */
     startDrag: Point;
+    /** The coordinates to snap the start of the {@link Connection|`Connection`} to if hovering over a compatible connector, `null` otherwise. */
     snapPosition: Point | null;
+    /** If the dragging is replacing an existing {@link Connection|`Connection`}, this is it. */
     replacingConnection?: Connection;
+    /** The connector currently hovered over that would be the source if released. */
     candidatePartner: CandidateNodeOutput | CandidateExternalInput | null;
+    /** Information about the data type of the target connector. */
     datumInfo: DatumInfo;
 }
 
+/**
+ * When dragging, this is the object containing the information and parameters about the dragging.
+ *
+ * @notExported
+ */
 type DraggingElement = DraggingNode | DraggingGroup | DraggingBackground | DraggingFromNodeOutput | DraggingToNodeInput | DraggingFromExternalInput | DraggingToExternalOutput;
 
+/**
+ * A collection of {@link ElaborationNode|`ElaborationNode`s} and other {@link NodeGroup|`NodeGroup`s} that move together.
+ * The group can have a name can be collapsed, join connectors, and reduce visual complexity.
+ */
 export class NodeGroup {
 
+    /** The name shown in the UI. */
     public name: string = 'Group';
 
+    /** The {@link ElaborationNode|`ElaborationNode`s} that are direct children of this {@link NodeGroup|`NodeGroup`}. */
     public nodes: ElaborationNode[] = [];
 
+    /** The {@link NodeGroup|`NodeGroup`s} that are direct children of this {@link NodeGroup|`NodeGroup`}. */
     public subGroups: NodeGroup[] = [];
 
+    /** Whether this {@link NodeGroup|`NodeGroup`} should be shown in the UI as collapsed. A collapsed group hides its descendants, and groups all its descendants' inputs and outputs together. */
     public collapsed: boolean      = false;
+    /** Whether this  {@link NodeGroup|`NodeGroup`}'s {@link NodeGroup#inputs|`inputs`} and {@link NodeGroup#outputs|`outputs`} should be shown in the UI singularly or grouped together in a big connector.*/
     public showConnectors: boolean = true;
 
+    /** All the descendants' inputs that go outside the {@link NodeGroup|`NodeGroup`}. */
     public inputs: { datum: Datum, nodeId: number }[]  = [];
+    /** All the descendants' outputs that go inside the {@link NodeGroup|`NodeGroup`}. */
     public outputs: { datum: Datum, nodeId: number }[] = [];
 
+    /** Aliases for the descendants' inputs to be shown instead of their actual {@link Datum#name|`Datum.name`}. */
     public inputAliases: { datumName: string, nodeId: number, alias: string }[]  = [];
+    /** Aliases for the descendants' outputs to be shown instead of their actual {@link Datum#name|`Datum.name`}. */
     public outputAliases: { datumName: string, nodeId: number, alias: string }[] = [];
 
+    /** The order to show the {@link NodeGroup#inputs|`inputs`} in. */
     public inputPositions: { datumName: string, nodeId: number, order: number }[]  = [];
+    /** The order to show the {@link NodeGroup#outputs|`outputs`} in. */
     public outputPositions: { datumName: string, nodeId: number, order: number }[] = [];
 
+    /** If this {@link NodeGroup|`NodeGroup`} is inside another {@link NodeGroup|`NodeGroup`}, this is the nearest ancestor {@link NodeGroup|`NodeGroup`}. */
     public parent: NodeGroup | null = null;
+    /** The depth in the {@link NodeGroup|`NodeGroup`} hierarchy. */
     private _level: number          = 0;
 
+    /** The {@link NodeGroup|`NodeGroup`}'s leftmost bound. */
     public x: number      = 0;
+    /** The {@link NodeGroup|`NodeGroup`}'s topmost bound. */
     public y: number      = 0;
+    /** The {@link NodeGroup|`NodeGroup`}'s width. */
     public width: number  = 0;
+    /** The {@link NodeGroup|`NodeGroup`}'s height. */
     public height: number = 0;
 
+    /** The depth in the {@link NodeGroup|`NodeGroup`} hierarchy. */
     public get level(): number {
         return this._level;
     }
 
+    /** Set the depth in the {@link NodeGroup|`NodeGroup`} hierarchy, and propagate it to all the descending groups. */
     public set level(level: number) {
         this.subGroups.forEach(group => {group.level = level + 1;});
         this._level = level;
     }
 
+    /**
+     * Whether this {@link NodeGroup|`NodeGroup`} contains a {@link ElaborationNode|`ElaborationNode`}, both as its child or as a far descendant.
+     *
+     * @param {ElaborationNode} node - The {@link ElaborationNode|`ElaborationNode`} to check.
+     * @returns {boolean} Whether this {@link NodeGroup|`NodeGroup`} contains a {@link ElaborationNode|`ElaborationNode`}.
+     */
     public containsNode(node: ElaborationNode): boolean {
         return this.nodes.includes(node) || this.subGroups.some(subGroup => subGroup.containsNode(node));
     }
 
+    /**
+     * Whether this {@link NodeGroup|`NodeGroup`} contains another {@link NodeGroup|`NodeGroup`}, both as its child or as a far descendant.
+     *
+     * @param {ElaborationNode} group - The {@link ElaborationNode|`ElaborationNode`} to check.
+     * @returns {boolean} Whether this {@link NodeGroup|`NodeGroup`} contains a {@link ElaborationNode|`ElaborationNode`}.
+     */
     public containsGroup(group: NodeGroup): boolean {
         return this.subGroups.includes(group) || this.subGroups.some(subGroup => subGroup.containsGroup(group));
     }
 
+    /**
+     * Checks whether some {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`} are all direct children of the same {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {(ElaborationNode | NodeGroup)[]} elements - The elements to check.
+     * @returns {boolean | null} - - `true` if the elements are found to be siblings, either if all direct children of this {@link NodeGroup|`NodeGroup`s} or of a child
+     *     {@link NodeGroup|`NodeGroup`s},
+     *                             - `false` if the elements are definitely not siblings, because they are children of different {@link NodeGroup|`NodeGroup`s},
+     *                             - `null` if it was not possible to determine if the elements are siblings, because they are not found in the descending hierarchy, and thus may or may not
+     *     be siblings elsewhere.
+     */
     public elementsAreSiblings(elements: (ElaborationNode | NodeGroup)[]): boolean | null {
         return NodeGroup.checkElementsAreSiblings(elements, this.nodes, this.subGroups);
     }
 
+    /** All the {@link ElaborationNode|`ElaborationNode`s} descending from this {@link NodeGroup|`NodeGroup`}, direct children or descendant of a child {@link NodeGroup|`NodeGroup`}. */
     public get allNodes(): ElaborationNode[] {
         return this.nodes.concat(...this.subGroups.flatMap(subGroup => subGroup.allNodes));
     }
 
+    /** All the {@link NodeGroup|`NodeGroup`s} descending from this {@link NodeGroup|`NodeGroup`}, direct children or descendant of a child {@link NodeGroup|`NodeGroup`}. */
     public get allGroups(): NodeGroup[] {
         return this.subGroups.concat(...this.subGroups.flatMap(subGroup => subGroup.allGroups));
     }
 
+    /** All of the {@link ElaborationNode|`ElaborationNode`s} in {@link NodeGroup#allNodes| `allNodes()`} that are descendant of a {@link NodeGroup#collapsed|`collapsed`} {@link NodeGroup|`NodeGroup`}. */
     public get collapsedNodes(): ElaborationNode[] {
         if (this.collapsed) {
             return this.allNodes;
@@ -2235,6 +2864,16 @@ export class NodeGroup {
         }
     }
 
+    /** All of the {@link NodeGroup|`NodeGroup`s} in {@link NodeGroup#allGroups| `allGroups()`} that are descendant of a {@link NodeGroup#collapsed|`collapsed`} {@link NodeGroup|`NodeGroup`}. */
+    public get collapsedGroups(): NodeGroup[] {
+        if (this.collapsed) {
+            return this.allGroups;
+        } else {
+            return this.subGroups.flatMap(group => group.collapsedGroups);
+        }
+    }
+
+    /** Get the actual visible height of this {@link NodeGroup|`NodeGroup`}, considering its {@link NodeGroup#collapsed|`collapsed`} status. */
     public get displayHeight(): number {
         if (this.collapsed) {
             if (this.showConnectors) {
@@ -2248,14 +2887,21 @@ export class NodeGroup {
         }
     }
 
+    /** Get the actual visible width of this {@link NodeGroup|`NodeGroup`}, considering its {@link NodeGroup#collapsed|`collapsed`} status. */
     public get displayWidth(): number {
         return this.collapsed ? MEASURES.NODE_WIDTH : this.width;
     }
 
+    /** Get the actual visible left margin of this {@link NodeGroup|`NodeGroup`}, considering its {@link NodeGroup#collapsed|`collapsed`} status. */
     public get displayX(): number {
         return this.collapsed ? this.x + (this.width - MEASURES.NODE_WIDTH) / 2 : this.x;
     }
 
+    /**
+     * Update {@link NodeGroup#inputs|`this.inputs`} and {@link NodeGroup#outputs|`this.outputs`} according to all the {@link Connection|`Connection`} in a {@link Mix|`Mix`}.
+     *
+     * @param {readonly Connection[]} connections - The connections in the {@link Mix|`Mix`}.
+     */
     public updateExports(connections: readonly Connection[]): void {
         const allNodes = this.allNodes;
         this.inputs    = [];
@@ -2345,6 +2991,14 @@ export class NodeGroup {
         });
     }
 
+    /**
+     * Change the order of an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     *
+     * @param {Datum} datum - The {@link Datum|`Datum`} that identifies the export to move.
+     * @param {number} nodeId - The {@link ElaborationNode#id|`ElaborationNode.id`} containing the datum that identifies the export to move.
+     * @param {boolean} forwards - Whether to move the export forwards or backwards by one spot.
+     * @param {boolean} isInput - Whether the export is an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     */
     public moveExport(datum: Datum, nodeId: number, forwards: boolean, isInput: boolean): void {
         const positions = isInput ? this.inputPositions : this.outputPositions;
         const all       = isInput ? this.inputs : this.outputs;
@@ -2372,14 +3026,13 @@ export class NodeGroup {
         }
     }
 
-    public get collapsedGroups(): NodeGroup[] {
-        if (this.collapsed) {
-            return this.allGroups;
-        } else {
-            return this.subGroups.flatMap(group => group.collapsedGroups);
-        }
-    }
-
+    /**
+     * Find the direct parent {@link NodeGroup|`NodeGroup`} for an {@link ElaborationNode|`ElaborationNode`} or a {@link NodeGroup|`NodeGroup`} in the descending hierarchy for
+     * this {@link NodeGroup|`NodeGroup`}.
+     *
+     * @param {ElaborationNode | NodeGroup} element - The element to find the parent of.
+     * @returns {NodeGroup | null} - The parent. `null` if no {@link NodeGroup|`NodeGroup`} in the descending hierarchy is the parent of the element.
+     */
     public findParent(element: ElaborationNode | NodeGroup): NodeGroup | null {
         const result = NodeGroup.findParent(element, this.nodes, this.subGroups);
         if (result == 'ROOT') {
@@ -2389,7 +3042,14 @@ export class NodeGroup {
         }
     }
 
-    public changeAlias(datum: { datum: Datum; nodeId: number }, value: string, isInput: boolean): void {
+    /**
+     * Change the displayed aliased name of an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     *
+     * @param {DatumNodeInfo} datum - The {@link Datum|`Datum`} and containing The {@link ElaborationNode#id|`ElaborationNode.id`} that identify the export to move.
+     * @param {string} value - The new alias.
+     * @param {boolean} isInput - Whether the export is an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     */
+    public changeAlias(datum: DatumNodeInfo, value: string, isInput: boolean): void {
         const aliases  = isInput ? this.inputAliases : this.outputAliases;
         const oldAlias = aliases
             .find(alias =>
@@ -2406,7 +3066,14 @@ export class NodeGroup {
         }
     }
 
-    public getAlias(datum: { datum: Datum; nodeId: number }, isInput: boolean): string | null {
+    /**
+     * Get the displayed aliased name of an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     *
+     * @param {DatumNodeInfo} datum - The {@link Datum|`Datum`} and containing The {@link ElaborationNode#id|`ElaborationNode.id`} that identify the export to move.
+     * @param {boolean} isInput - Whether the export is an {@link NodeGroup#inputs|`input`} or {@link NodeGroup#outputs|`output`}.
+     * @returns {string} The alias.
+     */
+    public getAlias(datum: DatumNodeInfo, isInput: boolean): string | null {
         const aliases = isInput ? this.inputAliases : this.outputAliases;
         return aliases
                    .find(alias =>
@@ -2414,6 +3081,12 @@ export class NodeGroup {
                              && alias.nodeId == datum.nodeId)?.alias ?? null;
     }
 
+    /**
+     * Converts the node group instance into its JSON representation.
+     *
+     * @param {NodeGroup[]} allGroups - The list of all the {@link NodeGroup|`NodeGroup`s} in the {@link Mix|`Mix`}, used to extract the index to use as id.
+     * @returns {NodeGroupJSON} The JSON representation of `this`.
+     */
     public toJSON(allGroups: NodeGroup[]): NodeGroupJSON {
         return {
             name:            this.name,
@@ -2430,11 +3103,25 @@ export class NodeGroup {
         };
     }
 
+    /**
+     * Update the references to {@link NodeGroup#subGroups|`subGroups`} and {@link NodeGroup#allGroups|`allGroups`} after all their deserializations
+     * from JSON are available.
+     *
+     * @param {NodeGroupJSON} nodeGroupJSON - The JSON representation that was used to construct `this` with {@link NodeGroup.fromJSON| `fromJSON()`}.
+     * @param {NodeGroup[]} allGroups - The deserialized {@link NodeGroup|`NodeGroup`s} to get the references from.
+     */
     public fromJSONAdjust(nodeGroupJSON: NodeGroupJSON, allGroups: NodeGroup[]): void {
         this.subGroups = nodeGroupJSON.subGroupIds.map(subGroupId => allGroups[subGroupId]).filter(subGroup => subGroup != null);
         this.parent    = nodeGroupJSON.parentId != null ? allGroups[nodeGroupJSON.parentId] ?? null : null;
     }
 
+    /**
+     * Constructs a new {@link NodeGroup|`NodeGroup`} instance from a given JSON representation.
+     *
+     * @param {NodeGroupJSON} nodeGroupJSON - The JSON representation of the node group.
+     * @param {readonly ElaborationNode[]} allNodes - All the {@link ElaborationNode|`ElaborationNode`s} in the {@link Mix|`Mix`}, to get the children from.
+     * @returns {NodeGroup} The node group object constructed from the provided JSON.
+     */
     public static fromJSON(nodeGroupJSON: NodeGroupJSON, allNodes: readonly ElaborationNode[]): NodeGroup {
         const result           = new NodeGroup();
         result.name            = nodeGroupJSON.name;
@@ -2454,17 +3141,26 @@ export class NodeGroup {
         return result;
     }
 
-    public static findParent(element: ElaborationNode | NodeGroup, nodes: ElaborationNode[], subGroups: NodeGroup[]): NodeGroup | null | 'ROOT' {
+    /**
+     * Finds the parent of an {@link ElaborationNode|`ElaborationNode`} or a {@link NodeGroup|`NodeGroup`} in the descending hierarchy of a list of top-level {@link NodeGroup|`NodeGroup`s}.
+     *
+     * @param {ElaborationNode | NodeGroup} element - The element to find the parent of.
+     * @param {ElaborationNode[]} rootNodes - The {@link ElaborationNode|`ElaborationNode`s} that don't have a parent.
+     * @param {NodeGroup[]} rootGroups - The {@link NodeGroup|`NodeGroup`s} that don't have a parent.
+     * @returns {NodeGroup | 'ROOT' | null} - The containing {@link NodeGroup|`NodeGroup`} if found, the literal `"ROOT"` if the element is doesn't have a parent or `null` if the
+     *                                        element was not found in the descending hierarchy.
+     */
+    public static findParent(element: ElaborationNode | NodeGroup, rootNodes: ElaborationNode[], rootGroups: NodeGroup[]): NodeGroup | null | 'ROOT' {
         if (element instanceof ElaborationNode) {
-            if (nodes.includes(element)) {
+            if (rootNodes.includes(element)) {
                 return 'ROOT';
             }
         } else {
-            if (subGroups.includes(element)) {
+            if (rootGroups.includes(element)) {
                 return 'ROOT';
             }
         }
-        for (const subGroup of subGroups) {
+        for (const subGroup of rootGroups) {
             const parent = subGroup.findParent(element);
             if (parent != null) {
                 return parent;
@@ -2473,12 +3169,25 @@ export class NodeGroup {
         return null;
     }
 
-    public static checkElementsAreSiblings(elements: (ElaborationNode | NodeGroup)[], nodes: ElaborationNode[], subGroups: NodeGroup[]): boolean | null {
+    /**
+     * Checks whether some {@link ElaborationNode|`ElaborationNode`s} or {@link NodeGroup|`NodeGroup`} are all direct children of the same {@link NodeGroup|`NodeGroup`}
+     *  in the descending hierarchy of a list of top-level {@link NodeGroup|`NodeGroup`s}.
+     *
+     * @param {(ElaborationNode | NodeGroup)[]} elements - The elements to check.
+     * @param {ElaborationNode[]} rootNodes - The {@link ElaborationNode|`ElaborationNode`s} that don't have a parent.
+     * @param {NodeGroup[]} rootGroups - The {@link NodeGroup|`NodeGroup`s} that don't have a parent.
+     * @returns {boolean | null} - - `true` if the elements are found to be siblings, either if all direct children of this {@link NodeGroup|`NodeGroup`s} or of a child
+     *     {@link NodeGroup|`NodeGroup`s},
+     *                             - `false` if the elements are definitely not siblings, because they are children of different {@link NodeGroup|`NodeGroup`s},
+     *                             - `null` if it was not possible to determine if the elements are siblings, because they are not found in the descending hierarchy, and thus may or may not
+     *     be siblings elsewhere.
+     */
+    public static checkElementsAreSiblings(elements: (ElaborationNode | NodeGroup)[], rootNodes: ElaborationNode[], rootGroups: NodeGroup[]): boolean | null {
         const areDirectChildren = elements.map(element => {
             if (element instanceof ElaborationNode) {
-                return nodes.includes(element);
+                return rootNodes.includes(element);
             } else {
-                return subGroups.includes(element);
+                return rootGroups.includes(element);
             }
         });
         if (areDirectChildren.every(a => a)) {
@@ -2486,11 +3195,11 @@ export class NodeGroup {
             return true;
         } else if (areDirectChildren.every(a => !a)) {
             // If none of the elements are children of this, they may be siblings in the children groups
-            if (subGroups.length == 0) {
+            if (rootGroups.length == 0) {
                 // We don't have any subgroup, so we cannot say anything about them being siblings or not.
                 return null;
             } else {
-                for (const subGroup of subGroups) {
+                for (const subGroup of rootGroups) {
                     const elementsAreSiblings = subGroup.elementsAreSiblings(elements);
                     if (elementsAreSiblings === true) {
                         // If a subgroup definitely has the nodes as siblings, the answer is true and we don't care about anywhere else
@@ -2510,3 +3219,66 @@ export class NodeGroup {
         }
     }
 }
+
+/** Information about a {@link Datum|`Datum`} coming from a specific {@link ElaborationNode|`ElaborationNode`}. */
+export interface DatumNodeInfo {
+    /** The {@link Datum|`Datum`}. */
+    datum: Datum;
+    /** The {@link ElaborationNode#id|`id`} of the {@link ElaborationNode|`ElaborationNode`} containing the {@link Datum|`Datum`}. */
+    nodeId: number
+}
+
+/**
+ * The representation of an {@link ElaborationNode|`ElaborationNode`} as a node in the graph structure of a {@link Mix|`Mix`}'s calculation.
+ */
+interface TreeNode {
+    /** The {@link ElaborationNode|`ElaborationNode`} this node is representing. */
+    node: ElaborationNode;
+    /** The {@link TreeNode|`TreeNode`s} relative to the  {@link ElaborationNode|`ElaborationNode`s} that are connected to this {@link ElaborationNode|`ElaborationNode`} through its {@link ElaborationNode#outputs|`outputs`}. */
+    children: TreeNode[];
+    /** The {@link TreeNode|`TreeNode`s} relative to the  {@link ElaborationNode|`ElaborationNode`s} that are connected to this {@link ElaborationNode|`ElaborationNode`} through its {@link ElaborationNode#inputs|`inputs`}. */
+    parents: TreeNode[];
+    /** The depth of this node from the {@link Mix|`Mix`}'s {@link Mix#inputs|`inputs`}. */
+    level?: number;
+}
+
+/**
+ * Information about a connector, i.e., any end of a {@link Connection|`Connection`}.
+ *
+ * @notExported
+ */
+type ConnectorInfo = {
+    /** The {@link ElaborationNode|`ElaborationNode`} the connector is attached to. */
+    node: ElaborationNode,
+    /** The {@link Datum|`Datum`} this connector is representing. */
+    datum: Datum,
+    /** This connector is attached to an {@link ElaborationNode|`ElaborationNode`}. */
+    external: false,
+    /** The connector faces to the right. */
+    rightFacing: true
+} | {
+    /** The {@link ElaborationNode|`ElaborationNode`} the connector is attached to. */
+    node: ElaborationNode,
+    /** The {@link Datum|`Datum`} this connector is representing. */
+    datum: Datum,
+    /** This connector is attached to an {@link ElaborationNode|`ElaborationNode`}. */
+    external: false,
+    /** The connector faces to the left. */
+    rightFacing: false,
+    /** Whether the connector is the "Add import" connector for an {@link ArbitraryInputsElaborationNode|`ArbitraryInputsElaborationNode`}. */
+    specialAdditional?: boolean
+} | {
+    /** The {@link ExportedDatum|`ExportedDatum`} this connector is representing. */
+    datum: ExportedDatum,
+    /** This connector is attached to a {@link Mix#imports|`Mix import`}. */
+    external: true,
+    /** The connector faces to the right. */
+    rightFacing: true
+} | {
+    /** The {@link Datum|`Datum`} this connector is representing. */
+    datum: Datum,
+    /** This connector is attached to a {@link Mix#outputs|`Mix output`}. */
+    external: true,
+    /** The connector faces to the left. */
+    rightFacing: false
+};

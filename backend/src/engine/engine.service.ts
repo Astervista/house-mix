@@ -64,7 +64,7 @@ const MAIN_LOOP_INTERVAL = 1000;
  * to adeguate the state of the system, this service runs through the mixes and recalculates all the outputs to send to
  * actuators.
  *
- * When any tool needs to request a new calculation in the system, {@link EngineService#requestRecalculation|`requestRecalculation()`}
+ * When any tool needs to request a new calculation in the system, {@link EngineService#requestRecalculation| `requestRecalculation()`}
  * should be called. The method will schedule a recalculation as soon as possible and recalculate the whole system.
  *
  * The engine hooks to {@link ZigbeeService|`ZigbeeService`}'s events to listen for actuator changes, and automatically

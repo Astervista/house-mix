@@ -758,7 +758,7 @@ export class GroupService extends PersistentDataService<GroupData, GroupDataJSON
     
     /**
      * Retrieves the entire chain of ancestor {@link Group|`Group`s} for a given entity. For groups, this is the same as
-     * {@link GroupService#getAncestorGroups|`GroupService.getAncestorGroups()`}. For devices, it's that function applied to the parent group.
+     * {@link GroupService#getAncestorGroups| `GroupService.getAncestorGroups()`}. For devices, it's that function applied to the parent group.
      *
      * @param {EntityType} entityType - The type of the entity (Group, Sensor, or Actuator).
      * @param {string} name - The unique name of the entity.

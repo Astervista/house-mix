@@ -1188,7 +1188,7 @@ export interface ConnectionDrainToNode {
 export type ConnectionDrain = ConnectionDrainToOutput | ConnectionDrainToNode
 
 /**
- * In the context of a {@link Mix|`Mix`}, a connection links two {@link Datum|`Datum`}s so that the flow of data can be passed
+ * In the context of a {@link Mix|`Mix`}, a connection links two {@link Datum|`Datum`s} so that the flow of data can be passed
  * among {@link ElaborationNode|`ElaborationNode`s}, mixes' {@link Mix#outputs|outputs} and {@link Mix#inputs|inputs}, and
  * constant values. Every connection originates from a {@link ConnectionSource|source} (the datum from which the value comes
  * from) and points too a {@link ConnectionDrain|drain} (the datum to which the value is sent).

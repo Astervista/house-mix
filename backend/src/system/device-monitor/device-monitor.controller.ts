@@ -42,8 +42,9 @@ export class DeviceMonitorController {
      * Get all {@link DeviceMonitorDevice|`DeviceMonitorDevice`s} in the system.
      *
      * @returns {Promise<DeviceMonitorDeviceJSON[]>} An array containing the resulting {@link DeviceMonitorDevice|`DeviceMonitorDevice`s}' {@link DeviceMonitorDeviceJSON|serializations}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-get">`GET /system/device-monitor`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-device-monitor-get">`/system/device-monitor`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("")
     public async getAll(): Promise<DeviceMonitorDeviceJSON[]> {
@@ -51,14 +52,14 @@ export class DeviceMonitorController {
         return devices.map(device => device.toJSON());
     }
     
-    
     /**
      * Adds a new {@link DeviceMonitorDevice|`DeviceMonitorDevice`} to the system.
      *
      * @param {DeviceMonitorDeviceJSON} data - The HTTP request's body containing the {@link DeviceMonitorDeviceJSON|serialization} of the device to add.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a device with the same name already exists.
-     * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-post">`POST /system/device-monitor`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-device-monitor-post">`/system/device-monitor`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("")
     public async add(
@@ -74,8 +75,9 @@ export class DeviceMonitorController {
      * @param {string} name - The HTTP request's path parameter with the {@link DeviceMonitorDevice#name|`name`} of the device to remove.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the device is used in a mix.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-delete">`DELETE /system/device-monitor/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-device-monitor-name-delete">`/system/device-monitor/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("/:name")
     public async delete(
@@ -93,8 +95,9 @@ export class DeviceMonitorController {
      * @param {DeviceMonitorDeviceJSON} data - The HTTP request's body containing the properties to be updated.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if there is an attempt to change the {@link DeviceMonitorDevice#name|`name`}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-patch">`PATCH /system/device-monitor/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-device-monitor-name-patch">`/system/device-monitor/{name}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name")
     public async edit(
@@ -118,8 +121,9 @@ export class DeviceMonitorController {
      *                                       reference the {@link DeviceMonitorDevice|`DeviceMonitorDevice`} and prevent it from being deleted. If empty,
      *                                       it means that the {@link DeviceMonitorDevice|`DeviceMonitorDevice`} can be deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link DeviceMonitorDevice|`DeviceMonitorDevice`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-device-monitor-name-delete-locks-get">`GET /system/device-monitor/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-device-monitor-name-delete-locks-get">`/system/device-monitor/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(

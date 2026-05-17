@@ -12,7 +12,7 @@ import {ApiOkResponse} from "@nestjs/swagger";
 import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest-classes";
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
-import {SensorEditChanges} from "@common/devices/sensor/rest-classes";
+import {SensorEditChanges, SensorCreateOptions} from "@common/devices/sensor/rest-classes";
 import {GetDevicesOptions, LockedExposes, UnavailableParents} from "@common/devices/rest-classes";
 import {MixPositionInfo} from "@common/mixing/mix/rest-classes";
 import {MixService} from "../../mixing/mix/mix.service";
@@ -48,8 +48,9 @@ export class SensorController {
      * @returns {Promise<SensorJSON[]>} An array containing the resulting {@link Sensor|`Sensor`s}' {@link SensorJSON|serializations}.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if both {@link GetDevicesOptions#mix|`mix`} and {@link GetDevicesOptions#anyMixed|`anyMixed`} are
      *     specified at the same time.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-get">`GET /device/sensors`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-get">`/device/sensors`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("")
     @ApiOkResponse({ type: [Array<SensorJSON>] })
@@ -65,20 +66,21 @@ export class SensorController {
      * Creates a new device of type {@link Sensor|`Sensor`} in the system.
      *
      * @param {SensorJSON} data - The HTTP request's body containing all the information about the {@link Sensor|`Sensor`} to be created.
-     * @param {GroupCreateOptions} query - The HTTP request's query parameters with additional optional info for the creation, namely the name of the {@link Group|`Group`} where the
+     * @param {SensorCreateOptions} query - The HTTP request's query parameters with additional optional info for the creation, namely the name of the {@link Group|`Group`} where the
      *                                     sensor will be placed.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if there already exist a {@link Sensor|sensor} with the same {@link Sensor#name|name}.
-     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link GroupCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
+     * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if a {@link SensorCreateOptions#parent|parent} was specified but no {@link Group|`Group`} was found with
      *     the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-post">`POST /device/sensors`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-post">`/device/sensors`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("")
     public async create(
         @Body()
         data: SensorJSON,
         @Query()
-        query: GroupCreateOptions
+        query: SensorCreateOptions
     ): Promise<void> {
         await this.sensorService.createSensor(Sensor.fromJSON(data), query.parent ?? null);
     }
@@ -89,8 +91,9 @@ export class SensorController {
      * @param {string} name - The HTTP request's path parameter with the {@link Sensor#name|`name`} of the sensor to retrieve.
      * @returns {Promise<SensorJSON>} - The {@link Sensor|`Sensor`}'s {@link SensorJSON|serialization}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Sensor|`Sensor`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-get">`GET /device/sensors/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-get">`/device/sensors/{name}`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get(":name")
     public async getByName(
@@ -114,8 +117,9 @@ export class SensorController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a new {@link Sensor#name|`name`} was specified, but a {@link Sensor|sensor} with that name already
      *     exists.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-patch">`PATCH /device/sensors/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-patch">`/device/sensors/{name}`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch(":name")
     public async edit(
@@ -135,8 +139,9 @@ export class SensorController {
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Sensor|`Sensor`} cannot be deleted because it is linked to a {@link Mix|mix} that is
      *     referenced in a {@link Mix|mix} downstream.
      * @returns {Promise<void>}
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-delete">`DELETE /device/sensors/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-delete">`/device/sensors/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete(":name")
     public async delete(
@@ -154,8 +159,9 @@ export class SensorController {
      *                                       reference the {@link Sensor|`Sensor`} and prevent it from being deleted. If empty, it means that
      *                                       the {@link Sensor|`Sensor`} can be deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Sensor|`Sensor`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-delete-locks-get">`GET /device/sensors/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-delete-locks-get">`/device/sensors/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(
@@ -177,8 +183,9 @@ export class SensorController {
      *                               names.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the {@link Sensor|`Sensor`} cannot be moved to the requested {@link Group|`Group`}, because it
      *                               would break dependencies in {@link Mix|`Mix`es} that depend on data related to the sensor or its linked mix.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-parent-patch">`PATCH /device/sensors/{name}/parent`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-parent-patch">`/device/sensors/{name}/parent`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name/parent")
     public async changeParent(
@@ -198,8 +205,9 @@ export class SensorController {
      * @param {string} name - The HTTP request's path parameter with the {@link Sensor#name|`name`} of the {@link Sensor|`Sensor`}.
      * @returns {Promise<UnavailableParents>} The information about the {@link UnavailableParents|unavailable groups}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Sensor|`Sensor`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-unavailable-parents-get">`GET /device/sensors/{name}/unavailable-parents`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-unavailable-parents-get">`/device/sensors/{name}/unavailable-parents`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/unavailable-parents")
     public async getUnavailableParents(
@@ -216,8 +224,9 @@ export class SensorController {
      * @param {string} name - The HTTP request's path parameter with the {@link Sensor#name|`name`} of the {@link Sensor|`Sensor`}.
      * @returns {Promise<LockedExposes[]>} The information about the {@link LockedExposes|locked exposes}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Sensor|`Sensor`} was found with the specified name.
-     * @see REST API endpoint <a href="../../rest/#operation-device-sensors-name-locked-exposes-get">`GET /device/sensors/{name}/locked-exposes`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-device-sensors-name-locked-exposes-get">`/device/sensors/{name}/locked-exposes`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/locked-exposes")
     public async getLockedExposes(

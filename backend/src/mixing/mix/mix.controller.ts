@@ -23,6 +23,10 @@ import type {Sensor} from "@common/devices/sensor/sensor";
 import type {Actuator} from "@common/devices/actuator/actuator";
 // noinspection ES6UnusedImports
 import type {Device} from "@common/devices/device";
+// noinspection ES6UnusedImports
+import type {ElaborationNode} from "@common/mixing/mix/elaboration-node";
+// noinspection ES6UnusedImports
+import type {NodeGroupJSON} from "@common/mixing/mix/mix-layout";
 
 /**
  * This class is the controller for all the api endpoints under <a href="../../rest/#tag-mixing">`/mixing`</a>, regarding operations on {@link Mix|`Mix`es}
@@ -42,8 +46,9 @@ export class MixController {
      * Retrieves all the {@link Mix|`Mix`es} in the system.
      *
      * @returns {Promise<MixJSON[]>} - An array containing the resulting {@link Mix|`Mix`es}' {@link MixJSON|serializations}.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-get">`GET /mixing/mixes/`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-get">`/mixing/mixes/`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("mixes/")
     public async getAll(): Promise<MixJSON[]> {
@@ -70,8 +75,9 @@ export class MixController {
      * @throws {ConflictException} {@link ConflictException|`ConflictException`} if an update removes or changes outputs that are currently in use by other mixes downstream,
      *                             or if the inputs are not reachable by a mix in the specified position.
      * @throws {InternalServerErrorException} {@link InternalServerErrorException|`InternalServerErrorException`} If an unexpected state occurs during ID assignment or phase handling.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-put">`PUT /mixing/mixes/`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-put">`/mixing/mixes/`</a>.
      * @group API Endpoints
+     * @put
      */
     @Put("mixes/")
     public async create(
@@ -87,14 +93,15 @@ export class MixController {
         };
     }
     
-    
     /**
      * Retrieves a specific {@link Mix|`Mix`} by its unique id number.
      *
      * @param {number} id - The HTTP request's path parameter with the unique identifier of the {@link Mix|`Mix`} to retrieve.
      * @returns {Promise<MixJSON>} - The {@link MixJSON|serialization} of the requested {@link Mix|`Mix`}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-patch">`/mixing/mixes/:id`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("mixes/:id")
     public async getById(@Param("id", new ParseIntPipe()) id: number): Promise<MixJSON> {
@@ -123,8 +130,9 @@ export class MixController {
      * @throws {ConflictException} {@link ConflictException|`ConflictException`} if an update removes or changes outputs that are currently in use by other {@link Mix|`Mix`es} downstream,
      *                             or if the inputs are not reachable by a mix in the specified position.
      * @throws {InternalServerErrorException} {@link InternalServerErrorException|`InternalServerErrorException`} If an unexpected state occurs during ID assignment or phase handling.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-id-patch">`PATCH /mixing/mixes/:id`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-patch">`/mixing/mixes/:id`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("mixes/:id")
     public async editMix(@Body() newMix: MixJSON, @Param("id", new ParseIntPipe()) id: number): Promise<void> {
@@ -144,8 +152,9 @@ export class MixController {
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no mix with the specified ID exists.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the mix cannot be deleted because it is
      *                             currently being used or referenced by other mixes or entities downstream.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-id-delete">`DELETE /mixing/mixes/:id`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-delete">`/mixing/mixes/:id`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("mixes/:id")
     public async deleteMix(@Param("id", new ParseIntPipe()) id: number): Promise<void> {
@@ -158,8 +167,9 @@ export class MixController {
      * @param {number} id - The HTTP request's path parameter with the unique identifier of the {@link Mix|`Mix`}.
      * @returns {Promise<MixPositionInfoJSON>} - The serialized {@link MixPositionInfoJSON|position information}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-id-position-get">`GET /mixing/mixes/:id/position`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-position-get">`/mixing/mixes/:id/position`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("mixes/:id/position")
     public async getMixPosition(@Param("id", new ParseIntPipe()) id: number): Promise<MixPositionInfoJSON> {
@@ -170,10 +180,11 @@ export class MixController {
      * Retrieves the UI {@link MixLayout|layout} for a specific {@link Mix|`Mix`}.
      *
      * @param {number} id - The HTTP request's path parameter with the unique identifier of the {@link Mix|`Mix`}.
-     * @returns {Promise<MixLayout>} - The {@link MixLayout|layout} including node positions.
+     * @returns {Promise<MixLayout>} - The {@link MixLayout|layout} including {@link ElaborationNode|`ElaborationNode`} positions and {@link NodeGroupJSON|`NodeGroupJSON`s}.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-id-layout-get">`GET /mixing/mixes/:id/layout`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-layout-get">`/mixing/mixes/:id/layout`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("mixes/:id/layout")
     public async getMixLayout(@Param("id", new ParseIntPipe()) id: number): Promise<MixLayout> {
@@ -188,8 +199,9 @@ export class MixController {
      * @returns {Promise<void>} - A promise that resolves when the layout is saved.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the layout data is malformed or contains invalid coordinates.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link Mix|`Mix`} with the specified ID exists.
-     * @see REST API endpoint <a href="../../rest/#operation-mixes-id-layout-put">`PUT /mixing/mixes/:id/layout`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-mixes-id-layout-put">`/mixing/mixes/:id/layout`</a>.
      * @group API Endpoints
+     * @put
      */
     @Put("mixes/:id/layout")
     public async saveLayout(@Param("id", new ParseIntPipe()) id: number, @Body() layout: MixLayout): Promise<void> {
@@ -222,8 +234,9 @@ export class MixController {
      * @returns {Promise<ExportedDatumJSON[]>} - A list of available {@link ExportedDatum|`ExportedDatum`}'s {@link ExportedDatumJSON|serializations} for using as imports.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the position filters are invalid.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if the provided position does not resolve to a known position.
-     * @see REST API endpoint <a href="../../rest/#operation-available-imports-get">`GET /mixing/available-imports/`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-available-imports-get">`/mixing/available-imports/`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("available-imports/")
     public async getAvailableImports(
@@ -239,11 +252,12 @@ export class MixController {
     }
     
     /**
-     * Retrieves the global mixing graph representing all connections between mixes assigned to various locations of the system.
+     * Retrieves the global mixing graph representing all connections between {@link Mix|`Mix`es} assigned to various locations of the system.
      *
      * @returns {Promise<MixingGraphJSON>} - The {@link MixingGraph|`MixingGraph`}'s {@link MixingGraphJSON|serialization}.
-     * @see REST API endpoint <a href="../../rest/#operation-graph-get">`GET /mixing/graph`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-graph-get">`/mixing/graph`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("graph")
     public async getGraph(): Promise<MixingGraphJSON> {
@@ -256,8 +270,9 @@ export class MixController {
      * and before the elaboration regarding data to be sent to the {@link Actuator|`Actuator`s} gets started.
      *
      * @returns {Promise<string[]>} - An array of names to identify the {@link Mix|`Mix`es} positioned in the center.
-     * @see REST API endpoint <a href="../../rest/#operation-center-mixes-names-get">`GET /mixing/center-mixes-names`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-center-mixes-names-get">`/mixing/center-mixes-names`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("center-mixes-names")
     public async getCenterMixNames(): Promise<string[]> {

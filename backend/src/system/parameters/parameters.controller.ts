@@ -45,8 +45,9 @@ export class ParametersController {
      * Get all {@link SystemParameter|`SystemParameter`s} in the system.
      *
      * @returns {Promise<SystemParameterJSON[]>} An array containing the resulting {@link SystemParameter|`SystemParameter`s}' {@link SystemParameterJSON|serializations}.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-get">`GET /system/parameters`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-get">`/system/parameters`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("")
     public async getAll(): Promise<SystemParameterJSON[]> {
@@ -60,8 +61,9 @@ export class ParametersController {
      *
      * @param {SystemParameterJSON} data - The HTTP request's body containing the {@link SystemParameterJSON|serialization} of the parameter to add.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if a parameter with the same name already exists.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-post">`POST /system/parameters`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-post">`/system/parameters`</a>.
      * @group API Endpoints
+     * @post
      */
     @Post("")
     public async create(
@@ -77,8 +79,9 @@ export class ParametersController {
      * @param {string} name - The HTTP request's path parameter with the {@link SystemParameter#name|`name`} of the parameter to remove.
      * @throws {ConflictException} - {@link ConflictException|`ConflictException`} if the parameter is used in a mix.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemParameter|`SystemParameter`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-name-delete">`DELETE /system/parameters/{name}`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-name-delete">`/system/parameters/{name}`</a>.
      * @group API Endpoints
+     * @delete
      */
     @Delete("/:name")
     public async delete(
@@ -95,8 +98,9 @@ export class ParametersController {
      * @param {SetParameterBody} body - The HTTP request's body containing the new value.
      * @throws {BadRequestException} - {@link BadRequestException|`BadRequestException`} if the provided value is not valid for the chosen parameter.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemParameter|`SystemParameter`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-name-value-patch">`PATCH /system/parameters/{name}/value`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-name-value-patch">`/system/parameters/{name}/value`</a>.
      * @group API Endpoints
+     * @patch
      */
     @Patch("/:name/value")
     public async set(
@@ -114,9 +118,10 @@ export class ParametersController {
      * @param {string} name - The HTTP request's path parameter with the {@link SystemParameter#name|`name`} of the parameter.
      * @returns {Promise<{ value: unknown }>} An object containing the current value of the parameter.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemParameter|`SystemParameter`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-name-value-get">`GET /system/parameters/{name}/value`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-name-value-get">`/system/parameters/{name}/value`</a>.
      * @see {@link DatumType|`DatumType`} for a description of the return types.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/value")
     public async getValue(
@@ -135,8 +140,9 @@ export class ParametersController {
      * @returns {Promise<MixPositionInfo[]>} A list of {@link MixPositionInfo|positions} of all the {@link Mix|`Mix`es} that
      *                                       reference the {@link SystemParameter|`SystemParameter`} and prevent it from being deleted.
      * @throws {NotFoundException} - {@link NotFoundException|`NotFoundException`} if no {@link SystemParameter|`SystemParameter`} was found with the specific name.
-     * @see REST API endpoint <a href="../../rest/#operation-system-parameters-name-delete-locks-get">`GET /system/parameters/{name}/delete-locks`</a>.
+     * @apiEndpoint <a href="../../rest/#operation-system-parameters-name-delete-locks-get">`/system/parameters/{name}/delete-locks`</a>.
      * @group API Endpoints
+     * @get
      */
     @Get("/:name/delete-locks")
     public async canDelete(
