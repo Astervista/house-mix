@@ -169,6 +169,10 @@ jobs:
         working-directory: ./documentation
         run: npm ci
 
+      - name: Compile Common Typescript
+        working-directory: ./common
+        run: tsc
+
       - name: Build Common TypeDoc
         working-directory: ./common
         run: npx typedoc --options typedoc.config.mjs
