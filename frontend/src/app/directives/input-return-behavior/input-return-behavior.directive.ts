@@ -37,7 +37,7 @@ export class InputReturnBehaviorExcludeDirective {
  * on the last focusable element.
  *
  * @directive
- * @directiveName ´[house-mix-input-return-behavior]`
+ * @directiveName `[house-mix-input-return-behavior]`
  */
 @Directive({
                selector: '[house-mix-input-return-behavior]'

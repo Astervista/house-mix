@@ -18,6 +18,7 @@
     "excludeProtected": false,
     "customCss": "../documentation/custom-style.css",
     "customJs": "../documentation/custom-script.js",
+    "readme": "README-docs.md",
     "externalSymbolLinkMappings": {
         "typescript": {
             "Object": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object",

@@ -29,7 +29,7 @@ The available environment variables are:
 
 MQTT_URL=mqtt://some-address/
 MQTT_USERNAME=username
-HOUSEMIX_VERSION=0.3.0
+HOUSEMIX_VERSION=0.3.1
 HOST_DATA_LOCATION=/path/to/data/storage/location
 PROXY_NETWORK=proxy_network
 
