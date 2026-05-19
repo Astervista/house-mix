@@ -7,6 +7,6 @@
         "build": "sourcey build"
     },
     "dependencies": {
-        "sourcey": "^3.4.3"
+        "sourcey": "^3.6.0"
     }
 }

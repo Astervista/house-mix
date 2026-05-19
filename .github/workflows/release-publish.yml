@@ -194,7 +194,7 @@ jobs:
 
       - name: Generate OpenAPI Spec
         working-directory: ./documentation
-        run: sourcey build -o ./rest/
+        run: npx sourcey build -o ./rest/
 
       - name: Transform Version for Path
         run: |
