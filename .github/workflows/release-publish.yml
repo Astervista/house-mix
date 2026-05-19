@@ -186,7 +186,11 @@ jobs:
         run: sourcey build -o ./rest/
 
       - name: Transform Version for Path
-        run: echo "VERSION_PATH=$(echo ${{ github.event.release.tag_name }} | tr '.' '_')" >> $GITHUB_ENV
+        run: |
+          VERSION_TAG="${{ github.event.release.tag_name }}"
+          VERSION_WITHOUT_V="${VERSION_TAG#v}"
+          echo "VERSION_PATH=$(echo $VERSION_WITHOUT_V | tr '.' '_')" >> $GITHUB_ENV
+          echo "VERSION_ID=$VERSION_WITHOUT_V" >> $GITHUB_ENV
 
       # 4. Connect via SSH to make sure the folder exists
       - name: Prepare Server Environment
@@ -236,4 +240,4 @@ jobs:
           script: |
             curl -X POST localhost:3000/projects/house-mix/versions \
             -H "Content-Type: application/json" \
-            -d '{"versionId": "${{ github.event.release.tag_name }}", "setCurrent": true, "setBeta": false}'
+            -d '{"versionId": "${{ env.VERSION_ID }}", "setCurrent": true, "setBeta": false}'
