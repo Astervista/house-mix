@@ -96,7 +96,12 @@ jobs:
         with:
           path: common/node_modules
           key: common-deps-${{ hashFiles('common/package-lock.json') }}
-          restore-keys: common-deps-
+
+      - name: Cache Common Output
+        uses: actions/cache@v3
+        with:
+          path: common/dist
+          key: common-deps-${{ hashFiles('common/package-lock.json') }}
 
       - name: Cache Frontend Dependencies
         uses: actions/cache@v3
@@ -146,6 +151,12 @@ jobs:
           path: common/node_modules
           key: common-deps-${{ hashFiles('common/package-lock.json') }}
 
+      - name: Restore Common Output Cache
+        uses: actions/cache@v3
+        with:
+          path: common/dist
+          key: common-deps-${{ hashFiles('common/package-lock.json') }}
+
       - name: Restore Backend Dependencies Cache
         uses: actions/cache@v3
         with:
@@ -168,10 +179,6 @@ jobs:
       - name: Install Documentation Dependencies
         working-directory: ./documentation
         run: npm ci
-
-      - name: Compile Common Typescript
-        working-directory: ./common
-        run: tsc
 
       - name: Build Common TypeDoc
         working-directory: ./common
