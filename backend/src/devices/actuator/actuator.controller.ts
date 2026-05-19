@@ -9,7 +9,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, NotFoundExcep
 import { ActuatorService } from './actuator.service';
 import { Actuator, ActuatorJSON } from '@common/devices/actuator/actuator';
 import { ApiOkResponse } from '@nestjs/swagger';
-import { ChangeParentChange, GroupCreateOptions } from '@common/devices/group/rest-classes';
+import { ChangeParentChange } from '@common/devices/group/rest-classes';
 import { GroupService } from '../group/group.service';
 import { EntityType } from '@common/devices/constants';
 import {ActuatorEditChanges, ActuatorCreateOptions} from "@common/devices/actuator/rest-classes";
