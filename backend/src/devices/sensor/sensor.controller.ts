@@ -9,7 +9,7 @@ import {Body, Controller, Delete, Get, Param, Patch, Post, Query,NotFoundExcepti
 import {SensorService} from "./sensor.service";
 import {Sensor, SensorJSON} from "@common/devices/sensor/sensor";
 import {ApiOkResponse} from "@nestjs/swagger";
-import {ChangeParentChange, GroupCreateOptions} from "@common/devices/group/rest-classes";
+import {ChangeParentChange} from "@common/devices/group/rest-classes";
 import {GroupService} from "../group/group.service";
 import {EntityType} from "@common/devices/constants";
 import {SensorEditChanges, SensorCreateOptions} from "@common/devices/sensor/rest-classes";
