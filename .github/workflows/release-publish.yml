@@ -216,7 +216,25 @@ jobs:
             # -p ensures it creates the full path, and won't error if it already exists
             mkdir -p /home/${{ secrets.DOCS_PUB_SSH_USER }}/sources/house-mix/${{ env.VERSION_PATH }}
 
-      # 5. Now copy the files safely
+      # 5. Prepare upload package locally and copy as a single absolute path
+      - name: Prepare Upload Package
+        run: |
+          set -e
+          UPLOAD_DIR="$RUNNER_TEMP/house-mix-docs-${VERSION_PATH}"
+          mkdir -p "$UPLOAD_DIR"
+          # Copy only the needed documentation files/folders into the upload directory
+          cp -r documentation/rest/ "$UPLOAD_DIR/"
+          cp -r documentation/frontend/ "$UPLOAD_DIR/"
+          cp -r documentation/backend/ "$UPLOAD_DIR/"
+          cp -r documentation/common/ "$UPLOAD_DIR/"
+          cp -r documentation/fonts/ "$UPLOAD_DIR/"
+          cp -r documentation/assets/ "$UPLOAD_DIR/"
+          cp documentation/index.html "$UPLOAD_DIR/" || true
+          cp documentation/custom-style.css "$UPLOAD_DIR/" || true
+          cp documentation/custom-script.js "$UPLOAD_DIR/" || true
+          cp documentation/REST.json "$UPLOAD_DIR/" || true
+          echo "UPLOAD_DIR=$UPLOAD_DIR" >> $GITHUB_ENV
+
       - name: Copy files to Server via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -225,21 +243,10 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           passphrase: ${{ secrets.SERVER_SSH_PASSPHRASE }}
           port: 8022
-          source: |
-            ./documentation/rest
-            ./documentation/frontend
-            ./documentation/backend
-            ./documentation/common
-            ./documentation/fonts
-            ./documentation/assets
-            ./documentation/index.html
-            ./documentation/custom-style.css
-            ./documentation/custom-script.js
-            ./documentation/REST.json
-          target: "/home/${{ secrets.DOCS_PUB_SSH_USER }}/sources/house-mix/${{ env.VERSION_PATH }}"
-          strip_components: 1 # This will remove the 'documentation/' prefix from the copied files/folders
+          source: "${{ env.UPLOAD_DIR }}/*"
+          target: "/home/${{ secrets.DOCS_PUB_SSH_USER }}/sources/house-mix/${{ env.VERSION_PATH }}/"
+          strip_components: 0
 
-      # 6. Trigger Remote API Callback
       - name: Trigger Remote API Callback
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -252,3 +259,4 @@ jobs:
             curl -X POST localhost:3000/projects/house-mix/versions \
             -H "Content-Type: application/json" \
             -d '{"versionId": "${{ env.VERSION_ID }}", "setCurrent": true, "setBeta": false}'
+
