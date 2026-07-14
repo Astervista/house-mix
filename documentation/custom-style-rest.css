@@ -1479,7 +1479,7 @@ div[data-section=Body] > div > div > div.prose {
                 }
             }
             try {
-                if (m.target.getAttribute("href") == "api/index.html") {
+                if (m.target.getAttribute("href") == "api/index.html" || m.target.getAttribute("href") == "api.html") {
                     m.target.setAttribute("href", "../");
                 }
             } catch (e) {console.log(e)}

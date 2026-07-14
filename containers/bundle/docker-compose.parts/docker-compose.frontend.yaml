@@ -1,0 +1,6 @@
+services:
+  house-mix-frontend:
+    image: ghcr.io/astervista/house-mix-frontend:v${HOUSEMIX_VERSION}
+    restart: unless-stopped
+    networks:
+      - proxy

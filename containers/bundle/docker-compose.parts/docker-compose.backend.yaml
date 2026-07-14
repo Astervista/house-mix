@@ -1,0 +1,20 @@
+  house-mix-backend:
+    build:
+      context: ./backend   # Folder with Dockerfile + entrypoint.sh
+    image: house-mix-backend-runner:latest
+    env_file:
+      - .env       # Contains PORT, NODE_ENV, BACKEND_VERSION, MQTT_URL, MQTT_USERNAME
+    environment:
+      APP_BASE_DIR: /app/data
+      NODE_ENV: production
+      BACKEND_RUNNER_VERSION: 0.1.2
+      PORT: 80
+    secrets:
+      - github_token
+      - mqtt_password
+    volumes:
+      - "${HOST_DATA_LOCATION}:/app/data" # Persistent storage for backend
+      - npm-cache:/npm-cache    # Cache for npm packages to avoid full reinstall
+    restart: unless-stopped
+    networks:
+      - proxy

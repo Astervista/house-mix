@@ -1,0 +1,10 @@
+  mqtt-server:
+    image: eclipse-mosquitto:2.0.15
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+    networks:
+      - proxy

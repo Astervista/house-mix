@@ -13,3 +13,5 @@
 // TODO: Search in Api docs
 // TODO: Style examples
 // TODO: Hide inherit-doc text
+// TODO: Bundle needs to come with the proxy and maybe zigbee2mqtt, change readmes accordingly (maybe multiple options)
+// TODO: Create zips for fast download from website

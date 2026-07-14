@@ -4,9 +4,9 @@ This is the documentation for HouseMix's backend subproject.
 
 The backend is built as a NestJs application, and performs business logic for the system, connects and handles the communication with the Zigbee service through MQTT to perform the results of the system's calculation.
 
-The vast majority of the classes and modules here are structured in two-class clusters composed of a NestJs controller handling the REST endpoints and a NestJs service performing the relative business logic. These are all tied to one model defined in the [common project](../common/) each, on which they operate.
+The vast majority of the classes and modules here are structured in two-class clusters composed of a NestJs controller handling the REST endpoints and a NestJs service performing the relative business logic. These are all tied to one model defined in the common project each, on which they operate.
 
-The subfolders that contain such double class clusters are the same as the ones in the [common project](../common/): `/devices/`, `/mixing/` and `/system/`.
+The subfolders that contain such double class clusters are the same as the ones in the common project: `/devices/`, `/mixing/` and `/system/`.
 
 Two additional services handle business logic without being provided with a controller, since they are not connected to a model, but perform more interconnected functions. These are the [engine module](modules/engine_engine.service.html) and the [Zigbee module](modules/zigbee_zigbee.service.html), and are contained inside their respective `/engine/` and `/zigbee` folders.
 

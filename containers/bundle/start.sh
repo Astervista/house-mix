@@ -19,6 +19,8 @@ for secret in $REQUIRED_SECRETS; do
   fi
 done
 
+# The github_token.txt is still needed for logging into ghcr.io
+# The user will remove this later, but for now, we assume it exists.
 GITHUB_TOKEN=$(cat ./secrets/github_token.txt)
 
 # --- 2. Login to GitHub Container Registry ---
