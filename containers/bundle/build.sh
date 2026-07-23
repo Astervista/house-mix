@@ -275,9 +275,6 @@ echo -e "$DOCKER_COMPOSE_CONTENT" > docker-compose.yaml
 
 echo "Successfully generated .env and docker-compose.yaml"
 
-# --- Login to GitHub Container Registry ---
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u astervista --password-stdin
-
 # --- Fetch backend files and build house-mix-backend-runner image ---
 echo "Fetching backend files..."
 mkdir -p backend
