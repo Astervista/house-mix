@@ -14,7 +14,7 @@ ADD_MQTT_SERVER="false"
 ZIGBEE_COORDINATOR_PORT="/dev/ttyACM0" # Default value
 
 # GitHub URL for docker-compose parts (placeholder)
-BASE_GIT_URL="https://github.com/Astervista/house-mix/raw/refs/heads/main/containers/bundle/"
+BASE_GIT_URL="https://raw.githubusercontent.com/Astervista/house-mix/refs/heads/main/containers/bundle/"
 
 # Function to display usage
 usage() {
@@ -100,13 +100,6 @@ if [ -z "$HOUSEMIX_VERSION" ] || [ -z "$HOST_DATA_LOCATION" ]; then
   echo "Error: Missing required arguments. Please provide --housemix-version and --host-data-location."
   usage
 fi
-
-# Check for github_token.txt
-if [ ! -f "secrets/github_token.txt" ]; then
-  echo "Error: Required secret 'secrets/github_token.txt' is missing!"
-  exit 1
-fi
-GITHUB_TOKEN=$(cat ./secrets/github_token.txt)
 
 # Create necessary directories
 mkdir -p secrets
