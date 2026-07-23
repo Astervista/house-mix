@@ -1,6 +1,4 @@
 secrets:
-  github_token:
-    file: ./secrets/github_token.txt  # Personal access token for private npm package
   mqtt_password:
     file: ./secrets/mqtt_password.txt # MQTT password
 

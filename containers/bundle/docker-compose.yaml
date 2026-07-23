@@ -17,7 +17,6 @@ services:
       BACKEND_RUNNER_VERSION: 0.1.2
       PORT: 80
     secrets:
-      - github_token
       - mqtt_password
     volumes:
       - "${HOST_DATA_LOCATION}:/app/data" # Persistent storage for backend
@@ -27,8 +26,6 @@ services:
       - proxy
 
 secrets:
-  github_token:
-    file: ./secrets/github_token.txt  # Personal access token for private npm package
   mqtt_password:
     file: ./secrets/mqtt_password.txt # MQTT password
 

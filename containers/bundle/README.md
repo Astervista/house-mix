@@ -38,9 +38,8 @@ The available environment variables are:
 
 ### Secrets
 
-Password and sensitive data is passed to the container through secrets. The files are:
+Password and sensitive data is passed to the container through secrets. The file is:
 
-- `github_token.txt`: contains the access token that allows downloading of the docker image of the backend
 - `mqtt_password.txt`: contains the password for the mqtt connection
 
 ## Executing

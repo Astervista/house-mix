@@ -10,7 +10,6 @@
       BACKEND_RUNNER_VERSION: 0.1.2
       PORT: 80
     secrets:
-      - github_token
       - mqtt_password
     volumes:
       - "${HOST_DATA_LOCATION}:/app/data" # Persistent storage for backend
