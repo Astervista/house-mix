@@ -13,8 +13,8 @@ ADD_ZIGBEE2MQTT="false"
 ADD_MQTT_SERVER="false"
 ZIGBEE_COORDINATOR_PORT="/dev/ttyACM0" # Default value
 
-# GitHub URL for docker-compose parts (placeholder) TODO: put the correct one when available
-BASE_GIT_URL="http://localhost:12345/house-mix-page/temp-git/"
+# GitHub URL for docker-compose parts (placeholder)
+BASE_GIT_URL="https://github.com/Astervista/house-mix/raw/refs/heads/main/containers/bundle/"
 
 # Function to display usage
 usage() {
@@ -23,7 +23,7 @@ usage() {
   echo "  --mqtt-username <username>        MQTT username (optional)"
   echo "  --mqtt-password <password>        MQTT password (optional)"
   echo "  --mqtt-url <url>                  MQTT broker URL (e.g., mqtt://localhost:1883 or mqtt://mqtt-server:1883)"
-  echo "  --housemix-version <version>      HouseMix version (e.g., 0.3.1)"
+  echo "  --housemix-version <version>      HouseMix version (e.g., 1.0.0)"
   echo "  --host-data-location <path>       Host path for data storage"
   echo "  --proxy-network <network_name>    Name of the proxy network (optional, default: house-mix-network)"
   echo "  --webserver-local-port <port>     Local port for webserver forwarding (optional)"

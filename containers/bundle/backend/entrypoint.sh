@@ -5,13 +5,9 @@ set -e
 if [ -f "/run/secrets/mqtt_password" ]; then
   export MQTT_PASSWORD=$(cat /run/secrets/mqtt_password)
 fi
-if [ -f "/run/secrets/github_token" ]; then
-  export GITHUB_TOKEN=$(cat /run/secrets/github_token)
-fi
 
 
 echo "@astervista:registry=https://npm.pkg.github.com/" > ~/.npmrc
-echo "//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}" >> ~/.npmrc
 
 PACKAGE="@astervista/house-mix-backend"
 VERSION="${HOUSEMIX_VERSION:-latest}"

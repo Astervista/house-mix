@@ -21,7 +21,7 @@ All installations assume that you have the following already installed (for more
 
 ### Environment variables
 
-To be able to run the bundle, in addition to the setup needed for any execution of HouseMix , a file
+To be able to run the bundle, in addition to the setup needed for any execution of HouseMix, a file
 with the environment settings has to be created, and saved as `/.env` in the same folder as the `docker-compose.yaml` file.
 An example can be found
 <a href="https://github.com/Astervista/house-mix/blob/main/containers/bundle/example.md">in this folder</a>.
