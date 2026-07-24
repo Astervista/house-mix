@@ -275,7 +275,7 @@ jobs:
           port: 8022
           source: "${{ env.UPLOAD_DIR }}/*"
           target: "/home/${{ secrets.DOCS_PUB_SSH_USER }}/sources/house-mix/${{ env.VERSION_PATH }}/"
-          strip_components: 1
+          strip_components: 3
 
       - name: Trigger Remote API Callback
         uses: appleboy/ssh-action@v1.0.3
