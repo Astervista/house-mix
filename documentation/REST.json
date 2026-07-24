@@ -3,7 +3,7 @@
     "info": {
         "title": "HouseMix REST API",
         "description": "HouseMix REST API to communicate between the backend and the frontend.",
-        "version": "0.4.0"
+        "version": "0.4.1"
     },
     "paths": {
         "/device/actuators": {
