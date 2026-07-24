@@ -7,7 +7,7 @@ on:
 permissions:
   contents: write
   packages: write
-  id-token: write # Add id-token permission for OIDC authentication with npmjs
+  id-token: write
 
 jobs:
   publish-bundle:
@@ -41,13 +41,11 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org/ # Changed to npmjs registry
-          scope: '@astervista' # Add scope for npmjs if needed, otherwise remove
-          # Always authenticate with npm to publish
-          always-auth: true
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
 
       - name: Cache Common Dependencies
         uses: actions/cache@v3
@@ -94,7 +92,7 @@ jobs:
 
       - name: Publish Backend Package to npmjs
         working-directory: ./backend
-        run: npm publish --access public # Added --access public for public packages
+        run: npm publish --access public
 
   frontend:
     name: Build & Publish Angular Frontend Docker Image
